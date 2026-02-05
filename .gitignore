@@ -1,0 +1,22 @@
+# --- Python (AI 서버) ---
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+requirements.txt.tmp
+
+# --- Spring Boot (백엔드) ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+build/
+.gradle/
+
+# --- IDE (인텔리제이 등) ---
+.idea/
+*.iml
+.vscode/
+
+# --- OS / Log ---
+.DS_Store
+*.log
