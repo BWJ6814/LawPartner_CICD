@@ -364,7 +364,7 @@ CREATE TABLE TB_REVIEW (
 /*
 누가, 어디서, 무엇으로 들어왔는가?
 사용자가 클릭을 할 때(API 호출)마다 묵묵히 기록을 남기는 테이블
-주로 Spring AOP(Aspect Oriented Programming) 기술을 이용해서 개발자가 일일이 코드를 짜지 않아도
+주로 Spring AOP.txt(Aspect Oriented Programming) 기술을 이용해서 개발자가 일일이 코드를 짜지 않아도
 자동으로 쌓이게 처리!
 
 누가 (Who)
@@ -502,7 +502,7 @@ CREATE TABLE TB_DAILY_STATS (
 
 
 /*
-AOP 수행할 로그 시퀀스(흐름)
+AOP.txt 수행할 로그 시퀀스(흐름)
 
 1. 낚아채기 시작 : 관리자 API 호출
 2. ID 발급 : TRACE_ID 생성 (MDC 등을 활용해 쓰레드에 저장)
