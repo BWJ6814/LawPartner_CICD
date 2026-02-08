@@ -23,7 +23,7 @@ const Footer = () => {
                 {/* 2. 법적 고지 (Disclaimer) - 실무 필수 요소 */}
                 <div className="max-w-3xl bg-slate-800/50 rounded-xl p-4 mb-8 border border-slate-700/50">
                     <p className="text-[11px] md:text-xs text-slate-400 leading-relaxed font-light">
-                        본 서비스의 모든 상담 내용은 참고용이며 법적 효력을 갖지 않습니다.<br className="hidden md:block" />
+                        본 서비스의 모든 상담 내용은 참고용이며 법적 효력을 갖지 않습니다.
                         정확한 법적 판단을 위해서는 전문가와의 대면 상담을 권장합니다.
                     </p>
                 </div>
