@@ -1,26 +1,34 @@
-// src/App.js
 import React from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css'; // 부트스트랩 스타일 (필수)
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
-// 1. 형님이 만든 헤더 부품을 가져옵니다. (경로 확인 필수!)
-import Header from './common/components/Header'; 
+// 1. 외부 부품(컴포넌트)들을 정확한 경로에서 가져오기
+import Header from './common/components/Header';
+import Footer from './common/components/Footer';
+import MainPage from './pages/mainpage';
+
+// 2. 로그인 페이지가 아직 없다면 일단 임시 컴포넌트로 대체
+const LoginPage = () => <div className="p-20 text-center">로그인 페이지 준비중</div>;
 
 function App() {
   return (
-    <div className="App">
-      {/* 2. 여기에 헤더를 '태그'처럼 씁니다. 이게 화면에 그리는 겁니다. */}
-      <Header />
+      <div className="flex flex-col min-h-screen bg-gray-50 text-slate-900 font-sans">
+        {/* 모든 페이지 상단에 고정 */}
+        <Header />
 
-      <main className="container mt-5">
-        <h2>형님, 헤더가 잘 보이십니까?</h2>
-        <p>여기부터는 본문 영역입니다.</p>
+        {/* 주소(URL)에 따라 바뀌는 메인 컨텐츠 영역 */}
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<MainPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="*" element={<div className="text-center p-20">404 Not Found</div>} />
+          </Routes>
+        </main>
 
-        <div className="tw-bg-amber-400 tw-p-4 tw-text-center tw-font-bold tw-text-red-600">
-        이 글자가 노란 배경에 빨간색으로 보이면 테일윈드 성공!
+        {/* 모든 페이지 하단에 고정 */}
+        <Footer />
       </div>
-      </main>
-    </div>
   );
 }
 

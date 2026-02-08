@@ -129,10 +129,6 @@ const Header = () => {
                      className="bg-blue-900 text-white px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-800 transition shadow-lg hover:shadow-blue-900/20 active:scale-95 transform no-underline whitespace-nowrap">
                     회원가입
                   </Link>
-                  <div className="h-6 w-px bg-gray-200 mx-1"></div>
-                  <Link to="/lawyer-signup" style={noUnderlineStyle} className="text-sm font-bold text-blue-700 hover:text-blue-900 transition no-underline whitespace-nowrap">
-                    변호사 가입
-                  </Link>
                 </>
               )}
             </div>
