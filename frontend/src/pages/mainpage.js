@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+/*
+Link 컴포넌트 사용 : <a> 태그 대신 Link를 사용했습니다. 이는 SPA 환경에서 페이지 전체를 
+새로고침 하지 않고 필요한 부분만 갈아 끼워 속도를 높이기 위함입니다.
+*/
+
 import winterimg from '../common/img/윈터증사.webp'
 // ----------------------------------------------------------------------
 // [메인 페이지] MainPage.jsx로 분리할 부분 (★★★★★)
@@ -8,6 +13,7 @@ import winterimg from '../common/img/윈터증사.webp'
 const MainPage = () => {
   return (
     <main className="flex-grow font-sans">
+
       {/* 1. 히어로 섹션 */}
       <section className="law-gradient py-16 md:py-24 px-4 overflow-hidden relative">
         <div className="max-w-7xl mx-auto relative z-10">
@@ -16,8 +22,12 @@ const MainPage = () => {
           <div className="max-w-4xl mx-auto mb-20">
             <div className="bg-white rounded-2xl p-2 flex items-center search-focus transition-all duration-300 shadow-2xl">
               <div className="hidden md:flex items-center px-4 border-r border-gray-200 cursor-pointer hover:bg-gray-50 h-full rounded-l-xl transition">
-                <span className="text-sm font-bold text-gray-700 whitespace-nowrap mr-2">카테고리</span>
-                <i className="fas fa-chevron-down text-[10px] text-gray-400"></i>
+                <select className="text-sm font-bold text-gray-700 whitespace-nowrap mr-2">
+                    <option value="all">전체 검색</option> 
+                    <option value="lawyer">변호사</option> 
+                    <option value="JP">판례</option> 
+                    <option value="lawterm">법률 용어</option> 
+                </select>
               </div>
               <input 
                 type="text" 
@@ -132,16 +142,32 @@ const MainPage = () => {
           <h3 className="text-3xl font-black text-gray-900 mb-3">어떤 도움이 필요하신가요?</h3>
           <p className="text-gray-500 font-medium">상황에 맞는 카테고리를 선택하여 상담을 시작하세요.</p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6">
           {[
             { icon: 'fa-home', label: '부동산', color: 'text-amber-600' },
             { icon: 'fa-heart-broken', label: '이혼/상속', color: 'text-rose-500' },
             { icon: 'fa-gavel', label: '형사', color: 'text-slate-700' },
             { icon: 'fa-building', label: '기업/노동', color: 'text-blue-600' },
             { icon: 'fa-coins', label: '금전/채무', color: 'text-yellow-500' },
-            { icon: 'fa-plus', label: '더보기', color: 'text-gray-400' },
+            { icon: 'fa-car-crash', label: '교통사고', color: 'text-red-500' },
+            { icon: 'fa-balance-scale', label: '민사', color: 'text-indigo-600' },
+            { icon: 'fa-landmark', label: '행정', color: 'text-gray-600' },
+            { icon: 'fa-lightbulb', label: '지식재산', color: 'text-yellow-400' },
+            { icon: 'fa-file-invoice-dollar', label: '세무/회계', color: 'text-green-600' },
+            { icon: 'fa-stethoscope', label: '의료', color: 'text-teal-500' },
+            { icon: 'fa-hard-hat', label: '건설', color: 'text-orange-600' },
+            { icon: 'fa-globe', label: '국제', color: 'text-blue-400' },
+            { icon: 'fa-rocket', label: '스타트업', color: 'text-purple-600' },
+            { icon: 'fa-shield-virus', label: '사이버', color: 'text-emerald-500' },
+            { icon: 'fa-ellipsis-h', label: '기타', color: 'text-gray-400' },
           ].map((cat, idx) => (
-            <Link to={`/category/${cat.label}`} key={idx} className="bg-white border border-gray-200 rounded-2xl p-6 text-center hover:shadow-xl hover:border-blue-300 transition cursor-pointer group flex flex-col items-center justify-center h-40 decoration-0 no-underline">
+            // 실무(Jitsumu): 카테고리 클릭 시 전문가 찾기 페이지로 이동하면서 
+            // 쿼리 스트링(?category=...)을 넘겨줍니다. '기타'는 전체보기를 위해 파라미터 없이 이동합니다.
+            <Link 
+              to={cat.label === '기타' ? '/experts' : `/experts?category=${cat.label}`} 
+              key={idx} 
+              className="bg-white border border-gray-200 rounded-2xl p-6 text-center hover:shadow-xl hover:border-blue-300 transition cursor-pointer group flex flex-col items-center justify-center h-40 decoration-0 no-underline"
+            >
               <div className={`text-4xl mb-4 ${cat.color} group-hover:scale-110 transition duration-300`}>
                 <i className={`fas ${cat.icon}`}></i>
               </div>
