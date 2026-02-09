@@ -9,6 +9,7 @@ import Footer from './common/components/Footer';
 import MainPage from './pages/mainpage';
 import ConsultationBoard from './BWJ/ConsultationBoard';
 import WriteQuestionPage from './BWJ/WriteQuestionPage';
+import GeneralMyPage from './pages/GeneralMypage'
 
 // 2. 로그인 페이지가 아직 없다면 일단 임시 컴포넌트로 대체
 const LoginPage = () => <div className="p-20 text-center">로그인 페이지 준비중</div>;
@@ -23,7 +24,8 @@ function App() {
             <main className="flex-grow">
                 <Routes>
                     <Route path="/" element={<MainPage />} />
-                    <Route path="/" element={<ConsultationBoard />} />
+                    <Route path="/board" element={<ConsultationBoard />} />
+                    <Route path="/mypage" element={<GeneralMyPage />} />
                     <Route path="/write" element={<WriteQuestionPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="*" element={<div className="text-center p-20">404 Not Found</div>} />
