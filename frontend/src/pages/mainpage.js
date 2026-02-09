@@ -10,6 +10,9 @@ import winterimg from '../common/img/윈터증사.webp'
 // [메인 페이지] MainPage.jsx로 분리할 부분 (★★★★★)
 // ----------------------------------------------------------------------
 // 이 컴포넌트 전체를 잘라내서 'src/pages/MainPage.jsx'로 저장하세요.
+
+
+
 const MainPage = () => {
   return (
     <main className="flex-grow font-sans">
@@ -114,7 +117,7 @@ const MainPage = () => {
 
           {/* 하단 숏컷 */}
           <div className="grid md:grid-cols-2 gap-6 mt-16 max-w-5xl mx-auto">
-            <Link to="/board" className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center justify-between hover:scale-[1.02] transition duration-300 decoration-0 group">
+            <Link to="/board" className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center justify-between hover:scale-[1.02] transition duration-300 no-underline group">
               <div>
                 <h3 className="text-lg font-black text-gray-900 mb-1">상담 게시판 가기</h3>
                 <p className="text-sm text-gray-500 font-medium">다른 사람들의 사례를 확인하고 직접 질문하세요.</p>
@@ -123,7 +126,7 @@ const MainPage = () => {
                 <i className="fas fa-clipboard-list"></i>
               </div>
             </Link>
-            <Link to="/experts" className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center justify-between hover:scale-[1.02] transition duration-300 decoration-0 group">
+            <Link to="/experts" className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center justify-between hover:scale-[1.02] transition duration-300 no-underline group">
               <div>
                 <h3 className="text-lg font-black text-gray-900 mb-1">전문가 찾기</h3>
                 <p className="text-sm text-gray-500 font-medium">분야별 베스트 변호사에게 1:1 상담을 요청하세요.</p>

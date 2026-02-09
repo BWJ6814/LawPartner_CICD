@@ -9,6 +9,11 @@ body {
    font-family: 'Noto Sans KR', sans-serif;
 }
 
+
+a, a * {
+  text-decoration: none !important;
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
