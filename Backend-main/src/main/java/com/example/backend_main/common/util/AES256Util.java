@@ -68,7 +68,7 @@ public class AES256Util {
 
         // 2. [진짜 열쇠 만들기] (properties 파일에 저장해둔 문자열 활용)
         // SecretKeySpec : 우리가 가진 문자열 키를 AES 알고리즘이 이해할 수 있는 진짜 키 객체로 변환
-        // UTF_8 : 공통 번역기 - 문자를 바이트 숫자로 인코딩하는 방식 - 전 세계 표전 번역기를 돌려 숫자로 변경 후
+        // UTF_8 : 공통 번역기 - 문자를 바이트 숫자로 인코딩하는 방식 - 표준 번역기를 돌려 숫자로 변경 후
         // AES : 금고 브랜드 - 암호화 알고리즘 규격 - AES 금고에 딱 맞는 가상이 아닌 실물 열쇠 객체로 변환..!
         SecretKeySpec keySpec = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "AES");
 
@@ -142,6 +142,8 @@ public class AES256Util {
         // 방금 계산한 길이만큼 크기가 딱 맞는 주머니 준비하기
         byte[] encryptedValue = new byte[encryptedSize];
         // 16번째부터 끝까지 복사
+        // combined의 앞 16칸은 이미 IV로 가져갔기 때문에, 처음 위치(16부터) ~ encryptedSize 만큼 복사해오기
+        // System.arraycopy(원본, 어디부터, 복사본, 어디에, 몇개나)
         System.arraycopy(combined, IV_SIZE, encryptedValue, 0, encryptedSize);
 
         // 4. [해독기 준비]
@@ -159,6 +161,7 @@ public class AES256Util {
 
         // 7. [문 열기]
         // 분리해두었던 진짜 암호 데이터를 기계에 넣고 버튼을 누르면 원래의 글자 숫자가 나옵니다.
+        // 암호화된 데이터 덩어리가 기계를 통과 = 다시 원래의 데이터 조각(바이트)로 돌아옴
         byte[] decrypted = cipher.doFinal(encryptedValue);
 
         // 8. [편지 읽기]
