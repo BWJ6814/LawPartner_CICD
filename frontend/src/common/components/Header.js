@@ -41,7 +41,7 @@ const Header = () => {
   // 헤더 상단 네비게이션 메뉴 객체형 배열로 정리..
   const NAV_ITEMS = [
     { label: 'AI 법률상담', href: '/ai-chat' },
-    { label: '상담게시판', href: '/board' },
+    { label: '상담게시판 가기', href: '/consultation' },
     { label: '전문가 찾기', href: '/experts' },
     { label: '고객센터', href: '/customer' },
   ];
