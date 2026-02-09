@@ -27,6 +27,27 @@ Ai-Law/
 -----------------------------------------------------------
 팀원들은 코드를 Clone 받은 후 아래 순서대로 진행하세요. 
 
+git 저장 안전하게 하기 아침에 오시면 무조건 받아주세요
+
+git stash (내 작업 잠시 보관)
+
+git pull --rebase (서버 내용 깔끔하게 가져오기)
+
+git stash pop (내 작업 다시 합치기)
+이렇게 항상 받아주시고
+올리실때는 
+git status (확인)
+
+git add . (담기)
+
+git commit -m "메시지" (포장)
+
+git pull --rebase origin main (최신 상태 동기화 - 핵심!)
+
+git push origin main (발송)
+
+
+
 Node.js https://nodejs.org/ko/download 다운로드를 받으시고 마지막 체크는 하지 마시고 완료하세요
 
 1) 라이브러리 통합 설치:
