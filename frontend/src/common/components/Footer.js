@@ -4,13 +4,12 @@ import { Link } from 'react-router-dom'; // 페이지 이동이 필요할 경우
 const Footer = () => {
     return (
         // 배경색: 헤더와 어울리는 짙은 네이비 (bg-[#0f172a] = slate-900)
-        <footer className="bg-[#0f172a] text-white py-12 border-t border-slate-800">
+        <footer className="bg-[#0f172a] text-white py-6 border-t border-slate-800">
             <div className="max-w-7xl mx-auto px-4 flex flex-col items-center text-center">
 
                 {/* 1. 사이트 명 및 로고 */}
-                <div className="mb-6 flex flex-col items-center">
+                <div className="mb-4 flex flex-col items-center">
                     <Link to="/" className="flex items-center gap-2 group decoration-0 mb-2">
-                        <span className="text-3xl">⚖️</span>
                         <h2 className="text-2xl md:text-3xl font-black text-white tracking-tighter group-hover:opacity-80 transition whitespace-nowrap">
                             LAW PARTNER
                         </h2>

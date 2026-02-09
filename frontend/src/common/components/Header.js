@@ -43,7 +43,7 @@ const Header = () => {
     { label: 'AI 법률상담', href: '/ai-chat' },
     { label: '상담게시판 가기', href: '/consultation' },
     { label: '전문가 찾기', href: '/experts' },
-    { label: '공지사항', href: '/notice' },
+    { label: '고객센터', href: '/customer' },
   ];
 
   useEffect(() => {
@@ -143,7 +143,6 @@ const Header = () => {
           {/* 1. 로고 영역 */}
           <div className="flex items-center space-x-8">
             <Link to="/" style={noUnderlineStyle} className="flex items-center gap-2 group decoration-0 no-underline">
-              <span className="text-2xl">⚖️</span>
               <h1 className="text-xl md:text-2xl font-black text-blue-900 tracking-tighter group-hover:opacity-80 transition whitespace-nowrap">LAW PARTNER</h1>
             </Link>
             {/* 데스크탑 메뉴 */}

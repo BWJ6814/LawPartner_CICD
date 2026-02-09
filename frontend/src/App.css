@@ -40,3 +40,23 @@
     transform: rotate(360deg);
   }
 }
+/* 풀 캘린더 속성 */
+.fc { font-family: 'sans-serif'; }
+.fc-theme-standard td, .fc-theme-standard th { border: 1px solid #f1f5f9 !important; }
+.fc .fc-toolbar-title { font-size: 1.1rem !important; color: #1e293b; font-weight: 700; }
+.fc .fc-button { padding: 4px 8px !important; font-size: 0.8rem !important; }
+
+/* 캘린더 내부 셀 높이 최적화 */
+.fc .fc-daygrid-day-frame {
+  min-height: 80px !important; /* 각 날짜 칸의 최소 높이를 줄임 */
+}
+
+/* 툴바 간격 줄이기 */
+.fc .fc-toolbar {
+  margin-bottom: 1rem !important;
+}
+
+/* 짤림 방지를 위한 스크롤 제거 */
+.fc-scroller {
+  overflow: hidden !important;
+}
