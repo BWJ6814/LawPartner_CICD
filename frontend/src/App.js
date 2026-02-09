@@ -23,7 +23,8 @@ function App() {
             <main className="flex-grow">
                 <Routes>
                     <Route path="/" element={<MainPage />} />
-                    <Route path="/" element={<ConsultationBoard />} />
+                    <Route path="/consultation" element={<ConsultationBoard />} />
+
                     <Route path="/write" element={<WriteQuestionPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="*" element={<div className="text-center p-20">404 Not Found</div>} />
