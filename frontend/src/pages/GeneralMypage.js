@@ -6,7 +6,18 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 const GeneralMyPage = () => {
   const navigate = useNavigate();
 
-  // 로그아웃 핸들러
+  // 1. 페이지가 열리자마자 딱 한 번 권한을 체크합니다.
+  useEffect(() => {
+    const role = localStorage.getItem('userRole');
+    const token = localStorage.getItem('userToken');
+
+    if (!token || role !== 'GENERAL') {
+      alert("일반 회원만 이용 가능한 페이지입니다.");
+      navigate('/'); // 메인으로 쫓아내기
+    }
+  }, [navigate]); // navigate가 바뀔 때만 실행 (사실상 마운트 시 1회)
+
+  // 로그아웃 핸들러 (이건 그대로 두셔도 됩니다)
   const handleLogout = () => {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userRole');
@@ -129,37 +140,7 @@ const GeneralMyPage = () => {
               </table>
             </div>
           </div>
-
-            {/* 1. 내 재판 일정 (상단에 넓게 배치) */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shadow-md mb-8">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-slate-800 text-lg">내 재판 일정</h3>
-                <button className="text-xs text-blue-600 font-bold hover:underline">전체 보기</button>
-            </div>
-            
-            <div className="calendar-container">
-                <FullCalendar
-                plugins={[dayGridPlugin]}
-                initialView="dayGridMonth"
-                locale="ko"
-                headerToolbar={{
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: ''
-                }}
-                events={[
-                    { title: '교통사고 재판', date: '2026-02-03', color: '#3b82f6' },
-                    { title: '의뢰인 상담', date: '2026-02-08', color: '#ef4444' }
-                ]}
-                // 핵심: 높이를 제한하지 않고 날짜가 다 나오게 설정
-                height="auto" 
-                contentHeight="auto"
-                aspectRatio={2.5} // 가로로 길게 배치해서 시원하게 보이게 함
-                />
-            </div>
-            </div>
-
-            {/* 2. 최근 내 게시란 (하단에 배치) */}
+          {/* 2. 최근 내 게시란 (하단에 배치) */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shadow-md">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 text-lg">최근 내 게시판</h3>
@@ -190,6 +171,37 @@ const GeneralMyPage = () => {
                 </div>
             </div>
             </div>
+
+            {/* 1. 내 재판 일정 (상단에 넓게 배치) */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shadow-md mb-8">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-slate-800 text-lg">내 재판 일정</h3>
+                <button className="text-xs text-blue-600 font-bold hover:underline">전체 보기</button>
+            </div>
+            
+            <div className="calendar-container">
+                <FullCalendar
+                plugins={[dayGridPlugin]}
+                initialView="dayGridMonth"
+                locale="ko"
+                headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: ''
+                }}
+                events={[
+                    { title: '교통사고 재판', date: '2026-02-03', color: '#3b82f6' },
+                    { title: '의뢰인 상담', date: '2026-02-08', color: '#ef4444' }
+                ]}
+                // 핵심: 높이를 제한하지 않고 날짜가 다 나오게 설정
+                height="auto" 
+                contentHeight="auto"
+                aspectRatio={2.5} // 가로로 길게 배치해서 시원하게 보이게 함
+                />
+            </div>
+            </div>
+
+            
 
         </div>
       </main>
