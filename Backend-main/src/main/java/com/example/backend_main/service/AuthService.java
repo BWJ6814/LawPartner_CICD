@@ -15,14 +15,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/*
+이 클래스는 시스템에 들어오려는 사람들의 서류를 검사 및 통행증 발급해주는 사령부!
+@RequiredArgsConstructor : 필요한 도구들(final)을 스프링이 자동으로 배치해도록 해주는 어노테이션
+@Transactional(readOnly = true) : 기본적으로는 읽기 전용 모드로 안전하게 운영하기..! + 원자성!
+
+*/
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AuthService {
-
-    private final UserRepository userRepository;
-    private final CryptoUtil cryptoUtil;
-    private final JwtTokenProvider jwtTokenProvider;
+    // 미리 준비한 3가지 핵심 도구를 의존성 설정!
+    private final UserRepository userRepository;        // DB 창고 관리자
+    private final CryptoUtil cryptoUtil;                // 암호화/해독 전문가
+    private final JwtTokenProvider jwtTokenProvider;    // 신분증(토큰) 발급기
 
     /*
      [회원가입] USR-01 요구사항 반영
@@ -31,6 +37,7 @@ public class AuthService {
     @Transactional
     public void join(UserJoinRequestDTO dto) throws Exception {
         // 1. 아이디 중복 체크
+        // DB창고 userRepository에 가서 아이디(UserId)를 이미 사용하는 사람이 있는지 확인하기..
         if (userRepository.existsByUserId(dto.getUserId())) {
             throw new RuntimeException("이미 사용 중인 아이디입니다.");
         }
@@ -59,21 +66,32 @@ public class AuthService {
      아이디/비번을 검증하고 Access/Refresh Token을 발급합니다.
      */
     public TokenDTO login(String userId, String password) throws Exception {
+        // 1. 아이디로 유저 찾기 (로그인 입력값 활용)
+        // 입력받은 아이디로 DB에서 해당 시민(User 객체)을 가져오기
+        // 아이디가 없어도 아이디가 없습니다..! 라고 보내주는 것이 아닌 아이디/비밀번호 통째로 불일치 처리..
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("아이디 또는 비밀번호가 일치하지 않습니다."));
 
+        // 2. 비밀번호 확인
         if (!cryptoUtil.checkPassword(password, user.getUserPw())) {
             throw new RuntimeException("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
-        // 성문의 공식 명찰(Authentication)을 만듭니다.
+        // 3. [핵심] 이메일 복호화 (JWT의 식별자로 사용하기 위해)
+        // DB에 잠겨있던 이메일을 해독기(decrypt)로 풀어서 꺼내기..
+        String decryptedEmail = cryptoUtil.decrypt(user.getEmail());
+
+        // 4. 복호화된 이메일을 담은 공식 명찰(Authentication) 생성
+        // user.getUserId() 대신 decryptedEmail을 첫 번째 인자로 넣습니다.
+        // 스프링 시큐리티가 이해할 수 있는 규격의 임시 명찰 만들기..! (사용자의 권한 정보도 함께)
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                user.getUserId(),
+                // 신분증 주인 이름(이메일)
+                decryptedEmail,
                 null,
+                // 부여할 권한 배지 (예: ROLE_ADMIN)
                 List.of(new SimpleGrantedAuthority(user.getRoleCode()))
         );
-
-        // 이제 공식 명찰을 발급기(Provider)에 전달합니다. [cite: 2026-01-30]
+        // 5. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
         return jwtTokenProvider.createToken(authentication);
     }
 }
