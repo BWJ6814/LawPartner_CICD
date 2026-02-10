@@ -1,4 +1,4 @@
-package com.example.backend_main.service;
+package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.UserRepository;
