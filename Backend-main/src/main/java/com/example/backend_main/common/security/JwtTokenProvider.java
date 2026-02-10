@@ -1,5 +1,6 @@
 package com.example.backend_main.common.security;
 
+import com.example.backend_main.dto.TokenDTO;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -40,31 +41,32 @@ public class JwtTokenProvider {
     }
 
     // 1. 신분증 발급 (생성)
-    public String createToken(String userEmail, String role) {
-        // Jwts.claims() : 빈 신분증 종이 한 장 꺼내기
-        Claims claims = Jwts.claims()
-                // 이름 칸에 사용자의 이메일 적기
-                .subject(userEmail)
-                // 권한 칸에 ADMIN이나 USER 같은 권한 이름 적기
-                .add("auth", role)
-                // 정보를 다 적었으니 작성 완료 처리
-                .build();
+    // TokenDTO라는 전용 상자에 담아서 반환시키기
+    public TokenDTO createToken(Authentication authentication) {
+        long now = (new Date()).getTime();
 
-        Date now = new Date();
-        Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);
-
-        // Jwts.builder() : 신분증 조립하기
-        return Jwts.builder()
-                // 앞서 만든 claims(신분증 종이)를 신분증 플라스틱 카드(JWT) 안에 쏙 집어넣기
-                .claims(claims)
-                // 발급 시간을 도장으로 찍기
-                .issuedAt(now)
-                // 언제까지 사용 가능! 유효기간 적기
-                .expiration(validity)
-                // 프로퍼티에 설정된 열쇠로 위조 방지용 특수 사인 처리
+        // 1. Access Token 생성 (수명: 30분)
+        String accessToken = Jwts.builder()
+                .subject(authentication.getName())
+                .claim("auth", "ROLE_USER") // 실제 권한 로직으로 대체 필요
+                .expiration(new Date(now + 1800000)) // 30분
                 .signWith(key)
-                // 모든 정보를 압축해서 앚 ㅜ긴 문자열 한 줄로 만들기!
                 .compact();
+
+        // 2. Refresh Token 생성 (수명: 14일)
+        // DB나 보안 저장소에 보관하기..
+        String refreshToken = Jwts.builder()
+                // 14일
+                .expiration(new Date(now + 1209600000))
+                .signWith(key)
+                .compact();
+
+        return TokenDTO.builder()
+                // 이 토큰은 Bearer(소지자) 방식의 인증 토큰이라고 리엑트에게 알려주는 꼬리표
+                .grantType("Bearer")
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 
     // 2. 신분증 검사 (검증)
