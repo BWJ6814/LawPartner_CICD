@@ -8,6 +8,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/*
+
+@RequestMapping("/api/admin") : 관리자 전용 구역으로 들어오는 주소는 /api/admin이라고 설정..!
+*/
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -17,6 +21,8 @@ public class AdminController {
 
     // [전체 화원 목록 조회] [ADM-02]
     // 관리자가 전체 시민 명부를 확인하는 기능
+    // ResultVO<List<User>> : ResultVO라는 큰 상자 안에, 유저 여러 명의 정보가 담긴 List를 넣어서 보내겠다!
+    // 리액트에서는 이 상자를 받아 success가 true인지 확인하고, 안에 든 유저 리스트를 화면의 표(Table)에 뿌려주기..!
     @GetMapping("/users")
     public ResultVO<List<User>> getAllUsers(){
         // 서비스에게 "암호 해독해서 회원 목록 가져와!" 라고 명령하기
