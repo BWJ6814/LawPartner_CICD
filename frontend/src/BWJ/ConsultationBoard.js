@@ -7,10 +7,10 @@ import {
     GitFork, Briefcase, Building2, Copyright,
     TrendingDown, FileText, MoreHorizontal, Plus, ChevronDown, ChevronUp, Filter,
     ChevronLeft, ChevronRight
-} from 'lucide-react';
+} from 'lucide-react';  // 이미지 가져오기
 
-// --- 1. Constants ---
 
+// 1. 카테고리 객체 배열 생성 keyy & value 로 객체를 생성하고 배열에 넣음
 const CATEGORIES = [
     { id: 1, name: '형사범죄', icon: <Gavel size={24} /> },
     { id: 2, name: '교통사고', icon: <Car size={24} /> }, // DB랑 이름 맞춤 ('교통사고/음주운전' -> '교통사고')
