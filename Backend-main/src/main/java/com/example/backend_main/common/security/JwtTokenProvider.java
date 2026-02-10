@@ -46,6 +46,7 @@ public class JwtTokenProvider {
         long now = (new Date()).getTime();
 
         // 0. 권한 정보를 한 줄의 문자열로 만들기
+        // 모든 권한 배지를 꺼내 콤마(,)로 연결시키기..
         String authorities = authentication.getAuthorities().stream()
                 .map(grantedAuthority -> grantedAuthority.getAuthority())
                 .collect(Collectors.joining(","));
