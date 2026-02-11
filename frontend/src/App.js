@@ -45,9 +45,9 @@ function App() {
                     <Route
                       path="/mypage"
                       element={
-                        auth.isLoggedIn && auth.role === 'GENERAL' 
+                        auth.isLoggedIn && auth.role === 'ROLE_USER'
                         ? <GeneralMyPage /> 
-                        : <Navigate to="/login" replace /> // 권한 없으면 로그인창으로 강제 이동
+                        : <Navigate to="/login" replace  /> // 권한 없으면 로그인창으로 강제 이동
                       }
                     />
                     <Route path="/chatList" element={<ChatList />} />

@@ -113,7 +113,7 @@ const Header = ({auth, onLoginUpdate}) => {
   };
 
   return (
-    <nav className={`sticky top-0 z-60 bg-white w-full transition-all duration-300 ${isScrolled ? 'border-b border-gray-200 shadow-sm' : 'border-b border-gray-100'}`}>
+    <nav className={`sticky top-0 z-999 bg-white w-full transition-all duration-300 ${isScrolled ? 'border-b border-gray-200 shadow-sm' : 'border-b border-gray-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           
@@ -181,7 +181,7 @@ const Header = ({auth, onLoginUpdate}) => {
                 </div>
 
                 {/* 권한별 마이페이지 분기 */}
-                {auth.role === 'LAWYER' ? (
+                {auth.role === 'ROLE_LAWYER' ? (
                   <Link to="/lawyer-dashboard" style={noUnderlineStyle} className="bg-blue-900 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition shadow-md whitespace-nowrap no-underline">
                     <span className="w-2 h-2 bg-green-400 rounded-full"></span> 마이페이지
                   </Link>
@@ -219,7 +219,7 @@ const Header = ({auth, onLoginUpdate}) => {
           <div className="border-t border-gray-100 my-2 pt-4 space-y-3">
             {auth.isLoggedIn ? (
               <>
-                {auth.role === 'LAWYER' ? (
+                {auth.role === 'ROLE_LAWYER' ? (
                    <Link to="/lawyer-dashboard" style={noUnderlineStyle} className="block px-3 py-3 text-center text-sm font-bold bg-navy-dark text-white rounded-xl shadow-md no-underline">변호사 워크스페이스</Link>
                 ) : (
                    <Link to="/mypage" style={noUnderlineStyle} className="block px-3 py-3 text-center text-sm font-bold bg-blue-900 text-white rounded-xl shadow-md no-underline">마이페이지</Link>

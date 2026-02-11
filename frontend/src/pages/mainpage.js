@@ -116,7 +116,7 @@ const MainPage = () => {
           </div>
 
           {/* 하단 숏컷 */}
-          <div className="grid md:grid-cols-2 gap-6 mt-16 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-20 mt-16 max-w-7xl mx-auto">
             <Link to="/consultation" className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center justify-between hover:scale-[1.02] transition duration-300 no-underline group">
               <div>
                 <h3 className="text-lg font-black text-gray-900 mb-1">상담 게시판 가기</h3>
