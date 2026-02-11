@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
@@ -10,6 +10,7 @@ import MainPage from './pages/mainpage';
 import ConsultationBoard from './BWJ/ConsultationBoard';
 import WriteQuestionPage from './BWJ/WriteQuestionPage';
 import GeneralMyPage from './pages/GeneralMypage'
+import ChatList from './KImMinSU/chatList'
 import Lawmainpage from './ky/Lawmainpage';
 import LoginPage from './H-S-H/Login'
 import SignupPage from './H-S-H/Signup'
@@ -17,15 +18,25 @@ import SignupPage from './H-S-H/Signup'
 
 function App() {
 
-  // 현재 로그인한 사용자의 역할을 가져오는 헬퍼 함수
-  const userRole = localStorage.getItem('userRole');
-  const isLoggedIn = !!localStorage.getItem('userToken');
+  // 1. 로그인 상태를 App 수준에서 관리해요.
+  const [auth, setAuth] = useState({
+    isLoggedIn: !!localStorage.getItem('accessToken'),
+    role: localStorage.getItem('userRole')
+  });
+
+  // 2. 로그인 상태를 업데이트하는 함수
+  const updateAuth = () => {
+    setAuth({
+      isLoggedIn: !!localStorage.getItem('accessToken'),
+      role: localStorage.getItem('userRole')
+    });
+  };
 
     return (
         <BrowserRouter>
         <div className="flex flex-col min-h-screen bg-gray-50 text-slate-900 font-sans">
             {/* 모든 페이지 상단에 고정 */}
-            <Header />
+            <Header auth={auth} onLoginUpdate={updateAuth} />
 
             {/* 주소(URL)에 따라 바뀌는 메인 컨텐츠 영역 */}
             <main className="flex-grow">
@@ -34,11 +45,12 @@ function App() {
                     <Route
                       path="/mypage"
                       element={
-                        isLoggedIn && userRole === 'GENERAL'
-                        ? <GeneralMyPage />
+                        auth.isLoggedIn && auth.role === 'GENERAL' 
+                        ? <GeneralMyPage /> 
                         : <Navigate to="/login" replace /> // 권한 없으면 로그인창으로 강제 이동
                       }
                     />
+                    <Route path="/chatList" element={<ChatList />} />
                     <Route path="/consultation" element={<ConsultationBoard />} />
                     <Route path="/write" element={<WriteQuestionPage />} />
                     <Route path="/signup" element={<SignupPage />} />
