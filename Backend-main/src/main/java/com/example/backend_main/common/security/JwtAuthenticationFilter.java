@@ -33,9 +33,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
     // HttpServletResponse : 손님에게 줄 답장(응답 정보)
     // FilterChain : 검사가 끝나면 이 통로로 손님을 밀어넣기..!
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+    protected void doFilterInternal(
+            @org.springframework.lang.NonNull HttpServletRequest request,
+            @org.springframework.lang.NonNull HttpServletResponse response,
+            @org.springframework.lang.NonNull FilterChain filterChain)
             throws ServletException,IOException{
 
         // 1. 손님의 가방(Header)에서 신분증(Token)을 꺼냅니다.
