@@ -47,12 +47,14 @@ const WriteQuestionPage = () => {
         if (selectedCategories.length === 0) return alert("카테고리를 최소 1개 선택해주세요.");
         if (!title.trim()) return alert("제목을 입력해주세요.");
         if (!content.trim()) return alert("내용을 입력해주세요.");
+        const userId = localStorage.getItem('userId');
 
         try {
             await axios.post('http://localhost:8080/api/boards', {
                 title: title,
                 content: content,
-                categories: selectedCategories // 배열 그대로 보냄
+                categories: selectedCategories,
+                userId: userId
             });
             alert("질문이 등록되었습니다.");
             navigate('/'); // 메인으로 이동
