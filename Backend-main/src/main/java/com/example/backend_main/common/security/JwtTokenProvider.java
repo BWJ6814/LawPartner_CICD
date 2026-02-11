@@ -15,9 +15,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -50,16 +48,15 @@ public class JwtTokenProvider {
                 .collect(Collectors.joining(","));
 
         long now = (new Date()).getTime();
-        Date accessTokenExpiresIn = new Date(now + tokenValidityInMilliseconds); // 1일
 
         String accessToken = Jwts.builder()
-                .subject(authentication.getName())         // 이메일 (누구인가?)         - 주인
-                .claim("role", authorities)             // 권한 (무엇을 할 수 있는가?) - 추가
-                .claim("userNo", userNo)                // 회원 번호(DB 식별자)       - 추가
-                .claim("userNm", userNm)                // 회원 닉네임               - 추가
-                .expiration(accessTokenExpiresIn)         // 유효기간 설정
-                .signWith(key)                            // 우리 열쇠로 서명(위조 방지)
-                .compact();                               // 한 줄의 문자열로 압축하기.
+                .subject(authentication.getName())                        // 이메일 (누구인가?)         - 주인
+                .claim("role", authorities)                             // 권한 (무엇을 할 수 있는가?) - 추가
+                .claim("userNo", userNo)                                // 회원 번호(DB 식별자)       - 추가
+                .claim("userNm", userNm)                                 // 회원 닉네임               - 추가
+                .expiration(new Date(now + tokenValidityInMilliseconds))     // 유효기간 설정
+                .signWith(key)                                                // 우리 열쇠로 서명(위조 방지)
+                .compact();                                                // 한 줄의 문자열로 압축하기.
 
         String refreshToken = Jwts.builder()
                 .expiration(new Date(now + refreshTokenValidityInMilliseconds))
@@ -77,6 +74,7 @@ public class JwtTokenProvider {
                 .build() : 설계를 마치고, 실제 TokenDTO 객체를 완성해 반환시켜주기 (리엑트로)
                  */
                 .grantType("Bearer")
+                .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .userNm(userNm)
                 .role(authentication.getAuthorities().toString())
@@ -140,12 +138,11 @@ public class JwtTokenProvider {
                 new UsernamePasswordAuthenticationToken(principal, token, authorities);
 
         // [중요] LoggingAspect에서 DB 조회 없이 userNo를 꺼낼 수 있도록 details에 저장!
-        Long userNo = claims.get("userNo", Long.class);
-        // [중요2] LoggingAspect에서 DB 조회 없이 userNm를 꺼낼 수 있도록 details에 저장!
-        String userNm = claims.get("userNm", String.class);
+        Map<String, Object> details = new HashMap<>();
+        details.put("userNo", claims.get("userNo", Long.class));
+        details.put("userNm", claims.get("userNm", String.class));
+        authentication.setDetails(details);
         // setDetails(userNo) : 신분증에 적혀있던 userNo/Nm를 통행증의 [비고란(Details)]에 적어두기
-        authentication.setDetails(userNo);
-        authentication.setDetails(userNm);
 
         return authentication;
     }

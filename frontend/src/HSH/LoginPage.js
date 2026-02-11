@@ -59,7 +59,7 @@ const LoginPage = () => {
                 localStorage.setItem('userNm', tokenData.userNm || "사용자");
                 
                 // ★ 이 부분이 있어야 Header.js에서 '마이페이지' vs '워크스페이스'를 구분함
-                localStorage.setItem('userRole', tokenData.role || 'GENERAL'); 
+                localStorage.setItem('userRole', tokenData.role || 'ROLE_USER'); 
 
                 alert(`${tokenData.userNm}님 환영합니다!`);
                 
