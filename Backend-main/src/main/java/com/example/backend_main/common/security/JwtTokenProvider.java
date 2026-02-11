@@ -52,7 +52,7 @@ public class JwtTokenProvider {
 
         String accessToken = Jwts.builder()
                 .subject(authentication.getName())         // 이메일 (누구인가?)         - 주인
-                .claim("auth", authorities)             // 권한 (무엇을 할 수 있는가?) - 추가
+                .claim("role", authorities)             // 권한 (무엇을 할 수 있는가?) - 추가
                 .claim("userNo", userNo)                // 회원 번호(DB 식별자)       - 추가
                 .expiration(accessTokenExpiresIn)         // 유효기간 설정
                 .signWith(key)                            // 우리 열쇠로 서명(위조 방지)
