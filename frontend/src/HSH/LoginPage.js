@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; 
-import api from '../common/api/axiosConfig'; 
-import './LoginPage.css'; 
+import { useNavigate } from 'react-router-dom';
+import api from '../common/api/axiosConfig';
+import './LoginPage.css';
 
 const LoginPage = () => {
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
 
-    const [userId, setUserId] = useState(''); 
+    const [userId, setUserId] = useState('');
     const [password, setPassword] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
     const [isError, setIsError] = useState(false);
@@ -23,8 +23,8 @@ const LoginPage = () => {
         const logAccess = async () => {
             try {
                 // 백엔드에 접속 로그 기록 (주소는 백엔드 설계에 맞게 조절)
-                await api.post('/api/logs/access', { 
-                    page: 'LOGIN_PAGE' 
+                await api.post('/api/logs/access', {
+                    page: 'LOGIN_PAGE'
                 });
             } catch (e) {
                 console.error("접속 로그 전송 실패:", e);
@@ -36,7 +36,7 @@ const LoginPage = () => {
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
         setIsError(false);
-        
+
         // 활동 정지 시뮬레이션
         if(userId === 'blocked_user'){
             setErrorMsg("활동 정지 회원입니다. 고객센터에 문의하세요.");
@@ -50,7 +50,7 @@ const LoginPage = () => {
                 userPw: password
             });
 
-            const tokenData = response.data.data; 
+            const tokenData = response.data.data;
 
             if (tokenData && tokenData.accessToken) {
                 // 모든 정보를 로컬 스토리지에 저장 (RBAC 연동의 핵심)
@@ -61,7 +61,7 @@ const LoginPage = () => {
                 localStorage.setItem('userEmail', tokenData.email);
                 localStorage.setItem('userNo', tokenData.userNo);
                 // ★ 이 부분이 있어야 Header.js에서 '마이페이지' vs '워크스페이스'를 구분함
-                localStorage.setItem('userRole', tokenData.role || 'ROLE_USER');
+                localStorage.setItem('userRole', tokenData.role || 'GENERAL');
 
 
                 alert(`${tokenData.userNm}님 환영합니다!`);
@@ -74,7 +74,7 @@ const LoginPage = () => {
             
         } catch (error) {
             console.error("로그인 에러:", error);
-            setErrorMsg("아이디 또는 비밀번호가 틀렸습니다!"); 
+            setErrorMsg("아이디 또는 비밀번호가 틀렸습니다!");
             setIsError(true);
         }
     };
@@ -108,11 +108,11 @@ const LoginPage = () => {
                 <form className="space-y-5" onSubmit={handleLoginSubmit}>
                     <div className="space-y-2">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">USER ID</label>
-                        <input 
-                            type="text" 
-                            required 
-                            placeholder="아이디를 입력하세요" 
-                            className={inputStyle} 
+                        <input
+                            type="text"
+                            required
+                            placeholder="아이디를 입력하세요"
+                            className={inputStyle}
                             value={userId}
                             onChange={(e) => setUserId(e.target.value)}
                         />
@@ -120,16 +120,16 @@ const LoginPage = () => {
 
                     <div className="space-y-2">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">PASSWORD</label>
-                        <input 
-                            type="password" 
-                            required 
-                            placeholder="비밀번호를 입력하세요" 
-                            className={inputStyle} 
+                        <input
+                            type="password"
+                            required
+                            placeholder="비밀번호를 입력하세요"
+                            className={inputStyle}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
-                    
+
                     <div className="flex items-center justify-between px-2 pt-1">
                         <div className="flex items-center gap-2">
                             <input type="checkbox" id="remember" className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 cursor-pointer" />
@@ -144,9 +144,9 @@ const LoginPage = () => {
                 </form>
 
                 <div className="mt-8 text-center">
-                    <p className="text-slate-400 text-sm font-medium">아직 회원이 아니신가요? 
-                        <button 
-                            onClick={() => navigate('/signup')} 
+                    <p className="text-slate-400 text-sm font-medium">아직 회원이 아니신가요?
+                        <button
+                            onClick={() => navigate('/signup')}
                             className="ml-2 font-black text-blue-900 hover:underline underline-offset-4"
                         >
                             새 계정 만들기
