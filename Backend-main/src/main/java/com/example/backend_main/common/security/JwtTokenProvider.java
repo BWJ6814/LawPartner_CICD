@@ -48,7 +48,7 @@ public class JwtTokenProvider {
                 .collect(Collectors.joining(","));
 
         long now = (new Date()).getTime();
-        Date accessTokenExpiresIn = new Date(now + 86400000); // 1일
+        Date accessTokenExpiresIn = new Date(now + tokenValidityInMilliseconds); // 1일
 
         String accessToken = Jwts.builder()
                 .subject(authentication.getName())         // 이메일 (누구인가?)         - 주인
