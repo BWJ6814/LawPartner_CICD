@@ -23,7 +23,7 @@ import java.util.UUID;
 public class LoggingAspect {
 
     private final AccessLogRepository accessLogRepository;
-    private final UserRepository userRepository; // USER_NO 조회를 위해 추가 [cite: 2025-09-27]
+    private final UserRepository userRepository; // USER_NO 조회를 위해 추가
     private final HttpServletRequest request;
 
     @Around("execution(* com.example.backend_main.HSH.controller..*(..))")
@@ -42,7 +42,7 @@ public class LoggingAspect {
         String ip = request.getRemoteAddr();
         String uri = request.getRequestURI();
 
-        // 4. [USER_NO] 현재 로그인한 사용자 번호 가져오기 [cite: 2026-02-10]
+        // 4. [USER_NO] 현재 로그인한 사용자 번호 가져오기
         Long userNo = getCurrentUserNo();
 
         // 5. [AccessLog] 엔티티 생성 (새로운 SQL 규격 반영)
@@ -68,7 +68,7 @@ public class LoggingAspect {
     private Long getCurrentUserNo() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        // 로그인하지 않은 경우(비회원) 처리 [cite: 2025-09-27]
+        // 로그인하지 않은 경우(비회원) 처리
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             return null;
         }
