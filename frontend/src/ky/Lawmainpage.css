@@ -17,7 +17,7 @@
     flex-direction: column;
     flex-shrink: 0;
     position: fixed;
-    top: 0; left: 0; bottom: 0;
+    top: 137px; left: 0; bottom: 0;
     z-index: 100;
     overflow-y: auto;
 }

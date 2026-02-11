@@ -27,9 +27,9 @@ const mockData = {
 };
 
 const menuItems = [
-    { id: 'dashboard', label: '대시보드', icon: '📊' },
-
-    { id: 'subscription', label: '구독 신청/해지', icon: '💳' },
+    { id: 'dashboard', label: '대시보드'  },
+    { id: 'counsel', label: '상담 게시판' },
+    { id: 'subscription', label: '구독 신청/해지' },
 ];
 
 function StarRating({ rating }) {
