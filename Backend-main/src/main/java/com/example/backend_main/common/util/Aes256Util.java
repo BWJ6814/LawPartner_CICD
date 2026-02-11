@@ -2,7 +2,6 @@ package com.example.backend_main.common.util;
 
 // 기계 켜지자마자 실행하는 기능
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 
@@ -17,7 +16,7 @@ import java.util.Base64;
 // @Component : 스프링이 이 클래스를 관리하도록 빈으로 등록!
 // 나중에 다른 서비스에서 @Autowired로 편하게 불러다 사용 가능
 @Component
-public class CryptoUtil {
+public class Aes256Util {
     // ALGORITHM : 암호화 방식의 레시피 설정
     // AES : 알고리즘 이름
     // CBC : Cipher Block Chaining - 이전 암호화 결과가 다음 블록에 영향을 주는 모드
@@ -170,21 +169,7 @@ public class CryptoUtil {
         return new String(decrypted, StandardCharsets.UTF_8);
     }
 
-    // 1. 비밀번호 암호화 (BCrypt + Salt)
-    // BCrypt는 내부적으로 랜덤한 Salt를 생성하므로 IV를 따로 관리할 필요가 없어 편리합니다.
-    // hashPassword : 비밀번호를 알아볼 수 없게 으깨기
-    public String hashPassword(String password) {
-        // BCryptPasswordEncoder를 직접 써도 되지만, 유틸리티에 넣어두면 관리가 편합니다.
-        // BCrypt.gensalt() : 비밀 소금 뿌리기
-        // BCrypt.hashpw() : 절구에 넣고 빻기 (해시-Hash)라는 데이터 덩어리로 만들기 (원래의 비밀번호로 되돌리기 X)
-        return BCrypt.hashpw(password, BCrypt.gensalt());
-    }
 
-    // 2. 비밀번호 확인
-    // 단방향 암호화는 복호화가 안 되므로, 입력한 값과 저장된 값을 '비교'만 할 수 있습니다.
-    public boolean checkPassword(String password, String hashed) {
-        return BCrypt.checkpw(password, hashed);
-    }
 
 
 
