@@ -20,7 +20,7 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class LoggingAspect {
+public class LogingAspect {
 
     private final AccessLogRepository accessLogRepository;
     private final UserRepository userRepository; // USER_NO 조회를 위해 추가
@@ -33,6 +33,7 @@ public class LoggingAspect {
         String traceId = UUID.randomUUID().toString().substring(0, 8);
 
         // 2. [USER_AGENT] 접속 환경 정보 (최대 200자 제한으로 안전하게 처리)
+        // request.getHeader("User-Agent") : 사용자 브라우저, 운영체제, 기기 정보를 낚아챔..
         String userAgent = request.getHeader("User-Agent");
         if (userAgent != null && userAgent.length() > 200) {
             userAgent = userAgent.substring(0, 200);

@@ -95,6 +95,6 @@ public class AuthService {
                 List.of(new SimpleGrantedAuthority(user.getRoleCode()))
         );
         // 5. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
-        return jwtTokenProvider.createToken(authentication);
+        return jwtTokenProvider.createToken(authentication, user.getUserNo());
     }
 }

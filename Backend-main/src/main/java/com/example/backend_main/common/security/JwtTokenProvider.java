@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
@@ -22,95 +23,118 @@ import java.util.stream.Collectors;
 @Component
 public class JwtTokenProvider {
 
-    // 설정 파일 속에 숨겨둔 비밀번호를 가져와서 secretKey에 담기
     @Value("${jwt.secret}")
     private String secretKey;
-
-    // 신분증의 유효기간을 정해두기..
-    // long : 큰 숫자를 담는 자로형..! 밀리초 단위는 숫자가 매우 커지기 때문에 long 사용
-    // Duration.ofMinutes(60) : 60분이라는 시간 간격을 만들기!
-    // .toMillis() : 만든 시간의 단위를 밀리초(ms)로 변환시키기..
+    // tokenValidityInMilliseconds : 신분증의 유통기한 = 60분
+    // toMillis() : 밀리초 단위로 변환
+    // SecretKey key : 문자열 secretKey를 디지털 세상에서 사용할 수 있는 진짜 열쇠 객체로 변환
     private final long tokenValidityInMilliseconds = Duration.ofMinutes(60).toMillis();
     private SecretKey key;
 
-    // @PostConstruct : 기계가 켜지자마자 아래 init 함수를 실행!
+    // @PostConstruct : 객체가 생성된 직후 딱 한 번만 실행..
+    // 즉, secretKey 문자열을 가져와서 HMAC-SHA 알고리즘에 적합한 디지털 열쇠(key)로 정교하게 깎기
+    // HMAC-SHA : 해시함수 + 비밀 키를 함께 사용해 메시지 인증 코드를 만들기!
     @PostConstruct
     protected void init() {
-        // 비밀번호 문자열을 가져와서 진짜 디지털 열쇠로 정교하게 깎기.
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    // 1. 신분증 발급 (생성)
-    // TokenDTO라는 전용 상자에 담아서 반환시키기
-    public TokenDTO createToken(Authentication authentication) {
-        long now = (new Date()).getTime();
-
-        // 0. 권한 정보를 한 줄의 문자열로 만들기
-        // 모든 권한 배지를 꺼내 콤마(,)로 연결시키기..
+    // 1. 토큰 생성
+    // Authentication : 로그인한 살마의 정보가 담긴 객체
+    // Long userNo : DB조회 성능을 위해 추가한 회원의 고유 번호
+    public TokenDTO createToken(Authentication authentication, Long userNo) {
         String authorities = authentication.getAuthorities().stream()
-                .map(grantedAuthority -> grantedAuthority.getAuthority())
+                .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
-        // 1. Access Token 생성 (수명: 30분)
+        long now = (new Date()).getTime();
+        Date accessTokenExpiresIn = new Date(now + 86400000); // 1일
+
         String accessToken = Jwts.builder()
-                .subject(authentication.getName())
-                .claim("auth", authorities)          // 진짜 권한 문자열로 auth칸에 저장
-                .expiration(new Date(now + 1800000)) // 30분
-                .signWith(key)
-                .compact();
-
-        // 2. Refresh Token 생성 (수명: 14일)
-        // DB나 보안 저장소에 보관하기..
-        String refreshToken = Jwts.builder()
-                // 14일
-                .expiration(new Date(now + 1209600000))
-                .signWith(key)
-                .compact();
-
+                .subject(authentication.getName())         // 이메일 (누구인가?)         - 주인
+                .claim("auth", authorities)             // 권한 (무엇을 할 수 있는가?) - 추가
+                .claim("userNo", userNo)                // 회원 번호(DB 식별자)       - 추가
+                .expiration(accessTokenExpiresIn)         // 유효기간 설정
+                .signWith(key)                            // 우리 열쇠로 서명(위조 방지)
+                .compact();                               // 한 줄의 문자열로 압축하기.
+        
+        // 토큰 보내주기.. 
         return TokenDTO.builder()
-                // 이 토큰은 Bearer(소지자) 방식의 인증 토큰이라고 리엑트에게 알려주는 꼬리표
+                /*
+                .builder() : 룸복(Lombok)의 빌더 패턴
+                    - 생성자에 파라미터를 순서대로 넣다가 실수하는 일 방지 및 필드에 어떤 값을 넣는지 명확히 보여줌
+                .grantType("Bearer") : 토큰이 어떤 방식의 인증인지 명시!
+                    - [Bearer]은 이 토큰을 가진 사람을 인증된 자로 간주하라는 뜻의 전세계 공통 표준 규격
+                .accessToken(accessToken) : 우리가 정교하게 만든 JWT 문자열 담기
+                .build() : 설계를 마치고, 실제 TokenDTO 객체를 완성해 반환시켜주기 (리엑트로)
+                 */
                 .grantType("Bearer")
                 .accessToken(accessToken)
-                .refreshToken(refreshToken)
                 .build();
     }
 
-    // 2. 신분증 검사 (검증)
-    public boolean validateToken(String token) {
+    // 2. 토큰 파싱
+    public Claims parseClaims(String accessToken) {
         try {
-            // Jwts.parser() : 신분증 해독기 가져오기
-            Jwts.parser()
-                    .verifyWith(key)                // 1. 해독기 가져오기
-                    .build()                        // 2. 내 열쇠 꽂고
-                    .parseSignedClaims(token);      // 3. 신분증 넣어보기!
-            return true;                            // 통과!
-        } catch (JwtException | IllegalArgumentException e) {
-            // 문제가 생기면 거짓(false)을 반환해서 입구 컷!
-            return false;
+            return Jwts.parser()
+                    .verifyWith(key)                    // 열쇠를 꽂고
+                    .build()                            // 해독기 조립
+                    .parseSignedClaims(accessToken)     // 신분증 해독
+                    .getPayload();                      // 내용물(Claims)만 쏙 꺼내기
+        } catch (ExpiredJwtException e) {
+            return e.getClaims();                       // 만료돠었어도 일단 내용 확인하기..
         }
     }
 
-    // 3. 신분증 정보 읽기 (인증 객체 생성)
+    // 3. 토큰 검증
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()                           // 1. [해독기] 꺼내기
+                    .verifyWith(key)                // 2. [비밀 열쇠] 꺼내기
+                    .build()                        // 3. [해독기] 조립 끝
+                    .parseSignedClaims(token);      // 4. 신분증 넣고 [돌리기]
+            return true;                            // 5. 문제 없으면 true!
+        } catch (JwtException | IllegalArgumentException e) {
+            // 서명이 틀렸거나, 유효기간이 끝났거나, 형식이 이상하면 실행!
+            return false;                           // 5. 문제 있으면 false!
+        }
+    }
+
+    // 4. 인증 객체 생성 (LoggingAspect 성능 향상을 위해 userNo를 details에 저장)
     public Authentication getAuthentication(String token) {
-        Claims claims = Jwts.parser()       // 1. 해독기(parser)를 가져오기
-                .verifyWith(key)            // 2. 비밀번호 열쇠 꽂기
-                .build()                    // 3, 해독기를 완성(조립)하기
-                .parseSignedClaims(token)   // 4. 손님의 신분증(token)을 넣고 돌려보기
-                .getPayload();              // 5. 신분증 안에 적힌 진짜 내용(몸통) 꺼내기
+        Claims claims = parseClaims(token);     // 토큰 내용물 꺼내기
 
-        // ex) ADMIN, LAWYER라고 적혀있으면 하나씩 잘라서 스프링 시큐리티가 이해할 수 있는
-        //          형태의 권한 배지로 변환하는 과정..!
         Collection<? extends SimpleGrantedAuthority> authorities =
-                // 1. 신분의 'auth'칸에 적힌 글자를 가져와 콤마를 기준으로 쪼개기
-                Arrays.stream(claims.get("auth").toString().split(","))
-                        // 2. 쪼개진 글자 하나하나를 스프링이 인식하는 "권한 배지"로 만들기
-                        .map(SimpleGrantedAuthority::new)
-                        // 3. 만든 배지들을 하나로 모으기..!
-                        .collect(Collectors.toList());
+                Arrays.stream(claims.get("auth").toString().split(","))     // 1단계
+                        .map(SimpleGrantedAuthority::new)                         // 2단계
+                        .collect(Collectors.toList());                            // 3단계
+        /*
+        1단계 (split) : "ROLE_USER,ROLE_ADMIN" 이라는 문자열을 ["ROLE_USER", "ROLE_ADMIN"] 이라는 배열로 쪼갠 후,
+                        이를 한 줄로 세우기(stream)
+        2단계 (map) : 한 줄로 선 문자열 하나하나를 가져와서 [SimpleGrantedAuthority] 라는 [권한 배지](객체)로 새로 만들기
+                     스프링 시큐리티는 문자열이 아니라 이 [배지]가 있어야 권한을 인정해주기 때문에
+        3단계 (collect) : 만들어진 배지들을 다시 예쁜 리스트(List)에 담아서 마무리하기.
+        */
 
-        // 4. 스프링이 관리하는 "공식 사용자 대장"에 해당 사람의 이름(이메일)과 권한을 적어두기
+
+        // principal : 신분증 주인(이메일)과 권한을 담은 핵심 정보 객체
+        // authentication : 이를 감싼 최종 [공식 통행증]
         User principal = new User(claims.getSubject(), "", authorities);
-        // 5. 최종적으로 "해당 사람은 인증된 사람!"이다라는 공식 통행증(Authentication) 발급하여 돌려주기
-        return new UsernamePasswordAuthenticationToken(principal, token, authorities);
+
+        // 인증 토큰 생성
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(principal, token, authorities);
+
+        // [중요] LoggingAspect에서 DB 조회 없이 userNo를 꺼낼 수 있도록 details에 저장!
+        Long userNo = claims.get("userNo", Long.class);
+        // setDetails(userNo) : 신분증에 적혀있던 userNo를 통행증의 [비고란(Details)]에 적어두기
+        authentication.setDetails(userNo);
+
+        return authentication;
+    }
+
+    // 5. 토큰에서 userNo만 바로 꺼내기 (에러 해결)
+    public Long getUserNoFromToken(String token) {
+        return parseClaims(token).get("userNo", Long.class);
     }
 }
