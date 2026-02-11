@@ -1,34 +1,83 @@
-/* src/HSH/SignupPage.css */
-
-/* 1. 배경 효과 (로그인 페이지와 동일) */
+/* 1. 배경 효과 (로그인 페이지와 통일) */
 .bg-mesh {
     background-color: #f8fafc;
-    background-image: radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.05) 0px, transparent 50%), 
-                      radial-gradient(at 100% 100%, rgba(30, 58, 138, 0.05) 0px, transparent 50%);
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.05) 0px, transparent 50%), 
+        radial-gradient(at 100% 100%, rgba(30, 58, 138, 0.05) 0px, transparent 50%);
+    min-height: 100vh;
 }
 
-/* 2. 유리 질감 카드 (로그인 페이지와 수치 통일) */
+/* 2. 유리 질감 카드 (Glassmorphism) */
 .glass-card {
-    /* 배경을 조금 더 진하게 (0.85 -> 0.95) 해서 글씨가 잘 보이게 */
+    /* 가독성을 위해 배경 불투명도를 살짝 높임 */
     background: rgba(255, 255, 255, 0.95);
-    
-    /* 흐림 효과를 로그인 페이지(10px)와 통일 */
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    
-    /* 테두리 색상 통일 */
     border: 1px solid rgba(255, 255, 255, 0.2);
-    
-    /* 그림자 효과는 유지 (입체감) */
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
+    border-radius: 2.5rem; /* 로그인 페이지와 동일한 곡률 */
 
-    /* ★ 중요: 여기서 둥글기를 강제로 설정해버리면 JSX 신경 안 써도 됨 */
-    border-radius: 2.5rem; 
+    /* ★ 긴 폼을 위한 스크롤 설정 (막대는 숨김) */
+    max-height: 85vh;    /* 화면 높이에 맞춰 자동 조절 */
+    overflow-y: auto;    /* 스크롤 기능은 활성화 */
+    -ms-overflow-style: none; /* IE, Edge용 */
+    scrollbar-width: none;  /* Firefox용 */
 }
 
-/* 3. 애니메이션 (그대로 유지) */
+/* Chrome, Safari, Opera용 스크롤바 숨기기 */
+.glass-card::-webkit-scrollbar {
+    display: none; 
+}
+
+/* 3. 입력창 공통 스타일 */
+.input-focus:focus {
+    background: white !important;
+    border-color: #1e3a8a !important; /* blue-900 */
+    box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.08);
+}
+
+/* 4. 전문 분야(Specialty) 태그 레이아웃 */
+.specialty-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.specialty-tag {
+    cursor: pointer;
+    user-select: none;
+}
+
+.specialty-tag input {
+    display: none; /* 실제 체크박스는 숨김 */
+}
+
+.specialty-tag span {
+    display: block;
+    padding: 10px 5px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #64748b;
+    text-align: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: white;
+}
+
+/* 태그 체크되었을 때 스타일 */
+.specialty-tag input:checked + span {
+    background-color: #1e3a8a; /* blue-900 */
+    color: white;
+    border-color: #1e3a8a;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(30, 58, 138, 0.2);
+}
+
+/* 5. 애니메이션 및 효과 */
 .animate-fade-in {
-    animation: fadeIn 0.6s ease-out;
+    animation: fadeIn 0.6s ease-out forwards;
 }
 
 @keyframes fadeIn {
@@ -36,9 +85,12 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 4. 체크박스 커스텀 스타일 (그대로 유지) */
-.specialty-tag input:checked + span {
-    background-color: #1e3a8a; /* blue-900 */
-    color: white;
-    border-color: #1e3a8a;
+.shake {
+    animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
