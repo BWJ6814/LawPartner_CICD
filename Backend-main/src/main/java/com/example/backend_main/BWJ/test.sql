@@ -13,8 +13,6 @@ CREATE TABLE TB_BOARD (
 
 select * from TB_BOARD;
 
-insert into TB_BOARD values ()
-
 select * from TB_USER;
 
 INSERT INTO TB_USER (USER_NO, USER_ID, USER_PW, USER_NM, NICK_NM, EMAIL, PHONE, ADDR, ROLE_CODE)
@@ -151,3 +149,9 @@ VALUES ('기업,노동', '스타트업 스톡옵션 행사 문의', '퇴사 후 
 
 -- 최종 저장
 COMMIT;
+
+select * from TB_BOARD;
+
+delete from tb_board where BOARD_NO in (26,27);
+
+select * from TB_USER;

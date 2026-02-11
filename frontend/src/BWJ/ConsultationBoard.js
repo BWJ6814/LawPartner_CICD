@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';  // 이미지 가져오기
 
 
-// 1. 카테고리 객체 배열 생성 keyy & value 로 객체를 생성하고 배열에 넣음
+// 1. 카테고리 객체 배열 생성 key & value 로 객체를 생성하고 배열에 넣음
 const CATEGORIES = [
     { id: 1, name: '형사범죄', icon: <Gavel size={24} /> },
     { id: 2, name: '교통사고', icon: <Car size={24} /> }, // DB랑 이름 맞춤 ('교통사고/음주운전' -> '교통사고')
@@ -30,7 +30,7 @@ const CATEGORIES = [
     { id: 16, name: '기타', icon: <MoreHorizontal size={24} /> },
 ];
 
-// --- 2. Sub Components ---
+// --- 2. 필터메뉴(카테고리)의 컴포넌트 ---
 
 const FilterSection = ({ selectedCategory, setSelectedCategory, selectedSort, setSelectedSort }) => {
     const [activeTab, setActiveTab] = useState('category');
@@ -174,24 +174,26 @@ const PostCard = ({ post }) => (
     </div>
 );
 
-// --- 3. Main Component ---
+// --- 3. 메인 컴포넌트 맨처음에 실행하면 실행되는 코드라고 생각하면 된다. ---
 
 const ConsultationBoard = () => {
-    const navigate = useNavigate(); // 페이지 이동 함수
+    const navigate = useNavigate(); // 페이지 이동을 위한 훅(함수)
 
     const [posts, setPosts] = useState([]); // 게시글 데이터 (DB에서 가져올 예정)
     const [userRole, setUserRole] = useState('general');
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedCategory, setSelectedCategory] = useState('ALL');
-    const [selectedSort, setSelectedSort] = useState('최신순');
-    const [searchKeyword, setSearchKeyword] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('ALL'); // 카테고리
+    const [selectedSort, setSelectedSort] = useState('최신순'); // 정렬순
+    const [searchKeyword, setSearchKeyword] = useState(''); //
     const [searchType, setSearchType] = useState('title');
 
     // [기능 구현] 서버에서 게시글 데이터 가져오기
+    // 이 컴포넌트가 브라우저에 처음 나타 날 때(Mount), fetchPosts() 를 실행해라 ### []의존성 배열 -> 딱 한번
     useEffect(() => {
         fetchPosts();
     }, []);
 
+    // 비동기 통신 (axios) 을 위한 함수 선언
     const fetchPosts = async () => {
         try {
             const response = await axios.get('http://localhost:8080/api/boards');
@@ -208,12 +210,13 @@ const ConsultationBoard = () => {
                 categories: board.categoryCode ? board.categoryCode.split(',') : []
             }));
 
-            setPosts(mappedData);
+            setPosts(mappedData);        // 게시글 데이터 넣기
         } catch (error) {
             console.error("게시글 불러오기 실패:", error);
         }
     };
 
+    // 필터링 함수들  - 카테고리 전체 ....          ,    검색어 제목과 작성자
     const getFilteredPosts = () => {
         let filtered = posts; // DB에서 가져온 posts 사용
 
@@ -263,6 +266,11 @@ const ConsultationBoard = () => {
                 </div>
             </div>
 
+            {/*{props 부분}
+                부모 : ConsultataionBoard
+                자식 : FilterSection
+                부모가 자식한테 데이터를 넘겨주는것
+            */}
             <FilterSection
                 selectedCategory={selectedCategory}
                 setSelectedCategory={setSelectedCategory}

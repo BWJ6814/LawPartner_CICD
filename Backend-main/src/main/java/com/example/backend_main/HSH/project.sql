@@ -261,7 +261,7 @@ CREATE TABLE TB_BOARD_REPLY (
     WRITER_NO   NUMBER NOT NULL,
     -- 답변 내용은 4000바이트로 제한
     CONTENT     VARCHAR2(4000) NOT NULL,
-    -- [중요] 의뢰인 채택 여부  - 이로 인해 1:1상담까지 가능한가..? 이건 해당 처리하시는 분이 알아서..
+    --  의뢰인 채택 여부(변호인 채택은 없으나 글을 확정지어서 더이상 수정이 안되게 해야하므로 사용)
     SELECTION_YN CHAR(1) DEFAULT 'N',
     -- 등록일자.
     REG_DT      DATE DEFAULT SYSDATE,
