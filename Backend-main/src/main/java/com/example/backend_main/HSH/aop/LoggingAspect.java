@@ -4,7 +4,6 @@ import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.repository.AccessLogRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -19,14 +18,13 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Component : 스프링이 관리하는 부품으로 등록함
 @RequiredArgsConstructor : final이 붙은 도구들(Repository)를 가져오기 위한 생성자를 자동 처리
 @Slf4j : 로그 출력을 위한 도구, 콘솔창에 "누가 들어왔다!"라고 글자를 찍어주는 역할을 함
---> private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class); 자동 생성
 */
 @Aspect
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class LoggingAspect {
-    // 1. 콘솔에 찍힌 기록을 DB 창고(TB_ACCESS_LOG)에 저장해주는 관리자 도구 - 저장 데이터!
+    // 1. 콘솔에 찍힌 기록을 DB 창고(TB_ACCESS_LOG)에 저장해주는 관리자 도구
     private final AccessLogRepository accessLogRepository;
 
     // 일단 HSH 패키지 내부에서 로그 돌아가는지 보고, 전체 처리..
@@ -60,7 +58,7 @@ public class LoggingAspect {
         // joinPoint : 감시망에 걸린 해당 지점(메서드)
         //  getSignature().toShortString() : [어떤 클래스의 어떤 함수]가 실행됬는지 간략한 이름표를 가져오기
         // getRemoteIp(request) 접속자의 컴퓨터 주소(IP)를 정확하게 파악하기
-        AccessLog accessLog = AccessLog.builder()
+        AccessLog log = AccessLog.builder()
                 .userId(userId) // 누가?
                 .methodNm(joinPoint.getSignature().getName()) // 어떤 기능을? (예: getAllUsers)
                 .requestUri(request.getRequestURI()) // 어떤 주소로? (예: /api/admin/users)
@@ -70,8 +68,7 @@ public class LoggingAspect {
         // 6. DB 창고(TB_ACCESS_LOG)에 즉시 저장!
         // save(log) : DB의 TB_ACCESS_LOG 테이블에 한 줄의 기록을 영구적으로 저장
         // log.info 관리자묭 모니터(콘솔)에 실시간으로 상황 출력하기.
-        // log는 @Slf4j를 통해서 사용..!
-        accessLogRepository.save(accessLog);
+        accessLogRepository.save(log);
         log.info("📢 [Security Audit] User: {}, Method: {}, URI: {}", userId, accessLog.getMethodNm(), accessLog.getRequestUri());
     }
     // 실제 접속 IP를 정확하게 가져오는 유틸리티 메서드
@@ -79,7 +76,7 @@ public class LoggingAspect {
         // X-Forwarded-For : 실제 사용자가 프록시 서버나 보안 장비를 거쳐 올 때, 진짜 IP를 숨기지 못하도록 찾아주는 [추적용 헤더]
         // request.getRemoteAddr() : 헤더 정보가 없다면 직접 연결된 컴퓨터의 주소를 가져오기..
         String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
         return ip;
