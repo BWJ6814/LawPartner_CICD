@@ -55,6 +55,7 @@ const LoginPage = () => {
             // 토큰 시간은 생명 주기는 30분, 유효 기간은 14일 정도
             localStorage.setItem('accessToken', tokenData.accessToken);
             localStorage.setItem('refreshToken', tokenData.refreshToken);
+            localStorage.setItem('userRole', tokenData.role || 'GENERAL');
             localStorage.setItem('userNm', response.data.data.userNm || "사용자");
             
             // 백엔드에서 객체와 함께 메세지를 보내줬기에 동일하게 처리..

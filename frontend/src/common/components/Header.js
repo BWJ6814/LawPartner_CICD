@@ -65,7 +65,7 @@ const Header = () => {
     // [기능 C] 사이트 켜자마 로그인 상태 확인
     const checkLoginStatus = () => {
       // 브라우저 비밀 저장소(LocalStorage)에서 토큰과 역할을 꺼내와요.
-      const token = localStorage.getItem('userToken');
+      const token = localStorage.getItem('accessToken');
       const role = localStorage.getItem('userRole');
       
       if (token) {
@@ -108,8 +108,10 @@ const Header = () => {
   const noUnderlineStyle = { textDecoration: 'none', outline: 'none' };
 
   const handleLogout = () => {
-    localStorage.removeItem('userToken'); // 저장소 비우기
+    localStorage.removeItem('accessToken'); // 저장소 비우기
+    localStorage.removeItem('refreshToken'); // 리프레시 토큰도 같이 삭제
     localStorage.removeItem('userRole');
+    localStorage.removeItem('userNm');
     setIsLoggedIn(false); // 상태 초기화
     setUserType('GENERAL');
     setNotificationCount(0);
@@ -120,7 +122,7 @@ const Header = () => {
 
   // [테스트용] 로그인 시뮬레이션
   const simulateLogin = (role) => {
-    localStorage.setItem('userToken', 'fake-token');
+    localStorage.setItem('accessToken', 'fake-token');
     localStorage.setItem('userRole', role);
     setIsLoggedIn(true);
     setUserType(role);
