@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
+import DashboardSidebar from '../common/components/DashboardSidebar';
 
 const GeneralMyPage = () => {
   const navigate = useNavigate();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // 1. 페이지가 열리자마자 딱 한 번 권한을 체크합니다.
   useEffect(() => {
@@ -27,49 +29,13 @@ const GeneralMyPage = () => {
 
   return (
     <div className="flex h-screen bg-[#f1f5f9] overflow-hidden font-sans">
-      {/* 1. 사이드바 (Dark Navy) */}
-      <aside className="w-64 bg-[#0f172a] text-slate-400 flex flex-col shadow-2xl z-20">
-        
-        <nav className="flex-1 p-4 flex flex-col overflow-y-auto custom-scrollbar">
-            {/* 상단 메뉴 그룹 */}
-            <div className="flex-1 space-y-2">
-                <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">메인 메뉴</div>
-                <Link to="/mypage" className="flex items-center space-x-3 px-4 py-3 sidebar-active decoration-0 no-underline">
-                <i className="fas fa-columns w-5 text-center"></i>
-                <span>대시보드</span>
-                </Link>
-                <Link to="/board" className="flex items-center space-x-3 px-4 py-3 hover:bg-slate-800 hover:text-white rounded-xl transition decoration-0 no-underline text-slate-300">
-                <i className="fas fa-clipboard-list w-5 text-center"></i>
-                <span>법률 게시판</span>
-                </Link>
-                <Link to="/chatList" className="flex items-center space-x-3 px-4 py-3 hover:bg-slate-800 hover:text-white rounded-xl transition decoration-0 no-underline text-slate-300">
-                <i className="fas fa-comments w-5 text-center"></i>
-                <span>1:1 채팅 목록</span>
-                </Link>
-            </div>
-
-            {/* 하단 설정 그룹 (이 부분이 맨 밑으로 내려갑니다) */}
-            <div className="mt-auto pt-4 border-t border-slate-800/50">
-                <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">설정</div>
-                <Link to="/profile" className="flex items-center space-x-3 px-4 py-3 bg-blue-900/50 text-blue-200 rounded-xl hover:bg-blue-900 transition decoration-0 no-underline font-bold">
-                <i className="fas fa-user-cog w-5 text-center"></i>
-                <span>프로필 설정</span>
-                </Link>
-            </div>
-            </nav>
-
-        {/* 하단 프로필 카드 */}
-        <div className="p-4 bg-slate-900">
-          <div className="flex items-center space-x-3 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black shadow-lg">김</div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-bold text-white truncate">김길동 변호사</p>
-              <p className="text-[10px] text-slate-400 truncate">교통사고 전문</p>
-            </div>
-            <button onClick={handleLogout} className="text-slate-500 hover:text-red-400 transition"><i className="fas fa-sign-out-alt"></i></button>
-          </div>
-        </div>
-      </aside>
+      
+      {/* 1. 공용 사이드바 */}
+      <DashboardSidebar 
+              isSidebarOpen={isSidebarOpen} 
+              toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+            />
+      
 
       {/* 2. 메인 콘텐츠 영역 */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">

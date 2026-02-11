@@ -63,22 +63,13 @@ const ChatList = () => {
                 <i className="fas fa-arrow-left"></i>
             </Link>
             <div>
-              <h2 className="text-lg font-black text-navy-dark tracking-tight italic">PRO 상담 센터 <span className="text-blue-600 ml-2 font-medium text-sm">Active</span></h2>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">Counseling Manager v1.2</p>
+              <h2 className="text-lg font-black text-navy-dark tracking-tight ">채팅 목록</h2>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="hidden md:flex flex-col items-end mr-4">
-              <p className="text-xs font-bold text-slate-900">김신드 변호사</p>
-              <p className="text-[10px] text-slate-400 font-medium">현재 6명과 실시간 대화 중</p>
-            </div>
-            <button className="bg-red-50 text-red-600 px-5 py-2.5 rounded-xl text-xs font-black border border-red-100 hover:bg-red-600 hover:text-white transition shadow-sm whitespace-nowrap">
-              상담 종료
-            </button>
-          </div>
+          
         </header>
 
-        {/* 3분할 본문 영역 */}
+        {/* 2분할 본문 영역 */}
         <div className="flex-1 flex overflow-hidden">
           
           {/* (1) 좌측: 상담 목록 */}
@@ -90,9 +81,9 @@ const ChatList = () => {
                 <input type="text" placeholder="의뢰인 검색..." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium" />
               </div>
               <div className="flex p-1 bg-slate-100 rounded-lg">
-                <button className="flex-1 py-1.5 text-[10px] font-black text-blue-900 bg-white rounded-md shadow-sm">진행중</button>
-                <button className="flex-1 py-1.5 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition">대기</button>
-                <button className="flex-1 py-1.5 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition">완료</button>
+                <button className="flex-1 py-1.5 text-[14px] font-black text-blue-900 bg-white rounded-md shadow-sm">진행중</button>
+                <button className="flex-1 py-1.5 text-[14px] font-bold text-slate-400 hover:text-slate-600 transition">대기</button>
+                <button className="flex-1 py-1.5 text-[14px] font-bold text-slate-400 hover:text-slate-600 transition">완료</button>
               </div>
             </div>
 
@@ -115,7 +106,7 @@ const ChatList = () => {
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-black text-slate-900 text-sm tracking-tight">최박사</span>
                 </div>
-                <p className="text-xs text-slate-400 truncate font-medium italic">"방금 고소장이 접수되었다는 연락..."</p>
+                <p className="text-xs text-slate-400 truncate font-medium ">"방금 고소장이 접수되었다는 연락..."</p>
               </div>
             </div>
           </section>
@@ -128,9 +119,6 @@ const ChatList = () => {
                 className="flex-1 p-8 overflow-y-auto custom-scrollbar space-y-6 bg-gray-50/50 scroll-smooth"
             >
                 <div className="flex justify-center">
-                    <span className="px-4 py-1.5 bg-white border border-slate-100 text-slate-400 text-[9px] font-black rounded-full shadow-sm">
-                        2026.02.03 Counseling Log
-                    </span>
                 </div>
 
                 {chatLog.map((msg) => (
@@ -139,7 +127,7 @@ const ChatList = () => {
                     <div className="w-9 h-9 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-black shadow-inner flex-shrink-0">홍</div>
                     )}
                     <div className={`space-y-1 ${msg.sender === 'LAWYER' ? 'flex flex-col items-end' : ''}`}>
-                    <p className="text-[10px] font-black text-slate-400 ml-1 italic">
+                    <p className="text-[10px] font-black text-slate-400 ml-1 ">
                         {msg.sender === 'CLIENT' ? `의뢰인 ${msg.name}` : `PRO ${msg.name} 변호사`} 
                         <span className="text-slate-300 ml-1 font-normal">{msg.time}</span>
                     </p>
@@ -181,48 +169,6 @@ const ChatList = () => {
               </div>
             </div>
           </section>
-
-          {/* (3) 우측: AI 분석 및 자료함 */}
-          {/* ★ 핵심: isSidebarOpen이면 w-80, 닫히면 w-96로 변경하여 사이드바가 차지한 공간만큼 줄어들게 함 */}
-          <section 
-            className={`
-                hidden xl:block bg-slate-50 border-l border-slate-200 overflow-y-auto custom-scrollbar shadow-inner shrink-0 transition-all duration-300
-                ${isSidebarOpen ? 'w-80' : 'w-96'}
-            `}
-          >
-             <div className="p-8 space-y-8">
-               <div className="bg-white rounded-3xl p-6 shadow-sm border border-blue-100 border-t-4 border-t-blue-600">
-                 <h3 className="text-sm font-black text-navy-dark mb-4 flex items-center uppercase tracking-tighter italic">
-                   <i className="fas fa-magic mr-2 text-blue-600"></i> AI Case Insight
-                 </h3>
-                 <div className="space-y-5">
-                   <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100 shadow-inner">
-                     <p className="text-[10px] font-black text-blue-600 mb-1 uppercase opacity-60">Victory probability</p>
-                     <p className="text-3xl font-black text-slate-900 tracking-tighter">85.4%</p>
-                   </div>
-                   <div className="text-xs leading-relaxed text-slate-600 font-medium">
-                     <p className="mb-2 text-blue-800 font-black">💡 핵심 전략 포인트</p>
-                     <ul className="space-y-1 ml-4 list-disc text-slate-500 font-light italic">
-                       <li>임차권등기명령 신청 검토</li>
-                       <li>연 12% 지연손해금 청구 가능</li>
-                     </ul>
-                   </div>
-                 </div>
-               </div>
-               
-               {/* 파일함 */}
-               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-                  <h3 className="text-sm font-black text-navy-dark mb-4">Documents</h3>
-                  <div className="flex items-center p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-300 transition cursor-pointer group">
-                    <i className="fas fa-file-pdf text-red-500 text-xl mr-3 group-hover:scale-110 transition"></i>
-                    <div className="flex-1 overflow-hidden">
-                      <p className="text-xs font-black text-slate-800 truncate">계약서.pdf</p>
-                      <p className="text-[9px] text-slate-400">1.2MB</p>
-                    </div>
-                  </div>
-               </div>
-            </div>
-          </section>
         </div>
       </main>
     </div>
@@ -230,3 +176,15 @@ const ChatList = () => {
 };
 
 export default ChatList;
+
+// {/* 파일함 */}
+//                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+//                   <h3 className="text-sm font-black text-navy-dark mb-4">최근 파일 목록</h3>
+//                   <div className="flex items-center p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-300 transition cursor-pointer group">
+//                     <i className="fas fa-file-pdf text-red-500 text-xl mr-3 group-hover:scale-110 transition"></i>
+//                     <div className="flex-1 overflow-hidden">
+//                       <p className="text-xs font-black text-slate-800 truncate">계약서.pdf</p>
+//                       <p className="text-[9px] text-slate-400">1.2MB</p>
+//                     </div>
+//                   </div>
+//                </div>

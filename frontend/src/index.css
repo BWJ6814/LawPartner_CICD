@@ -37,5 +37,5 @@ code {
   .bg-navy-dark { background-color: #0f172a; }
   .bg-navy-main { background-color: #1e3a8a; }
   .chat-height { height: calc(100vh - 80px); }
-  .list-item-active { background-color: #eff6ff; border-left: 5px solid #1e3a8a; }
+  .list-item-active { background-color: #eff6ff; border-right: 5px solid #1e3a8a; }
   .list-item-hover:hover { background-color: #f8fafc; }
