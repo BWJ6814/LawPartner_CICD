@@ -11,6 +11,7 @@ import ConsultationBoard from './BWJ/ConsultationBoard';
 import WriteQuestionPage from './BWJ/WriteQuestionPage';
 import GeneralMyPage from './pages/GeneralMypage'
 import ChatList from './KImMinSU/chatList'
+import Lawmainpage from './ky/Lawmainpage';
 
 // 2. 로그인 페이지가 아직 없다면 일단 임시 컴포넌트로 대체
 const LoginPage = () => <div className="p-20 text-center">로그인 페이지 준비중</div>;
@@ -32,6 +33,7 @@ function App() {
   };
 
     return (
+        <BrowserRouter>
         <div className="flex flex-col min-h-screen bg-gray-50 text-slate-900 font-sans">
             {/* 모든 페이지 상단에 고정 */}
             <Header auth={auth} onLoginUpdate={updateAuth} />
@@ -40,18 +42,19 @@ function App() {
             <main className="flex-grow">
                 <Routes>
                     <Route path="/" element={<MainPage />} />
-                    <Route 
-                      path="/mypage" 
+                    <Route
+                      path="/mypage"
                       element={
                         auth.isLoggedIn && auth.role === 'GENERAL' 
                         ? <GeneralMyPage /> 
                         : <Navigate to="/login" replace /> // 권한 없으면 로그인창으로 강제 이동
-                      } 
+                      }
                     />
                     <Route path="/chatList" element={<ChatList />} />
                     <Route path="/consultation" element={<ConsultationBoard />} />
                     <Route path="/write" element={<WriteQuestionPage />} />
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
                     <Route path="*" element={<div className="text-center p-20">404 Not Found</div>} />
                 </Routes>
             </main>
@@ -59,6 +62,7 @@ function App() {
             {/* 모든 페이지 하단에 고정 */}
             <Footer />
         </div>
+        </BrowserRouter>
     );
 }
 

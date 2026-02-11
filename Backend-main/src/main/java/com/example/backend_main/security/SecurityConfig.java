@@ -1,4 +1,4 @@
-package com.example.backend_main.Security;
+package com.example.backend_main.security;
 
 import com.example.backend_main.common.security.JwtAuthenticationEntryPoint;
 import com.example.backend_main.common.security.JwtAuthenticationFilter;
@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -25,6 +27,12 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     // 보안관 가져오기!
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    // 비밀번호 암호기 등록하기.
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -53,6 +61,12 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                         // 그 외 모든 요청은 신분증(JWT) 검사! - 개발 중간 중간 확인할 예정..
                         // .anyRequest().authenticated()
+                        /*
+                        추후 상태 수정할 코드
+                        .requestMatchers("/api/auth/**").permitAll() // 로그인/회원가입은 자유롭게
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용 구역 잠금
+                        .anyRequest().authenticated() // 그 외 모든 곳은 신분증(JWT) 필수!
+                        */
                 )
 
                 // 5. JWT 문지기 배치 (기본 문지기 앞에 우리 문지기를 세웁니다)
