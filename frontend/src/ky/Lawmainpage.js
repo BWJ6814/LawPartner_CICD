@@ -111,12 +111,8 @@ export default function Lawmainpage() {
                 <header className="lw-header">
                     <h2 className="lw-header-title">대시보드</h2>
                     <div className="lw-header-right">
-                        <button className="lw-notif-btn">
-                            🔔
-                            {notifications > 0 && <span className="lw-notif-badge">{notifications}</span>}
-                        </button>
-                        <button className="lw-mypage-btn">마이페이지</button>
-                        <button className="lw-logout-btn">로그아웃</button>
+
+
                     </div>
                 </header>
 
