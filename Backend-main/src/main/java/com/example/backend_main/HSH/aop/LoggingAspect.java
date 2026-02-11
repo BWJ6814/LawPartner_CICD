@@ -19,13 +19,14 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Component : 스프링이 관리하는 부품으로 등록함
 @RequiredArgsConstructor : final이 붙은 도구들(Repository)를 가져오기 위한 생성자를 자동 처리
 @Slf4j : 로그 출력을 위한 도구, 콘솔창에 "누가 들어왔다!"라고 글자를 찍어주는 역할을 함
+--> private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class); 자동 생성
 */
 @Aspect
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class LoggingAspect {
-    // 1. 콘솔에 찍힌 기록을 DB 창고(TB_ACCESS_LOG)에 저장해주는 관리자 도구
+    // 1. 콘솔에 찍힌 기록을 DB 창고(TB_ACCESS_LOG)에 저장해주는 관리자 도구 - 저장 데이터!
     private final AccessLogRepository accessLogRepository;
 
     // 일단 HSH 패키지 내부에서 로그 돌아가는지 보고, 전체 처리..
@@ -69,6 +70,7 @@ public class LoggingAspect {
         // 6. DB 창고(TB_ACCESS_LOG)에 즉시 저장!
         // save(log) : DB의 TB_ACCESS_LOG 테이블에 한 줄의 기록을 영구적으로 저장
         // log.info 관리자묭 모니터(콘솔)에 실시간으로 상황 출력하기.
+        // log는 @Slf4j를 통해서 사용..!
         accessLogRepository.save(accessLog);
         log.info("📢 [Security Audit] User: {}, Method: {}, URI: {}", userId, accessLog.getMethodNm(), accessLog.getRequestUri());
     }
