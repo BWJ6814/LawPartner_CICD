@@ -16,4 +16,8 @@ public class TokenDTO {
     private String refreshToken;
     private String userNm;
     private String role;
+    // 이메일 처리..
+    private Long userNo;
+    // ★ 추가: 이메일과 유저 번호 필드
+    private String email;
 }

@@ -57,9 +57,12 @@ const LoginPage = () => {
                 localStorage.setItem('accessToken', tokenData.accessToken);
                 localStorage.setItem('refreshToken', tokenData.refreshToken);
                 localStorage.setItem('userNm', tokenData.userNm || "사용자");
-                
+                // ★ 추가 저장: 이메일과 유저 번호
+                localStorage.setItem('userEmail', tokenData.email);
+                localStorage.setItem('userNo', tokenData.userNo);
                 // ★ 이 부분이 있어야 Header.js에서 '마이페이지' vs '워크스페이스'를 구분함
-                localStorage.setItem('userRole', tokenData.role || 'ROLE_USER'); 
+                localStorage.setItem('userRole', tokenData.role || 'ROLE_USER');
+
 
                 alert(`${tokenData.userNm}님 환영합니다!`);
                 

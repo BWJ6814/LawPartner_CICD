@@ -112,6 +112,8 @@ public class AuthService {
         TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm());
         tokenDTO.setUserNm(user.getUserNm()); // 이제 리액트에서 undefined가 안 뜹니다!
         tokenDTO.setRole(user.getRoleCode()); // RBAC 설계도에 따른 권한 전송
+        tokenDTO.setEmail(decryptedEmail);  // 복호화된 진짜 이메일
+        tokenDTO.setUserNo(user.getUserNo()); // DB 고유 번호
 
         // ★ [REQ-SEC-02] 중복 로그인 차단 및 토큰 DB 저장은 추후 활성화 예정
         // 현재는 토큰 발급 후 리액트로 전달만 하고, DB 기록은 생략합니다.
