@@ -12,7 +12,8 @@ import WriteQuestionPage from './BWJ/WriteQuestionPage';
 import GeneralMyPage from './pages/GeneralMypage'
 import ChatList from './KImMinSU/chatList'
 import Lawmainpage from './ky/Lawmainpage';
-
+import LoginPage from './HSH/LoginPage';
+import SignupPage from './HSH/SignupPage'; // ★ [추가 1] 회원가입 페이지 가져오기
 
 
 function App() {
@@ -52,7 +53,17 @@ function App() {
                     <Route path="/chatList" element={<ChatList />} />
                     <Route path="/consultation" element={<ConsultationBoard />} />
                     <Route path="/write" element={<WriteQuestionPage />} />
+                    
+                    {/* 로그인 페이지 */}
+                    <Route path="/login" element={<LoginPage />} />
+                    
+                    {/* ★ [추가 2] 회원가입 페이지 라우트 설정 */}
+                    <Route path="/signup" element={<SignupPage />} />
+
                     <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
+                    
+                    {/* (기존 코드에 /login이 중복되어 있어서 하나는 제거했습니다) */}
+                    
                     <Route path="*" element={<div className="text-center p-20">404 Not Found</div>} />
                 </Routes>
             </main>
