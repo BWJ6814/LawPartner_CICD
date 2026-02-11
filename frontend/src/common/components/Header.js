@@ -244,31 +244,33 @@ const Header = ({auth, onLoginUpdate}) => {
         </div>
       </div>
 
-      {/* [개발자용 테스트 도구] */}
-      <div className="fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-xl shadow-2xl z-[100] opacity-90 hover:opacity-100 transition">
-        <p className="text-xs font-bold mb-2 text-gray-400 uppercase">Dev Tools (Auth Check)</p>
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs w-16">로그인:</span>
-            {!auth.isLoggedIn ? (
-              <>
-                <button onClick={() => simulateLogin('GENERAL')} className="px-2 py-1 bg-blue-600 rounded text-[10px] font-bold hover:bg-blue-500">일반회원</button>
-                <button onClick={() => simulateLogin('LAWYER')} className="px-2 py-1 bg-navy-dark border border-slate-600 rounded text-[10px] font-bold hover:bg-slate-700">변호사</button>
-              </>
-            ) : (
-              <button onClick={handleLogout} className="px-2 py-1 bg-red-600 rounded text-[10px] font-bold hover:bg-red-500 w-full">로그아웃</button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs w-16">알림({notificationCount}):</span>
-            <button onClick={toggleNotification} className="px-2 py-1 bg-gray-600 rounded text-[10px] font-bold hover:bg-gray-500 w-full">
-              새 알림 추가
-            </button>
-          </div>
-        </div>
-      </div>
+      
     </nav>
   );
 };
 
 export default Header;
+
+// {/* [개발자용 테스트 도구] */}
+//       <div className="fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-xl shadow-2xl z-[100] opacity-90 hover:opacity-100 transition">
+//         <p className="text-xs font-bold mb-2 text-gray-400 uppercase">Dev Tools (Auth Check)</p>
+//         <div className="flex flex-col gap-2">
+//           <div className="flex items-center gap-2">
+//             <span className="text-xs w-16">로그인:</span>
+//             {!auth.isLoggedIn ? (
+//               <>
+//                 <button onClick={() => simulateLogin('GENERAL')} className="px-2 py-1 bg-blue-600 rounded text-[10px] font-bold hover:bg-blue-500">일반회원</button>
+//                 <button onClick={() => simulateLogin('LAWYER')} className="px-2 py-1 bg-navy-dark border border-slate-600 rounded text-[10px] font-bold hover:bg-slate-700">변호사</button>
+//               </>
+//             ) : (
+//               <button onClick={handleLogout} className="px-2 py-1 bg-red-600 rounded text-[10px] font-bold hover:bg-red-500 w-full">로그아웃</button>
+//             )}
+//           </div>
+//           <div className="flex items-center gap-2">
+//             <span className="text-xs w-16">알림({notificationCount}):</span>
+//             <button onClick={toggleNotification} className="px-2 py-1 bg-gray-600 rounded text-[10px] font-bold hover:bg-gray-500 w-full">
+//               새 알림 추가
+//             </button>
+//           </div>
+//         </div>
+//       </div>
