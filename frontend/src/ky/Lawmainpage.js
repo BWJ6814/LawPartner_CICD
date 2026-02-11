@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './Lawmainpage.css';
-import PaymentModal from './PaymentModal';
+// import PaymentModal from './PaymentModal';
 
 const mockData = {
     lawyer: {
@@ -212,7 +212,8 @@ export default function Lawmainpage() {
                 </div>
             </div>
 
-            {showPayment && <PaymentModal onClose={() => setShowPayment(false)} />}
+           {/*{*{showPayment && <PaymentModal onClose={() => setShowPayment(false)} />}*!/*/}
+
         </div>
     );
 }
