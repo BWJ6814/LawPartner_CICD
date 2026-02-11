@@ -12,8 +12,7 @@ import WriteQuestionPage from './BWJ/WriteQuestionPage';
 import GeneralMyPage from './pages/GeneralMypage'
 import ChatList from './KImMinSU/chatList'
 import Lawmainpage from './ky/Lawmainpage';
-import LoginPage from './H-S-H/Login'
-import SignupPage from './H-S-H/Signup'
+
 
 
 function App() {
@@ -53,11 +52,6 @@ function App() {
                     <Route path="/chatList" element={<ChatList />} />
                     <Route path="/consultation" element={<ConsultationBoard />} />
                     <Route path="/write" element={<WriteQuestionPage />} />
-                    <Route path="/signup" element={<SignupPage />} />
-                    <Route
-                        path="/login"
-                        element={isLoggedIn ? <Navigate to="/" replace /> : <LoginPage />}
-                    />
                     <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
                     <Route path="*" element={<div className="text-center p-20">404 Not Found</div>} />
                 </Routes>
