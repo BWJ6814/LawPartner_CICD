@@ -61,7 +61,7 @@ const LoginPage = () => {
                 // ★ 이 부분이 있어야 Header.js에서 '마이페이지' vs '워크스페이스'를 구분함
                 localStorage.setItem('userRole', tokenData.role || 'GENERAL'); 
 
-                alert(`${tokenData.userId}님 환영합니다!`);
+                alert(`${tokenData.userNm}님 환영합니다!`);
                 
                 //  window.location.href를 사용하여 헤더 상태 강제 동기화
                 window.location.href = '/';

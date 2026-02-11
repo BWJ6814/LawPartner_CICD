@@ -166,7 +166,7 @@ CREATE TABLE TB_LAWYER_INFO (
     OFFICE_ADDR    VARCHAR2(200),          -- 사무실 주소
     EXAM_TYPE      VARCHAR2(50),           -- 출신 (사법고시/로스쿨)
     INTRO_TEXT     VARCHAR2(4000),         -- 자기소개 (CLOB 대신 짧게)
-    IMG_URL        VARCHAR2(500), -- 프로필 사진(경로만)
+    IMG_URL        VARCHAR2(500),          -- 프로필 사진(경로만)
     APPROVAL_YN    CHAR(1) DEFAULT 'N',   -- 관리자 승인 여부 (Y/N/R)
     SUB_EXPIRE_DT  DATE,                  -- [중요] 구독 만료일 (기능 제한용)
     -- IF (오늘날짜 > 만료일): "구독이 만료되었습니다. 결제해주세요."
