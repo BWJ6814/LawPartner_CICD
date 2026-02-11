@@ -28,12 +28,7 @@ const mockData = {
 
 const menuItems = [
     { id: 'dashboard', label: '대시보드', icon: '📊' },
-    { id: 'new-consult', label: '새로운 상담', icon: '✍️', sub: ['1:1 채팅 목록', '전체 보기'] },
-    { id: 'my-cases', label: '나의 법률 데이터', icon: '📋' },
-    { id: 'ai-chat', label: 'AI 채팅 관리', icon: '🤖' },
-    { id: 'trial', label: '재판 일정 관리', icon: '📅' },
-    { id: 'profile', label: '프로필 관리', icon: '👤' },
-    { id: 'review', label: '리뷰 및 평점', icon: '⭐' },
+
     { id: 'subscription', label: '구독 신청/해지', icon: '💳' },
 ];
 
