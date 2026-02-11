@@ -60,10 +60,10 @@ public class LoggingAspect {
         //  getSignature().toShortString() : [어떤 클래스의 어떤 함수]가 실행됬는지 간략한 이름표를 가져오기
         // getRemoteIp(request) 접속자의 컴퓨터 주소(IP)를 정확하게 파악하기
         AccessLog accessLog = AccessLog.builder()
-                .userId(userId)
-                .methodNm(joinPoint.getSignature().getName())
-                .requestUri(request.getRequestURI())
-                .remoteIp(getRemoteIp(request)) // 위에서 만든 getRemoteIp 메서드 활용
+                .userId(userId) // 누가?
+                .methodNm(joinPoint.getSignature().getName()) // 어떤 기능을? (예: getAllUsers)
+                .requestUri(request.getRequestURI()) // 어떤 주소로? (예: /api/admin/users)
+                .remoteIp(request.getRemoteAddr()) // 어떤 컴퓨터(IP)에서?
                 .build();
 
         // 6. DB 창고(TB_ACCESS_LOG)에 즉시 저장!
