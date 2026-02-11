@@ -12,8 +12,24 @@ import org.springframework.stereotype.Repository;
 @Repository : 해당 인터페이스가 DB에 접근한느 창고 관리자임을 스프링에게 명시
 
 extends JpaRepository<AccessLog, Long> : 스프링이 제공하는 만능 관리자를 상속받기!
+JpaRepository : 스프링 데이터 JPA가 미리 만들어둔 [만능 기술 교본]
+상속(Inheritance) : 교본을 상속받는 순간, 코드 한 줄도 사용하지 않고 save()/findAll() 등 수십 가지 함수 사용 가능
 
-<AccessLog, Long> : AccessLog 엔티티를 관리할 것이며, 그 주인공(PK)의 자료형은 Long
+<AccessLog, Long>
+1) AccessLog : 이 레포지토리는 AccessLog 시민(Entity)만 전담하는 관리자 - AccessLog 클래스 가서 정보를 찾음!
+            - @Entity로 DB와 연결된 Entity임을 확인..!
+            - @Table(name = "TB_ACCESS_LOG")로 테이블 이름 확인!
+2) Long : 해당 시민의 주민번호(PK)는 Long 타입이니, 참고해라
+3) 결과 : 스프링은 해당 정보를 바탕으로 save()를 호출할 때, 어떤 테이블(TB_ACCESS_LOG)에 데이터를 넣어야 하는 것을
+         이미 다 알고 있게 됨!
+
+컴포넌트 스캔으로 서버를 켜주는 순간에 바로 일어납니다.
+1) 전수 조사: 서버가 켜지면 스프링은 프로젝트의 모든 폴더를 샅샅이 뒤집니다.(스캔)
+2) 매칭 : AccessLogRepository를 발견 - 주소록에 AccessLog 확인
+3) 연결 : AccessLog 클래스로 가서 @Table에 적힌 TB_ACCESS_LOG라는 이름을 확인 후 내부적으로 연결고리 생성!
+
+
+
 */
 @Repository
 public interface AccessLogRepository extends JpaRepository<AccessLog, Long>{
