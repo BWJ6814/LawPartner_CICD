@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@fullcalendar/daygrid": "^6.1.20",
+    "@fullcalendar/react": "^6.1.20",
+    "lucide-react": "^0.563.0"
+  }
+}

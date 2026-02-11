@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,7 +39,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // 1. CSRF 보안 끄기 (REST API 방식에서는 필수)
-                .csrf(csrf -> csrf.disable())
+                // csrf : 스프링 시큐리티가 제공하는 CsrfConfigurer 객체 (설정을 담당하는 일꾼)
+                // --> 사이트 간 요청 위조하기..!
+                // JWT와 Stateless 방식을 사용하기 때문에 모든 요청마다 리액트가 헤더에 JWT(신분증)을 실어서 보내기..!
+                // 해커가 가짜 사이트에서 요청을 보내도, CSRF 공격 자체가 성립 불가..
+                // 그러나, 개발만 복잡하기 때문에 REST API에서는 보통 비활성화 처리..
+                // csrf.disable() : CSRF 보안 기능을 꺼라..!
+                // AbstractHttpConfigurer : 스프링 시큐리티의 설정 일꾼들(CsrfConfigurer 등)은 모두 이 조상님 클래스에서 상속 받아 만들어짐
+                // disable : 모든 설정을 공통적으로 끄는 기능(disable()) 사용
+                // 콜론 두 개(::) : 메섣드 참조 연산자로, 람다식을 더 짧게 줄인 것. (csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
 
                 // 2. CORS 설정 적용 (리액트와의 연결 통로)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -89,7 +99,18 @@ public class SecurityConfig {
 
         // 모든 헤더 허용
         configuration.setAllowedHeaders(List.of("*"));
+        /*
+        - [운영 환경 적용] 모든 헤더(*) 대신 실제 사용하는 헤더만 명시
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",      // JWT 토큰 전달용
+                "Content-Type",       // JSON 데이터 전달용
+                "Cache-Control",
+                "X-Requested-With"    // AJAX 요청 확인용
+        ));
 
+        - 브라우저가 위 헤더들을 읽을 수 있도록 노출 설정
+        configuration.setExposedHeaders(List.of("Authorization"));
+        */
         // 쿠키나 인증 정보 포함 허용
         configuration.setAllowCredentials(true);
 

@@ -52,6 +52,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResultVO<TokenDTO> login(@RequestBody Map<String, String> loginData) throws Exception {
         // 리액트에서 보낸 id와 pw를 꺼냅니다.
+        // userID / userPw
         String userId = loginData.get("userId");
         String password = loginData.get("userPw");
 
