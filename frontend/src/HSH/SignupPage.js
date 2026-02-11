@@ -151,14 +151,31 @@ const SignupPage = () => {
                 </div>
 
                 {/* 1. 회원 유형 선택 (Segmented Control) */}
-                <div className="bg-slate-100 p-1 rounded-2xl flex mb-8 relative">
-                    {/* 배경 애니메이션 바 */}
-                    <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-xl shadow-sm transition-transform duration-300 ease-in-out ${role === 'lawyer' ? 'translate-x-[calc(100%+8px)]' : 'translate-x-0'}`}></div>
+                <div className="relative flex mb-8 p-1 bg-slate-100 rounded-2xl w-full h-12">
+                    {/* ★ 무빙 배경 바 (이 녀석이 움직입니다) */}
+                    <div 
+                        className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-white rounded-xl shadow-sm transition-all duration-300 ease-out z-0 ${
+                            role === 'lawyer' ? 'translate-x-[calc(100%+0px)]' : 'translate-x-0'
+                        }`}
+                    ></div>
                     
-                    <button onClick={() => setRole('client')} className={`flex-1 py-2.5 relative z-10 text-xs font-bold transition-colors ${role === 'client' ? 'text-slate-900' : 'text-slate-400'}`}>
+                    {/* 버튼들: z-10을 줘서 글씨가 배경 바 위로 올라오게 합니다. */}
+                    <button 
+                        type="button"
+                        onClick={() => setRole('client')} 
+                        className={`flex-1 relative z-10 text-xs font-black transition-colors duration-300 ${
+                            role === 'client' ? 'text-slate-900' : 'text-slate-400'
+                        }`}
+                    >
                         의뢰인 가입
                     </button>
-                    <button onClick={() => setRole('lawyer')} className={`flex-1 py-2.5 relative z-10 text-xs font-bold transition-colors ${role === 'lawyer' ? 'text-slate-900' : 'text-slate-400'}`}>
+                    <button 
+                        type="button"
+                        onClick={() => setRole('lawyer')} 
+                        className={`flex-1 relative z-10 text-xs font-black transition-colors duration-300 ${
+                            role === 'lawyer' ? 'text-slate-900' : 'text-slate-400'
+                        }`}
+                    >
                         변호사 회원 가입
                     </button>
                 </div>

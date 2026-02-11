@@ -98,20 +98,12 @@ const Header = ({auth, onLoginUpdate}) => {
     localStorage.removeItem('accessToken'); // 저장소 비우기
     localStorage.removeItem('refreshToken'); // 리프레시 토큰도 같이 삭제
     localStorage.removeItem('userRole');
+    localStorage.removeItem('userNm');
     onLoginUpdate();
     alert("로그아웃 되었습니다.");
     navigate('/');
   };
 
-  // [테스트용] 로그인 시뮬레이션
-  const simulateLogin = (role) => {
-    localStorage.setItem('accessToken', 'fake-token');
-    localStorage.setItem('userRole', role);
-
-    onLoginUpdate();
-
-    alert(`${role === 'LAWYER' ? '변호사' : '일반'} 회원으로 로그인되었습니다.`);
-  };
 
   // [테스트용] 알림 토글 (새 알림 추가)
   const toggleNotification = () => {

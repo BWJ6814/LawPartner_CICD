@@ -94,7 +94,13 @@ public class AuthService {
                 // 부여할 권한 배지 (예: ROLE_ADMIN)
                 List.of(new SimpleGrantedAuthority(user.getRoleCode()))
         );
-        // 5. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
-        return jwtTokenProvider.createToken(authentication, user.getUserNo());
+
+        // 5. 토큰 발급 후 추가 정보를 주머니에 담기!
+        TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo());
+        tokenDTO.setUserNm(user.getUserNm()); // 이제 리액트에서 undefined가 안 뜹니다!
+        tokenDTO.setRole(user.getRoleCode()); // RBAC 설계도에 따른 권한 전송
+
+        // 6. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
+        return tokenDTO;
     }
 }
