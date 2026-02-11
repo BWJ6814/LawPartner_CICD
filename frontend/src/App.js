@@ -42,7 +42,10 @@ function App() {
                     <Route path="/consultation" element={<ConsultationBoard />} />
                     <Route path="/write" element={<WriteQuestionPage />} />
                     <Route path="/signup" element={<SignupPage />} />
-                    <Route path="/login" element={<LoginPage />} />
+                    <Route
+                        path="/login"
+                        element={isLoggedIn ? <Navigate to="/" replace /> : <LoginPage />}
+                    />
                     <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
                     <Route path="*" element={<div className="text-center p-20">404 Not Found</div>} />
                 </Routes>

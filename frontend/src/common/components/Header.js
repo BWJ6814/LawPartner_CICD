@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Header = () => {
+    const navigate = useNavigate();
+
     // 1. 로그인 여부를 기억해요 (true : 로그인 됨, false : 안됨)
     /*
       const [상태_변수명, 상태_변경_함수명] = useState(초기값);
@@ -23,7 +25,7 @@ const Header = () => {
     //    기본값을 GENERAL로 설정해둔 상태입니다.
     const [userType, setUserType] = useState('GENERAL'); // 'GENERAL'(일반) or 'LAWYER'(변호사)
 
-    /* [수정] 로그인 시 좌측 상단에 띄울 사용자 이름을 저장할 상자를 하나 더 만들었습니다. */
+    /* 로그인 시 내부적으로 사용할 사용자 이름 상태 */
     const [userName, setUserName] = useState('');
 
     // 알림 관련 상태 (실무 필수)
@@ -70,13 +72,11 @@ const Header = () => {
             // 브라우저 비밀 저장소(LocalStorage)에서 토큰과 역할을 꺼내와요.
             const token = localStorage.getItem('userToken');
             const role = localStorage.getItem('userRole');
-            /* [수정] Login.js에서 저장한 userId도 꺼내옵니다. */
             const savedId = localStorage.getItem('userId');
 
             if (token) {
                 setIsLoggedIn(true); // 토큰이 있으면 로그인 상태로 변경
                 setUserType(role || 'GENERAL'); // 역할 저장
-                /* [수정] 꺼내온 이름을 상태 변수에 저장합니다. */
                 setUserName(savedId || '사용자');
                 // 로그인 시 알림 데이터 가져오기 (API 호출 시뮬레이션)
                 fetchNotifications(role);
@@ -99,12 +99,10 @@ const Header = () => {
             { id: 3, text: "이번 달 정산 내역이 생성되었습니다.", time: "어제", read: true },
             { id: 4, text: "AI 판례 분석이 완료되었습니다.", time: "2일 전", read: true },
             { id: 5, text: "시스템 점검 안내", time: "3일 전", read: true },
-            // 변호사용 알림들
         ] : [
             { id: 1, text: "변호사님이 답변을 등록했습니다.", time: "방금 전", read: false },
             { id: 2, text: "1:1 상담 예약이 확정되었습니다.", time: "30분 전", read: false },
             { id: 3, text: "회원가입 환영 쿠폰이 지급되었습니다.", time: "1일 전", read: true },
-            // 일반 사용자용 알림들
         ];
 
         setNotifications(dummyData);
@@ -115,7 +113,6 @@ const Header = () => {
     const noUnderlineStyle = { textDecoration: 'none', outline: 'none' };
 
     const handleLogout = () => {
-        /* [수정] 로그아웃 시 userId도 함께 지워주도록 수정했습니다. */
         localStorage.removeItem('userToken'); // 저장소 비우기
         localStorage.removeItem('userRole');
         localStorage.removeItem('userId');
@@ -131,7 +128,6 @@ const Header = () => {
     const simulateLogin = (role) => {
         localStorage.setItem('userToken', 'fake-token');
         localStorage.setItem('userRole', role);
-        /* [수정] 시뮬레이션 시에도 ID를 임시로 저장하도록 수정했습니다. */
         localStorage.setItem('userId', role === 'LAWYER' ? 'lawyer_test' : 'user_test');
         setIsLoggedIn(true);
         setUserType(role);
@@ -157,16 +153,6 @@ const Header = () => {
                         <Link to="/" style={noUnderlineStyle} className="flex items-center gap-2 group decoration-0 no-underline">
                             <h1 className="text-xl md:text-2xl font-black text-blue-900 tracking-tighter group-hover:opacity-80 transition whitespace-nowrap">LAW PARTNER</h1>
                         </Link>
-
-                        {/* [수정/추가] 로그인 성공 시 좌측 상단에 이름 표시 영역을 추가했습니다. */}
-                        {isLoggedIn && (
-                            <div className="hidden md:flex items-center border-l border-gray-200 pl-4 ml-2">
-                <span className="text-sm font-bold text-gray-600">
-                  이름 : <span className="text-blue-700">{userName}</span> ({userType === 'LAWYER' ? '변호사' : '일반'}) 로 로그인 중
-                </span>
-                            </div>
-                        )}
-
                         {/* 데스크탑 메뉴 */}
                         <div className="hidden lg:flex space-x-6 text-gray-700 font-bold text-sm">
                             {NAV_ITEMS.map((item) => (
@@ -240,17 +226,32 @@ const Header = () => {
                             </>
                         ) : (
                             <>
-                                {/* [수정] 로그인 링크가 이제 실제 /login 페이지로 이동하도록 설정되어 있습니다. */}
                                 <Link to="/login" style={noUnderlineStyle} className="text-sm font-medium text-gray-500 hover:text-gray-700 transition no-underline whitespace-nowrap">로그인</Link>
                                 <Link to="/signup" style={noUnderlineStyle} className="bg-blue-900 text-white px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-800 transition shadow-lg hover:shadow-blue-900/20 active:scale-95 transform no-underline whitespace-nowrap">회원가입</Link>
                             </>
                         )}
                     </div>
-
-                    {/* 모바일 메뉴 버튼 ... (이하 동일) ... */}
                 </div>
             </div>
-            {/* ... 이하 생략 ... */}
+
+            {/* [개발자용 테스트 도구 - 필요 시 주석 해제] */}
+            {/* <div className="fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-xl shadow-2xl z-[100] opacity-90 hover:opacity-100 transition">
+                <p className="text-xs font-bold mb-2 text-gray-400 uppercase">Dev Tools (Auth Check)</p>
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs w-16">로그인:</span>
+                        {!isLoggedIn ? (
+                            <>
+                                <button onClick={() => simulateLogin('GENERAL')} className="px-2 py-1 bg-blue-600 rounded text-[10px] font-bold hover:bg-blue-500">일반회원</button>
+                                <button onClick={() => simulateLogin('LAWYER')} className="px-2 py-1 bg-navy-dark border border-slate-600 rounded text-[10px] font-bold hover:bg-slate-700">변호사</button>
+                            </>
+                        ) : (
+                            <button onClick={handleLogout} className="px-2 py-1 bg-red-600 rounded text-[10px] font-bold hover:bg-red-500 w-full">로그아웃</button>
+                        )}
+                    </div>
+                </div>
+            </div>
+            */}
         </nav>
     );
 };
