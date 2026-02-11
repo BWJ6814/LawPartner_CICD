@@ -24,7 +24,7 @@ const Footer = () => {
                 {/* 2. 법적 고지 (Disclaimer) - ★ 높이 줄이기 핵심 ★ */}
                 {/* 두꺼운 박스(p-4)를 제거하고, 얇은 선과 텍스트 위주로 변경 */}
                 <div className="w-full max-w-2xl border-y border-slate-800/50 py-2 my-2">
-                    <p className="text-[10px] text-slate-500 leading-tight font-light break-keep">
+                    <p className="text-[12px] text-slate-500 leading-tight font-light break-keep">
                         본 서비스의 모든 상담 내용은 참고용이며 법적 효력을 갖지 않습니다. 
                         정확한 판단을 위해서는 전문가와의 대면 상담을 권장합니다.
                     </p>
