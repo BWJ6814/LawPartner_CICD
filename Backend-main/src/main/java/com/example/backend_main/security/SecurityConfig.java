@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,9 +40,9 @@ public class SecurityConfig {
         http
                 // 1. CSRF 보안 끄기 (REST API 방식에서는 필수)
                 // csrf : 스프링 시큐리티가 제공하는 CsrfConfigurer 객체 (설정을 담당하는 일꾼)
-                // -> : 매개 변수를 받아서 오른쪽 동작을 수행하라는 연결고리!
+                //
                 // csrf.disable() : CSRF 보안 기능을 꺼라..!
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
 
                 // 2. CORS 설정 적용 (리액트와의 연결 통로)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -92,7 +93,18 @@ public class SecurityConfig {
 
         // 모든 헤더 허용
         configuration.setAllowedHeaders(List.of("*"));
+        /*
+        - [운영 환경 적용] 모든 헤더(*) 대신 실제 사용하는 헤더만 명시
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",      // JWT 토큰 전달용
+                "Content-Type",       // JSON 데이터 전달용
+                "Cache-Control",
+                "X-Requested-With"    // AJAX 요청 확인용
+        ));
 
+        - 브라우저가 위 헤더들을 읽을 수 있도록 노출 설정
+        configuration.setExposedHeaders(List.of("Authorization"));
+        */
         // 쿠키나 인증 정보 포함 허용
         configuration.setAllowCredentials(true);
 
