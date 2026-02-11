@@ -38,6 +38,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // 1. CSRF 보안 끄기 (REST API 방식에서는 필수)
+                // csrf : 스프링 시큐리티가 제공하는 CsrfConfigurer 객체 (설정을 담당하는 일꾼)
+                // -> : 매개 변수를 받아서 오른쪽 동작을 수행하라는 연결고리!
+                // csrf.disable() : CSRF 보안 기능을 꺼라..!
                 .csrf(csrf -> csrf.disable())
 
                 // 2. CORS 설정 적용 (리액트와의 연결 통로)
