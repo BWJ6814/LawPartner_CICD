@@ -34,6 +34,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
     // FilterChain : 검사가 끝나면 이 통로로 손님을 밀어넣기..!
     @Override
     protected void doFilterInternal(
+            // @org.springframework.lang.NonNull : 이 변수에는 절대 빈 값(Null)이 들어올 수 없다! 선언
+            // request : Header(JWT 토큰), Method(GET/POST...), URL/URI(API), IP주소 등등
+            // response : Status Code(200,403 등), Header(설정/데이터 형식), Body(JSON/에러 메시지 등)
+            // filterChain : 다음 검문소로 손님을 보내주는 통로 역할 ! (VOID이기 때문에...)
+            //              이를 책임 연쇄 패턴(Chain of Responsibility)라고 부름
             @org.springframework.lang.NonNull HttpServletRequest request,
             @org.springframework.lang.NonNull HttpServletResponse response,
             @org.springframework.lang.NonNull FilterChain filterChain)
@@ -62,6 +67,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 
         // 5. 검사가 끝났으니 다음 절차(다음 필터나 컨트롤러)로 보내줍니다.
         filterChain.doFilter(request, response);
+        /*
+        - 결과물이 아닌 상태를 남긴다.
+            함수가 숫자/문자를 리턴하는 대신 위 필터는 [성 안의 공식 명부]에 정보를 적어 넣는 방식입니다.
+        ex) 호텔 프런트 직원이 손님에게 열쇠를 직접 주는 대신, 전산 시스템에 [301호 손님 체크인 완료] 처리하는 것과 같습니다.
+        사용 코드 : SecurityContextHolder.getContext().setAuthentication(auth);
+
+        --> 리턴 값이 없어도 위 코드 덕분에 나중에 실행될 컨트롤러나 LoginAspect에서 인증 정보를 꺼내 쓸 수 있음..
+
+        즉, 이건 배턴 터치 방식으로, 다음 주자에게 request + response라는 배턴을 넘겨주기!
+        */
+
     }
 
     // [신분증 꺼내기 도구] "Bearer "라고 적힌 뒷부분의 진짜 토큰만 쏙 가져옵니다.
