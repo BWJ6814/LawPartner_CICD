@@ -1,13 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+
+* { font-family: 'Noto Sans KR', sans-serif; }
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+   font-family: 'Noto Sans KR', sans-serif;
+}
+
+
+a, a * {
+  text-decoration: none !important;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+  
+  .law-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); }
+  .ai-glow { box-shadow: 0 0 30px rgba(59, 130, 246, 0.3); }
+  .rating-bar { height: 6px; border-radius: 3px; background-color: #e5e7eb; overflow: hidden; }
+  .rating-fill { height: 100%; background-color: #3b82f6; }
+  .search-focus:focus-within { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3); border-color: #3b82f6; }
+  .dashboard-card { transition: all 0.2s ease; border-top: 4px solid transparent; }
+  .dashboard-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1); }
+  .sidebar-active { background-color: #1e40af; color: white; border-radius: 0.75rem; font-weight: 700; }
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }

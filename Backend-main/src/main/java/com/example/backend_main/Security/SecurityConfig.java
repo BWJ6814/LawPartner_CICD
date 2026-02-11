@@ -1,0 +1,88 @@
+package com.example.backend_main.Security;
+
+import com.example.backend_main.common.security.JwtAuthenticationEntryPoint;
+import com.example.backend_main.common.security.JwtAuthenticationFilter;
+import com.example.backend_main.common.security.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
+@Configuration
+@EnableWebSecurity
+// // JwtTokenProvider를 가져오기 위해 필요합니당~
+@RequiredArgsConstructor
+public class SecurityConfig {
+    // 신분증 확인 기계 가져오기..!
+    private final JwtTokenProvider jwtTokenProvider;
+    // 보안관 가져오기!
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                // 1. CSRF 보안 끄기 (REST API 방식에서는 필수)
+                .csrf(csrf -> csrf.disable())
+
+                // 2. CORS 설정 적용 (리액트와의 연결 통로)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // 3. 세션 사용 안함 (JWT를 쓸 거니까 '무상태'로 설정!)
+                // 세션을 보통 아이디를 확인하지만 JWT를 사용함으로 인해 JWT내부에 있는 이름과 권한을 사용할 것이기 때문!
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // 401 Unauthorized 에러를 처리할 보안관을 등록!
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                )
+
+                // 4. 페이지별 출입 권한 설정
+                // .requestMatchers("/api/auth/**").permitAll() : 로그인이나 회원가입 주소로 오는 사람들은
+                // 신분증이 없어도 무조건 들어오도록  처리..!
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll() // 로그인/회원가입은 프리패스!
+                        // 2. [개발 기간용] 그 외의 모든 요청도 일단은 다 통과!
+                        .anyRequest().permitAll()
+                        // 그 외 모든 요청은 신분증(JWT) 검사! - 개발 중간 중간 확인할 예정..
+                        // .anyRequest().authenticated()
+                )
+
+                // 5. JWT 문지기 배치 (기본 문지기 앞에 우리 문지기를 세웁니다)
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+                        UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    // CORS 허용 설정
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // 리액트 주소(3000) 허용
+        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+
+        // 모든 메소드 허용
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        // 모든 헤더 허용
+        configuration.setAllowedHeaders(List.of("*"));
+
+        // 쿠키나 인증 정보 포함 허용
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+
+}
