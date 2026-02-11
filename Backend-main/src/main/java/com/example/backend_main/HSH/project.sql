@@ -545,3 +545,6 @@ AOP.txt 수행할 로그 시퀀스(흐름)
 
 select * from TB_BOARD;
 select * from TB_USER;
+select * from TB_ACCESS_LOG;
+commit;
+drop table TB_ACCESS_LOG;
