@@ -100,4 +100,14 @@ public class User {
         // LocalDateTime.now() : 지금 바로 이 순간..!
         this.joinDt = LocalDateTime.now();
     }
+
+    // User 엔티티 내부에 추가할 부분
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private LawyerInfo lawyerInfo;
+
+    // 변호사인지 확인하는 편의 메서드
+    public boolean isLawyer() {
+        return "ROLE_LAWYER".equals(this.roleCode);
+
+    }
 }

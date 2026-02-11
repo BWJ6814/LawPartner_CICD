@@ -5,10 +5,18 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
-@Getter // AuthService의 빨간불을 꺼주는 마법의 도구!
+/*
+    [UserJoinRequestDTO]
+    리액트에서 보낸 가입 정보를 담아 AuthService로 전달하는 바구니입니다.
+    @Builder를 추가하여 서비스 단에서 다루기 편하게 만들었습니다.
+*/
+@Getter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserJoinRequestDTO {
@@ -18,7 +26,7 @@ public class UserJoinRequestDTO {
 
     @NotBlank(message = "비밀번호는 필수 입력 항목입니다.")
     @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
-    private String userPw; // AuthService와 이름을 맞췄습니다.
+    private String userPw;
 
     @NotBlank(message = "이름은 필수 입력 항목입니다.")
     private String userNm;
@@ -31,6 +39,18 @@ public class UserJoinRequestDTO {
     @Pattern(regexp = "^[0-9]{10,11}$", message = "올바른 전화번호 형식이 아닙니다.")
     private String phone;
 
-    // ROLE_USER 또는 ROLE_ADMIN
+    private String nickNm; // 별칭
+    private String addr;   // 주소
+
+    // ROLE_USER, ROLE_LAWYER, ROLE_ADMIN
     private String roleCode;
+
+    // --- [변호사 가입 시에만 사용하는 필드들] ---
+    private String licenseNo;    // 자격번호
+    private String licenseFile;  // 증빙파일 경로
+    private String officeName;   // 소속 로펌
+    private String officeAddr;   // 사무실 주소
+    private String examType;     // 출신 (사시/로스쿨)
+    private String introText;    // 자기소개
+    private List<String> specialtyCodes; // 전문분야 리스트 (L01, L02 등)
 }
