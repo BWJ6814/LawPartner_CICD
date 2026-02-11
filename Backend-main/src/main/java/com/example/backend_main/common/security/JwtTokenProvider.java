@@ -29,6 +29,8 @@ public class JwtTokenProvider {
     // toMillis() : 밀리초 단위로 변환
     // SecretKey key : 문자열 secretKey를 디지털 세상에서 사용할 수 있는 진짜 열쇠 객체로 변환
     private final long tokenValidityInMilliseconds = Duration.ofMinutes(60).toMillis();
+    // 리프레시 토큰 유효기간: 7일 (★ 이 부분이 추가되어야 합니다!)
+    private final long refreshTokenValidityInMilliseconds = Duration.ofDays(7).toMillis();
     private SecretKey key;
 
     // @PostConstruct : 객체가 생성된 직후 딱 한 번만 실행..
@@ -42,7 +44,7 @@ public class JwtTokenProvider {
     // 1. 토큰 생성
     // Authentication : 로그인한 살마의 정보가 담긴 객체
     // Long userNo : DB조회 성능을 위해 추가한 회원의 고유 번호
-    public TokenDTO createToken(Authentication authentication, Long userNo) {
+    public TokenDTO createToken(Authentication authentication, Long userNo, String userNm) {
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
@@ -52,12 +54,18 @@ public class JwtTokenProvider {
 
         String accessToken = Jwts.builder()
                 .subject(authentication.getName())         // 이메일 (누구인가?)         - 주인
-                .claim("auth", authorities)             // 권한 (무엇을 할 수 있는가?) - 추가
+                .claim("role", authorities)             // 권한 (무엇을 할 수 있는가?) - 추가
                 .claim("userNo", userNo)                // 회원 번호(DB 식별자)       - 추가
+                .claim("userNm", userNm)                // 회원 닉네임               - 추가
                 .expiration(accessTokenExpiresIn)         // 유효기간 설정
                 .signWith(key)                            // 우리 열쇠로 서명(위조 방지)
                 .compact();                               // 한 줄의 문자열로 압축하기.
-        
+
+        String refreshToken = Jwts.builder()
+                .expiration(new Date(now + refreshTokenValidityInMilliseconds))
+                .signWith(key)
+                .compact();
+
         // 토큰 보내주기.. 
         return TokenDTO.builder()
                 /*
@@ -104,8 +112,12 @@ public class JwtTokenProvider {
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);     // 토큰 내용물 꺼내기
 
+        if (claims.get("role") == null) {
+            throw new RuntimeException("권한 정보가 없는 토큰입니다.");
+        }
+
         Collection<? extends SimpleGrantedAuthority> authorities =
-                Arrays.stream(claims.get("auth").toString().split(","))     // 1단계
+                Arrays.stream(claims.get("role").toString().split(","))     // 1단계
                         .map(SimpleGrantedAuthority::new)                         // 2단계
                         .collect(Collectors.toList());                            // 3단계
         /*
@@ -127,8 +139,11 @@ public class JwtTokenProvider {
 
         // [중요] LoggingAspect에서 DB 조회 없이 userNo를 꺼낼 수 있도록 details에 저장!
         Long userNo = claims.get("userNo", Long.class);
-        // setDetails(userNo) : 신분증에 적혀있던 userNo를 통행증의 [비고란(Details)]에 적어두기
+        // [중요2] LoggingAspect에서 DB 조회 없이 userNm를 꺼낼 수 있도록 details에 저장!
+        String userNm = claims.get("userNm", String.class);
+        // setDetails(userNo) : 신분증에 적혀있던 userNo/Nm를 통행증의 [비고란(Details)]에 적어두기
         authentication.setDetails(userNo);
+        authentication.setDetails(userNm);
 
         return authentication;
     }

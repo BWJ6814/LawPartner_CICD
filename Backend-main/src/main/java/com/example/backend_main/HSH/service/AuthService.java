@@ -7,6 +7,7 @@ import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.dto.TokenDTO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -25,12 +26,15 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class AuthService {
     // 미리 준비한 3가지 핵심 도구를 의존성 설정!
     private final UserRepository userRepository;        // DB 창고 관리자
     private final Aes256Util aes256Util;                // PII 전용 암호기
     private final JwtTokenProvider jwtTokenProvider;    // 신분증(토큰) 발급기
     private final PasswordEncoder passwordEncoder;      // 비밀번호 전용 보초
+    private final LawyerService lawyerService;
+
     /*
      [회원가입] USR-01 요구사항 반영
      비밀번호는 BCrypt로, 이메일/폰은 AES-256으로 암호화하여 저장합니다.
@@ -53,13 +57,21 @@ public class AuthService {
                 .userId(dto.getUserId())
                 .userPw(hashedPw)
                 .userNm(dto.getUserNm())
+                .nickNm(dto.getNickNm())
                 .email(encryptedEmail)
                 .phone(encryptedPhone)
-                .roleCode(dto.getRoleCode()) // ROLE_ADMIN 이면 관리자로 가입!
+                .addr(dto.getAddr())
+                .roleCode(dto.getRoleCode()) // ROLE_USER 또는 ROLE_LAWYER
                 .build();
 
-        // 4. DB 창고에 저장 [
         userRepository.save(user);
+        if ("ROLE_LAWYER".equals(user.getRoleCode())) {
+            log.info("⚖️ [변호사 회원가입] 상세 정보 및 전문 분야 등록을 시작합니다. (대상: {})", user.getUserId());
+            // 변호사일 때만 실행되므로, 일반 유저 가입 시에는 IMG_URL 등을 건드리지 않습니다.
+            lawyerService.registerLawyerInfo(user, dto);
+        } else {
+            log.info("👤 [일반 회원가입] 추가 상세 정보 없이 가입을 완료합니다. (대상: {})", user.getUserId());
+        }
     }
 
     /*
@@ -96,10 +108,11 @@ public class AuthService {
         );
 
         // 5. 토큰 발급 후 추가 정보를 주머니에 담기!
-        TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo());
+        TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm());
         tokenDTO.setUserNm(user.getUserNm()); // 이제 리액트에서 undefined가 안 뜹니다!
         tokenDTO.setRole(user.getRoleCode()); // RBAC 설계도에 따른 권한 전송
 
+        log.info("★ 로그인 성공 ★ : {} ({})", user.getUserId(), user.getUserNm());
         // 6. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
         return tokenDTO;
     }

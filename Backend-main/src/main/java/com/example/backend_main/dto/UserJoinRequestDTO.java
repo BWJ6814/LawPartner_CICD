@@ -41,7 +41,7 @@ public class UserJoinRequestDTO {
 
     private String nickNm; // 별칭
     private String addr;   // 주소
-
+    private String imgUrl;  // 변호사 이미지 URL
     // ROLE_USER, ROLE_LAWYER, ROLE_ADMIN
     private String roleCode;
 
