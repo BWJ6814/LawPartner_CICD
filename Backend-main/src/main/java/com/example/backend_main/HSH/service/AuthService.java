@@ -34,6 +34,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;    // 신분증(토큰) 발급기
     private final PasswordEncoder passwordEncoder;      // 비밀번호 전용 보초
     private final LawyerService lawyerService;
+    private final RefreshTokenService refreshTokenService;
 
     /*
      [회원가입] USR-01 요구사항 반영
@@ -111,6 +112,10 @@ public class AuthService {
         TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm());
         tokenDTO.setUserNm(user.getUserNm()); // 이제 리액트에서 undefined가 안 뜹니다!
         tokenDTO.setRole(user.getRoleCode()); // RBAC 설계도에 따른 권한 전송
+
+        // ★ [REQ-SEC-02] 중복 로그인 차단 및 토큰 DB 저장은 추후 활성화 예정
+        // 현재는 토큰 발급 후 리액트로 전달만 하고, DB 기록은 생략합니다.
+        // refreshTokenService.saveRefreshToken(user.getUserNo(), tokenDTO.getRefreshToken());
 
         log.info("★ 로그인 성공 ★ : {} ({})", user.getUserId(), user.getUserNm());
         // 6. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
