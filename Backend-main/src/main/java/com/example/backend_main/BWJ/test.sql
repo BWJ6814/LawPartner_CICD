@@ -155,3 +155,6 @@ select * from TB_BOARD;
 delete from tb_board where BOARD_NO in (26,27);
 
 select * from TB_USER;
+select * from TB_LAWYER_INFO;
+
+delete from tb_user where USER_NO = 1;
