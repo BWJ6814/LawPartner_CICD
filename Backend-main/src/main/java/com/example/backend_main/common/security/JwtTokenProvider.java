@@ -45,10 +45,16 @@ public class JwtTokenProvider {
     public TokenDTO createToken(Authentication authentication) {
         long now = (new Date()).getTime();
 
+        // 0. 권한 정보를 한 줄의 문자열로 만들기
+        // 모든 권한 배지를 꺼내 콤마(,)로 연결시키기..
+        String authorities = authentication.getAuthorities().stream()
+                .map(grantedAuthority -> grantedAuthority.getAuthority())
+                .collect(Collectors.joining(","));
+
         // 1. Access Token 생성 (수명: 30분)
         String accessToken = Jwts.builder()
                 .subject(authentication.getName())
-                .claim("auth", "ROLE_USER") // 실제 권한 로직으로 대체 필요
+                .claim("auth", authorities)          // 진짜 권한 문자열로 auth칸에 저장
                 .expiration(new Date(now + 1800000)) // 30분
                 .signWith(key)
                 .compact();

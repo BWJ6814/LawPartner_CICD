@@ -543,3 +543,5 @@ AOP.txt 수행할 로그 시퀀스(흐름)
 
 */
 
+select * from TB_BOARD;
+select * from TB_USER;

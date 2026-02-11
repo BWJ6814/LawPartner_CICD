@@ -1,9 +1,9 @@
-package com.example.backend_main.HSH;
+package com.example.backend_main.HSH.controller;
 
+import com.example.backend_main.HSH.service.AuthService;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.TokenDTO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
-import com.example.backend_main.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
