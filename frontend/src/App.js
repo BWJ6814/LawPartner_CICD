@@ -19,14 +19,14 @@ function App() {
 
   // 1. 로그인 상태를 App 수준에서 관리해요.
   const [auth, setAuth] = useState({
-    isLoggedIn: !!localStorage.getItem('userToken'),
+    isLoggedIn: !!localStorage.getItem('accessToken'),
     role: localStorage.getItem('userRole')
   });
 
   // 2. 로그인 상태를 업데이트하는 함수
   const updateAuth = () => {
     setAuth({
-      isLoggedIn: !!localStorage.getItem('userToken'),
+      isLoggedIn: !!localStorage.getItem('accessToken'),
       role: localStorage.getItem('userRole')
     });
   };
