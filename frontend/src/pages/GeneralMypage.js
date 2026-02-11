@@ -42,7 +42,7 @@ const GeneralMyPage = () => {
                 <i className="fas fa-clipboard-list w-5 text-center"></i>
                 <span>법률 게시판</span>
                 </Link>
-                <Link to="/chat-list" className="flex items-center space-x-3 px-4 py-3 hover:bg-slate-800 hover:text-white rounded-xl transition decoration-0 no-underline text-slate-300">
+                <Link to="/chatList" className="flex items-center space-x-3 px-4 py-3 hover:bg-slate-800 hover:text-white rounded-xl transition decoration-0 no-underline text-slate-300">
                 <i className="fas fa-comments w-5 text-center"></i>
                 <span>1:1 채팅 목록</span>
                 </Link>

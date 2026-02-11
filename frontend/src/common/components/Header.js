@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-const Header = () => {
+const Header = ({auth, onLoginUpdate}) => {
+  const navigate = useNavigate();
   // 1. 로그인 여부를 기억해요 (true : 로그인 됨, false : 안됨)
   /*
     const [상태_변수명, 상태_변경_함수명] = useState(초기값);
@@ -18,10 +19,10 @@ const Header = () => {
     userType = 'LAWYER' 라고 하면 안되는 이유
     일반 변수처럼 값을 직접 바꾸면, 화면이 바뀌지 않습니다. 
   */
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
   // 2. 사용자가 일반인 ('GENERAL')인지 변호사('LAWYER')인지 구분해요.
   //    기본값을 GENERAL로 설정해둔 상태입니다.
-  const [userType, setUserType] = useState('GENERAL'); // 'GENERAL'(일반) or 'LAWYER'(변호사)
+  // const [userType, setUserType] = useState('GENERAL'); // 'GENERAL'(일반) or 'LAWYER'(변호사)
   
   // 알림 관련 상태 (실무 필수)
   // 3. 안 읽은 알림의 숫자를 저장해요 (숫자 0부터 시작)
@@ -61,21 +62,7 @@ const Header = () => {
     };
     document.addEventListener('mousedown', handleClickOutside); // 클릭 감시자 등록
 
-    // 로그인 상태 및 권한 체크
-    // [기능 C] 사이트 켜자마 로그인 상태 확인
-    const checkLoginStatus = () => {
-      // 브라우저 비밀 저장소(LocalStorage)에서 토큰과 역할을 꺼내와요.
-      const token = localStorage.getItem('userToken');
-      const role = localStorage.getItem('userRole');
-      
-      if (token) {
-        setIsLoggedIn(true); // 토큰이 있으면 로그인 상태로 변경
-        setUserType(role || 'GENERAL'); // 역할 저장
-        // 로그인 시 알림 데이터 가져오기 (API 호출 시뮬레이션)
-        fetchNotifications(role); 
-      }
-    };
-    checkLoginStatus();
+    
     // [정리 단계] 컴포넌트가 사라질 떄, 감시자들을 제거해서 메모리를 아껴요.
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -110,21 +97,18 @@ const Header = () => {
   const handleLogout = () => {
     localStorage.removeItem('userToken'); // 저장소 비우기
     localStorage.removeItem('userRole');
-    setIsLoggedIn(false); // 상태 초기화
-    setUserType('GENERAL');
-    setNotificationCount(0);
-    setNotifications([]);
+    onLoginUpdate();
     alert("로그아웃 되었습니다.");
-    window.location.href = '/'; // 홈으로 이동
+    navigate('/');
   };
 
   // [테스트용] 로그인 시뮬레이션
   const simulateLogin = (role) => {
     localStorage.setItem('userToken', 'fake-token');
     localStorage.setItem('userRole', role);
-    setIsLoggedIn(true);
-    setUserType(role);
-    fetchNotifications(role);
+
+    onLoginUpdate();
+
     alert(`${role === 'LAWYER' ? '변호사' : '일반'} 회원으로 로그인되었습니다.`);
   };
 
@@ -158,7 +142,7 @@ const Header = () => {
 
           {/* 2. 우측 메뉴 (로그인/비로그인/권한별 분기) */}
           <div className="hidden lg:flex items-center space-x-4">
-            {isLoggedIn ? (
+            {auth.isLoggedIn ? (
               <>
                 {/* 알림 아이콘 & 드롭다운 (핵심 구현) */}
                 <div className="relative" ref={notificationRef}>
@@ -204,7 +188,7 @@ const Header = () => {
                 </div>
 
                 {/* 권한별 마이페이지 분기 */}
-                {userType === 'LAWYER' ? (
+                {auth.role === 'LAWYER' ? (
                   <Link to="/lawyer-dashboard" style={noUnderlineStyle} className="bg-blue-900 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition shadow-md whitespace-nowrap no-underline">
                     <span className="w-2 h-2 bg-green-400 rounded-full"></span> 마이페이지
                   </Link>
@@ -240,9 +224,9 @@ const Header = () => {
             <Link key={item.label} to={item.href} style={noUnderlineStyle} className="block px-3 py-3 rounded-xl text-base font-bold text-gray-700 hover:text-blue-900 hover:bg-blue-50 transition no-underline">{item.label}</Link>
           ))}
           <div className="border-t border-gray-100 my-2 pt-4 space-y-3">
-            {isLoggedIn ? (
+            {auth.isLoggedIn ? (
               <>
-                {userType === 'LAWYER' ? (
+                {auth.role === 'LAWYER' ? (
                    <Link to="/lawyer-dashboard" style={noUnderlineStyle} className="block px-3 py-3 text-center text-sm font-bold bg-navy-dark text-white rounded-xl shadow-md no-underline">변호사 워크스페이스</Link>
                 ) : (
                    <Link to="/mypage" style={noUnderlineStyle} className="block px-3 py-3 text-center text-sm font-bold bg-blue-900 text-white rounded-xl shadow-md no-underline">마이페이지</Link>
@@ -265,7 +249,7 @@ const Header = () => {
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs w-16">로그인:</span>
-            {!isLoggedIn ? (
+            {!auth.isLoggedIn ? (
               <>
                 <button onClick={() => simulateLogin('GENERAL')} className="px-2 py-1 bg-blue-600 rounded text-[10px] font-bold hover:bg-blue-500">일반회원</button>
                 <button onClick={() => simulateLogin('LAWYER')} className="px-2 py-1 bg-navy-dark border border-slate-600 rounded text-[10px] font-bold hover:bg-slate-700">변호사</button>
