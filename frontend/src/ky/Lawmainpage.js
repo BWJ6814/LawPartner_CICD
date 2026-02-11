@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './Lawmainpage.css';
-import PaymentModal from './PaymentModal';
+// import PaymentModal from './PaymentModal';
 
 const mockData = {
     lawyer: {
@@ -28,12 +28,7 @@ const mockData = {
 
 const menuItems = [
     { id: 'dashboard', label: '대시보드', icon: '📊' },
-    { id: 'new-consult', label: '새로운 상담', icon: '✍️', sub: ['1:1 채팅 목록', '전체 보기'] },
-    { id: 'my-cases', label: '나의 법률 데이터', icon: '📋' },
-    { id: 'ai-chat', label: 'AI 채팅 관리', icon: '🤖' },
-    { id: 'trial', label: '재판 일정 관리', icon: '📅' },
-    { id: 'profile', label: '프로필 관리', icon: '👤' },
-    { id: 'review', label: '리뷰 및 평점', icon: '⭐' },
+
     { id: 'subscription', label: '구독 신청/해지', icon: '💳' },
 ];
 
@@ -116,12 +111,8 @@ export default function Lawmainpage() {
                 <header className="lw-header">
                     <h2 className="lw-header-title">대시보드</h2>
                     <div className="lw-header-right">
-                        <button className="lw-notif-btn">
-                            🔔
-                            {notifications > 0 && <span className="lw-notif-badge">{notifications}</span>}
-                        </button>
-                        <button className="lw-mypage-btn">마이페이지</button>
-                        <button className="lw-logout-btn">로그아웃</button>
+
+
                     </div>
                 </header>
 
@@ -212,7 +203,8 @@ export default function Lawmainpage() {
                 </div>
             </div>
 
-            {showPayment && <PaymentModal onClose={() => setShowPayment(false)} />}
+           {/*{*{showPayment && <PaymentModal onClose={() => setShowPayment(false)} />}*!/*/}
+
         </div>
     );
 }
