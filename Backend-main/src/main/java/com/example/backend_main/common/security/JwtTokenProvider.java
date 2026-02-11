@@ -77,7 +77,9 @@ public class JwtTokenProvider {
                 .build() : 설계를 마치고, 실제 TokenDTO 객체를 완성해 반환시켜주기 (리엑트로)
                  */
                 .grantType("Bearer")
-                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .userNm(userNm)
+                .role(authentication.getAuthorities().toString())
                 .build();
     }
 
