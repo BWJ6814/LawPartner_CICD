@@ -1,15 +1,17 @@
-package com.example.backend_main.HSH.service;
+package com.example.backend_main.HSH.migration;
 
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.util.Aes256Util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Profile("migration")
 @Service
 @Slf4j
 public class KeyRotationService {

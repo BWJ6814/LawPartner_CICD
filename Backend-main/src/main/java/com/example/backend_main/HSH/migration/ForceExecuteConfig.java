@@ -1,13 +1,20 @@
-package com.example.backend_main.HSH.config;
+/*
+# 서버 시작할 때 강제 실행처리 하는 클래스 파일.
+구형 키 - 신형 키로 변경할 때 사용
+*/
 
-import com.example.backend_main.HSH.service.KeyRotationService;
+package com.example.backend_main.HSH.migration;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
+// @Profile("migration") : migration이라는 프로필 서버를 켤 때만 작동하기
 @Configuration
+@Profile("migration")
 @RequiredArgsConstructor
 @Slf4j
 public class ForceExecuteConfig {
@@ -27,3 +34,4 @@ public class ForceExecuteConfig {
         };
     }
 }
+

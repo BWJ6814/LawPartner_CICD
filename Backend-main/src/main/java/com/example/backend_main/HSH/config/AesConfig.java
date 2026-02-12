@@ -1,3 +1,8 @@
+/*
+AES-256 키를 변경할 때만 사용하는 파일 처리..
+필요할 시 재사용 !
+*/
+
 package com.example.backend_main.HSH.config;
 
 import com.example.backend_main.common.util.Aes256Util;
@@ -12,20 +17,13 @@ public class AesConfig {
     @Value("${encryption.aes256.key}")
     private String newKey;
 
-    @Value("${encryption.aes256.old-key}")
-    private String oldKey;
-
-
     // 현재 사용하는 신규 키 전용 유틸
+    // @Primary : aes 키를 사용하는 모든 클래스들은 신규 키 사용하게 처리..
     @Bean(name = "newAesUtil")
     @Primary
     public Aes256Util newAesUtil() {
         return new Aes256Util(newKey);
     }
 
-    // 마이그레이션용 구형 키 전용 유틸
-    @Bean(name = "oldAesUtil")
-    public Aes256Util oldAesUtil() {
-        return new Aes256Util(oldKey);
-    }
+
 }
