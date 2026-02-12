@@ -47,14 +47,19 @@ const WriteQuestionPage = () => {
         if (selectedCategories.length === 0) return alert("카테고리를 최소 1개 선택해주세요.");
         if (!title.trim()) return alert("제목을 입력해주세요.");
         if (!content.trim()) return alert("내용을 입력해주세요.");
-        const userId = localStorage.getItem('userId');
+        const userNo = localStorage.getItem('userNo');
+
+        if(!userNo){
+            alert("로그인 정보가 없습니다. 다시 로그인 해주세요.")
+            return navigate("/login");
+        }
 
         try {
             await axios.post('http://localhost:8080/api/boards', {
                 title: title,
                 content: content,
                 categories: selectedCategories,
-                userId: userId
+                userNo: userNo
             });
             alert("질문이 등록되었습니다.");
             navigate('/'); // 메인으로 이동
