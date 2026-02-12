@@ -15,7 +15,7 @@ import java.util.Base64;
 
 // @Component : 스프링이 이 클래스를 관리하도록 빈으로 등록!
 // 나중에 다른 서비스에서 @Autowired로 편하게 불러다 사용 가능
-@Component
+// @Component
 public class Aes256Util {
     // ALGORITHM : 암호화 방식의 레시피 설정
     // AES : 알고리즘 이름
@@ -26,8 +26,17 @@ public class Aes256Util {
     private static final int IV_SIZE = 16;
 
     // 보안을 위해 외부 설정 파일에 적힌 키 값을 이 변수에 자동으로 넣어주기..
-    @Value("${encryption.aes256.key}")
+    // @Value("${encryption.aes256.key}")
     private String secretKey;
+
+    // 스프링 자동 빈 등록용
+    public Aes256Util() {}
+    // 수동으로 열쇠를 꽂을 수 있는 생성자 만들기..!
+    public Aes256Util(String secretKey) {
+        this.secretKey = secretKey;
+    }
+
+
 
     // 기계가 준비되자마자 실행되는 열쇠 검사원..!!
     @PostConstruct
