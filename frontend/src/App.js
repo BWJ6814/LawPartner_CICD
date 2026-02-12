@@ -11,6 +11,7 @@ import ConsultationBoard from './BWJ/ConsultationBoard';
 import WriteQuestionPage from './BWJ/WriteQuestionPage';
 import GeneralMyPage from './pages/GeneralMypage'
 import Lawmainpage from './ky/Lawmainpage';
+import Profiles from './ky/profiles';
 
 // 2. 로그인 페이지가 아직 없다면 일단 임시 컴포넌트로 대체
 const LoginPage = () => <div className="p-20 text-center">로그인 페이지 준비중</div>;
@@ -43,6 +44,7 @@ function App() {
                     <Route path="/write" element={<WriteQuestionPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
+                    <Route path="/profiles" element={<Profiles />} />
                     <Route path="*" element={<div className="text-center p-20">404 Not Found</div>} />
                 </Routes>
             </main>
