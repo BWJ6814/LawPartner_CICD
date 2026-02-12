@@ -6,32 +6,30 @@ import './LoginPage.css';
 const LoginPage = () => {
     const navigate = useNavigate(); 
 
-    const [userId, setUserId] = useState(''); 
-    const [password, setPassword] = useState('');
-    const [errorMsg, setErrorMsg] = useState('');
-    const [isError, setIsError] = useState(false);
+    const [userId, setUserId] = useState('');           // 아이디 저장용
+    const [password, setPassword] = useState('');       // 비밀번호 
+    const [errorMsg, setErrorMsg] = useState('');       // 에러 메시지
+    const [isError, setIsError] = useState(false);      // 에러 유무
+    const [isRemember, setIsRemember] = useState(false); // 체크박스 상태용
 
     // 페이지 진입 시 로직 (이미 로그인 체크 + 접속 로그)
+    
     useEffect(() => {
         // 1-1. 이미 로그인된 사용자는 메인으로 돌려보냄
         if (localStorage.getItem('accessToken')) {
             navigate('/');
             return;
         }
-
-        // 1-2. [REQ-SYS-01] 접속 로그 전송
-        const logAccess = async () => {
-            try {
-                // 백엔드에 접속 로그 기록 (주소는 백엔드 설계에 맞게 조절)
-                await api.post('/api/logs/access', { 
-                    page: 'LOGIN_PAGE' 
-                });
-            } catch (e) {
-                console.error("접속 로그 전송 실패:", e);
-            }
-        };
-        logAccess();
+        // 1-2 브라우저 저장소에서 기억된 아이디 가져오기
+        const savedId = localStorage.getItem('savedUserId');
+        if(savedId){
+            // 설정한 State 함수 이름 사용하기
+            setUserId(savedId)
+            // 체크박스도 체크됨으로 변경
+            setIsRemember(true)
+        }
     }, [navigate]);
+
 
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
@@ -63,9 +61,14 @@ const LoginPage = () => {
                 // ★ 이 부분이 있어야 Header.js에서 '마이페이지' vs '워크스페이스'를 구분함
                 localStorage.setItem('userRole', tokenData.role || 'ROLE_USER');
 
-
+                if (isRemember) {
+                    // 체크되어 있다면 아이디 저장
+                    localStorage.setItem('savedUserId', userId);
+                } else {
+                    // 체크 해제되어 있다면 저장된 아이디 삭제
+                    localStorage.removeItem('savedUserId');
+                }
                 alert(`${tokenData.userNm}님 환영합니다!`);
-                
                 //  window.location.href를 사용하여 헤더 상태 강제 동기화
                 window.location.href = '/';
             } else {
@@ -95,7 +98,7 @@ const LoginPage = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                         </svg>
                     </div>
-                    <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">LEX AI</h2>
+                    <h3 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">법률적 해결의 첫걸음</h3>
                     <p className="text-slate-500 font-medium text-sm">로그인하여 서비스를 시작하세요</p>
                 </div>
 
@@ -131,11 +134,34 @@ const LoginPage = () => {
                     </div>
                     
                     <div className="flex items-center justify-between px-2 pt-1">
+                        {/* 왼쪽: 체크박스 + 라벨 세트 */}
                         <div className="flex items-center gap-2">
-                            <input type="checkbox" id="remember" className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 cursor-pointer" />
-                            <label htmlFor="remember" className="text-xs font-bold text-slate-500 cursor-pointer">기억하기</label>
+                            <input 
+                                type="checkbox" 
+                                id="remember" 
+                                // m-0을 추가하여 브라우저 기본 여백을 완전히 제거합니다.
+                                className="w-4 h-4 m-0 rounded border-slate-300 text-blue-900 focus:ring-blue-900 cursor-pointer shrink-0" 
+                                checked={isRemember} 
+                                onChange={(e) => setIsRemember(e.target.checked)} 
+                            />
+                            <label 
+                                htmlFor="remember" 
+                                // relative와 top을 사용해 픽셀 단위로 정밀하게 내립니다.
+                                // leading-normal을 써서 폰트의 표준 높이를 확보합니다.
+                                className="text-xs font-bold text-slate-500 cursor-pointer relative top-[3px] leading-normal"
+                            >
+                                기억하기
+                            </label>
                         </div>
-                        <button type="button" className="text-xs font-bold text-blue-900 hover:text-blue-700 transition-colors">비밀번호 찾기</button>
+
+                        {/* 오른쪽: 비밀번호 찾기 버튼 */}
+                        <button 
+                            type="button" 
+                            // 우측 버튼도 좌측 글자와 동일하게 정렬되도록 미세 조정합니다.
+                            className="text-xs font-bold text-blue-900 hover:text-blue-700 transition-colors relative top-[1px]"
+                        >
+                            비밀번호 찾기
+                        </button>
                     </div>
 
                     <button type="submit" className={buttonStyle}>
