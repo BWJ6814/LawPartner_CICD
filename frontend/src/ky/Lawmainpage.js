@@ -100,7 +100,7 @@ export default function Lawmainpage() {
     return (
         <div className="flex min-h-screen bg-gray-50">
             {/* 사이드바 */}
-            <aside className="w-56 bg-slate-800 fixed top-0 left-0 bottom-0 z-40 flex flex-col overflow-y-auto">
+            <aside className="w-56 bg-slate-800 fixed top-100 left-0 bottom-0 z-40 flex flex-col overflow-y-auto">
                 <div className="px-5 py-6 border-b border-white/10">
                     <h1 className="text-lg font-extrabold text-white tracking-wide">사이트 명</h1>
                 </div>

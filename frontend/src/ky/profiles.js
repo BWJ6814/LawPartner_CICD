@@ -1,14 +1,9 @@
 import React, { useState } from 'react';
 
 const menuItems = [
-    { id: 'overview', label: '개요 확인', icon: '📊' },
-    { id: 'dashboard', label: '대시보드', icon: '🏠' },
-    { id: 'cases', label: '법원 자료관', icon: '📁' },
-    { id: 'chat-list', label: '1:1 채팅 목록', icon: '💬' },
-    { id: 'all', label: '전체', icon: '📋' },
-    { id: 'ai-chat', label: 'AI 채팅 관리', icon: '🤖' },
-    { id: 'trial', label: '재판 일정 관리', icon: '📅' },
-    { id: 'review', label: '리뷰 및 평점', icon: '⭐' },
+    { id: 'overview', label: '대시보드'},
+    { id: 'dashboard', label: '프로필' }
+
 ];
 
 export default function ProfileSetting() {
@@ -69,10 +64,11 @@ export default function ProfileSetting() {
         }
     };
 
+
     return (
         <div className="flex min-h-screen bg-gray-100">
             {/* 사이드바 */}
-            <aside className="w-64 bg-gradient-to-b from-slate-800 to-slate-900 text-white flex flex-col fixed top-0 left-0 bottom-0 overflow-y-auto">
+            <aside className="w-64 bg-gradient-to-b from-slate-800 to-slate-900 text-white flex flex-col fixed top-20 left-0 bottom-0 overflow-y-auto">
                 <div className="p-6 border-b border-slate-700">
                     <h2 className="text-xl font-bold">프로필 설정</h2>
                 </div>
