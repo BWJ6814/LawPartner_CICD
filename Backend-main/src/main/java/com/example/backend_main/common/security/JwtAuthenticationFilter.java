@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -32,9 +33,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
     // HttpServletResponse : 손님에게 줄 답장(응답 정보)
     // FilterChain : 검사가 끝나면 이 통로로 손님을 밀어넣기..!
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException,IOException{
+    protected void doFilterInternal(
+            // @org.springframework.lang.NonNull : 이 변수에는 절대 빈 값(Null)이 들어올 수 없다! 선언
+            // request : Header(JWT 토큰), Method(GET/POST...), URL/URI(API), IP주소 등등
+            // response : Status Code(200,403 등), Header(설정/데이터 형식), Body(JSON/에러 메시지 등)
+            // filterChain : 다음 검문소로 손님을 보내주는 통로 역할 ! (VOID이기 때문에...)
+            //              이를 책임 연쇄 패턴(Chain of Responsibility)라고 부름
+            @org.springframework.lang.NonNull HttpServletRequest request,
+            @org.springframework.lang.NonNull HttpServletResponse response,
+            @org.springframework.lang.NonNull FilterChain filterChain)
+            throws ServletException,IOException{
 
         // 1. 손님의 가방(Header)에서 신분증(Token)을 꺼냅니다.
         // 손님 가방(Header)에서 Authorization이라는 이름 봉투를 찾아!
@@ -49,7 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
         // 신분증이 null이 아니고, 발급기에게 신분증을 넣었을 때, 가짜/날짜가 안 지났을 때만 true!
         if (token != null && jwtTokenProvider.validateToken(token)) {
             // 3. 신분증을 보고 공식 명찰(Authentication)을 만듭니다.
-            // 이메일과 권한의 정보가 공식 명찰이 됨..!
+            // userNo가 비고란(details)에 이미 적혀있음.
             Authentication auth = jwtTokenProvider.getAuthentication(token);
             // 4. 이 사람의 명찰을 성 안의 '현재 접속자 명단'에 등록합니다.
             // SecurityContextHolder.getContext() : 현재 출입자 명부 펼치기
@@ -59,6 +67,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
 
         // 5. 검사가 끝났으니 다음 절차(다음 필터나 컨트롤러)로 보내줍니다.
         filterChain.doFilter(request, response);
+        /*
+        - 결과물이 아닌 상태를 남긴다.
+            함수가 숫자/문자를 리턴하는 대신 위 필터는 [성 안의 공식 명부]에 정보를 적어 넣는 방식입니다.
+        ex) 호텔 프런트 직원이 손님에게 열쇠를 직접 주는 대신, 전산 시스템에 [301호 손님 체크인 완료] 처리하는 것과 같습니다.
+        사용 코드 : SecurityContextHolder.getContext().setAuthentication(auth);
+
+        --> 리턴 값이 없어도 위 코드 덕분에 나중에 실행될 컨트롤러나 LoginAspect에서 인증 정보를 꺼내 쓸 수 있음..
+
+        즉, 이건 배턴 터치 방식으로, 다음 주자에게 request + response라는 배턴을 넘겨주기!
+        */
+
     }
 
     // [신분증 꺼내기 도구] "Bearer "라고 적힌 뒷부분의 진짜 토큰만 쏙 가져옵니다.
@@ -66,7 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
         // 가방의 Authorization이라는 이름의 주머니 확인하기
         String bearerToken = request.getHeader("Authorization");
         // 주머니 안에 든 내용물이 Bearer라는 글자로 시작하는지 확인하기..!
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             // "Bearer "은 공백 포함 총 7글자이므로, 앞의 7글자 떼버리고 뒤에 오는
             // 진짜 신분증 문자열만 가져오기..!
             return bearerToken.substring(7);

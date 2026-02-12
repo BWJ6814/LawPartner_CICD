@@ -2,7 +2,7 @@ package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.UserRepository;
-import com.example.backend_main.common.util.CryptoUtil;
+import com.example.backend_main.common.util.Aes256Util;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public class AdminService {
 
     private final UserRepository userRepository;    // DB 전문가
-    private final CryptoUtil cryptoUtil;            // 해독 전문가
+    private final Aes256Util aes256Util;            // PII 전용 암호기
 
     // 모든 회원 목록을 가져오는 함수 정의하기
     // List<User> : 여러 명의 유저 정보를 리스트 형태의 묶음으로 반환처리..
@@ -28,8 +28,8 @@ public class AdminService {
                         // 관리자가 볼 수 있게 이메일과 전화번호 복호화
                         // cryptoUtil.decrypt(...) : DB에 잠겨있던 이메일과 전화번호를 해독기에 넣어서
                         // 읽을 수 있는 글자로 변환!
-                        String decryptedEmail = cryptoUtil.decrypt(user.getEmail());
-                        String decryptedPhone = cryptoUtil.decrypt(user.getPhone());
+                        String decryptedEmail = aes256Util.decrypt(user.getEmail());
+                        String decryptedPhone = aes256Util.decrypt(user.getPhone());
 
                         // 복호화된 정보를 담은 새로운 객체 생성 (보안상 DTO 변환 추천)
                         // User.builder() : 해독된 정보를 새로 담아서 [조립] 하기

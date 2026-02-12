@@ -1,0 +1,315 @@
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../common/api/axiosConfig'; 
+import './SignupPage.css'; // CSS 임포트
+
+const SignupPage = () => {
+    const navigate = useNavigate();
+    
+    // 1. 상태 관리 (Role, Form Data, UI Status)
+    const [role, setRole] = useState('client'); // 'client' or 'lawyer'
+    const [formData, setFormData] = useState({
+        userId: '', password: '', confirmPassword: '',
+        userName: '', phone: '', email: '',
+        // 변호사 전용 필드
+        licenseNo: '', origin: '', officeName: '', officeAddr: '', officeDetail: '', intro: ''
+    });
+    const [specialties, setSpecialties] = useState([]); // 전문분야 배열
+    const [selectedFile, setSelectedFile] = useState(null); // 자격증 파일
+    
+    // 검증 상태
+    const [isIdChecked, setIsIdChecked] = useState(false);
+    const [idMsg, setIdMsg] = useState({ text: '아이디 중복 확인을 해주세요.', color: 'text-slate-500' });
+    const [pwMsg, setPwMsg] = useState('');
+
+    // 2. 핸들러 함수들
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        
+        // 비밀번호 실시간 체크
+        if (name === 'password' || name === 'confirmPassword') {
+            const pw = name === 'password' ? value : formData.password;
+            const confirm = name === 'confirmPassword' ? value : formData.confirmPassword;
+            
+            if (confirm && pw !== confirm) setPwMsg('비밀번호가 일치하지 않습니다.');
+            else if (confirm && pw === confirm) setPwMsg('비밀번호가 일치합니다.');
+            else setPwMsg('');
+        }
+    };
+
+    // 아이디 중복 체크 (Mock API Call)
+    const checkDuplicateID = async () => {
+        if (!formData.userId) return alert('아이디를 입력해주세요.');
+        
+        try {
+            // 실제 연동 시: await api.get(`/api/auth/check-id?id=${formData.userId}`);
+            // 여기서는 시뮬레이션
+            if (formData.userId === 'admin') {
+                setIdMsg({ text: '이미 사용 중인 아이디입니다.', color: 'text-red-500' });
+                setIsIdChecked(false);
+            } else {
+                setIdMsg({ text: '사용 가능한 아이디입니다.', color: 'text-green-600' });
+                setIsIdChecked(true);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    // 휴대폰 번호 포맷팅
+    const handlePhoneFormat = (e) => {
+        let val = e.target.value.replace(/[^0-9]/g, "");
+        if (val.length > 3 && val.length <= 7) val = val.slice(0, 3) + "-" + val.slice(3);
+        else if (val.length > 7) val = val.slice(0, 3) + "-" + val.slice(3, 7) + "-" + val.slice(7);
+        setFormData({ ...formData, phone: val });
+    };
+
+    // 전문분야 체크박스 처리
+    const handleSpecialtyChange = (e) => {
+        const { value, checked } = e.target;
+        if (checked) setSpecialties([...specialties, value]);
+        else setSpecialties(specialties.filter(item => item !== value));
+    };
+
+    // 파일 업로드 처리
+    const handleFileChange = (e) => {
+        if (e.target.files.length > 0) {
+            setSelectedFile(e.target.files[0]);
+        }
+    };
+
+    // 최종 회원가입 요청
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!isIdChecked) return alert("아이디 중복 확인이 필요합니다.");
+        if (formData.password !== formData.confirmPassword) return alert("비밀번호가 일치하지 않습니다.");
+
+        // FormData 객체 생성 (파일 업로드 때문에 필수!)
+        const submitData = new FormData();
+        // 기본 정보 append
+        submitData.append("userId", formData.userId);
+        submitData.append("userPw", formData.password);
+        submitData.append("userNm", formData.userName);
+        submitData.append("phone", formData.phone);
+        submitData.append("email", formData.email);
+        submitData.append("role", role === 'client' ? 'ROLE_USER' : 'ROLE_LAWYER');
+
+        // 변호사일 경우 추가 정보 append
+        if (role === 'lawyer') {
+            submitData.append("licenseNo", formData.licenseNo);
+            submitData.append("origin", formData.origin);
+            submitData.append("officeName", formData.officeName);
+            submitData.append("officeAddr", formData.officeAddr + " " + formData.officeDetail);
+            submitData.append("intro", formData.intro);
+            submitData.append("specialties", specialties.join(",")); // 배열을 문자열로
+            if (selectedFile) {
+                submitData.append("licenseFile", selectedFile); // 파일 객체
+            }
+        }
+
+        try {
+            // Content-Type은 axios가 알아서 multipart/form-data로 설정함
+            await api.post('/api/auth/signup', submitData);
+            
+            alert(role === 'lawyer' ? "전문가 심사 요청이 완료되었습니다." : "회원가입이 완료되었습니다!");
+            navigate('/'); // 로그인 페이지로 이동
+            
+        } catch (error) {
+            console.error("가입 실패:", error);
+            alert("회원가입 중 오류가 발생했습니다.");
+        }
+    };
+
+    // ★ 스타일 변수 (LoginPage와 크기 통일 - Golden Ratio)
+    const inputStyle = "w-full px-4 py-3 bg-slate-100/50 border border-transparent rounded-2xl input-focus outline-none transition-all font-bold text-sm text-slate-700 placeholder:text-slate-400";
+    const labelStyle = "text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1";
+
+    return (
+        <main className="w-full flex items-center justify-center py-12 relative overflow-hidden bg-mesh min-h-screen">
+            
+            {/* 배경 장식 */}
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/30 rounded-full blur-[120px] pointer-events-none"></div>
+            <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-blue-50/50 rounded-full blur-[100px] pointer-events-none"></div>
+
+            {/* 카드 박스 (max-w-[500px]로 로그인 페이지와 폭 통일) */}
+            <div className="max-w-[500px] w-full glass-card p-10 border border-white relative z-10 animate-fade-in">
+                
+                {/* 아이콘 */}
+                <div className="flex justify-center items-center mb-6">
+                    <div className="w-16 h-16 bg-blue-900 rounded-2xl flex items-center justify-center shadow-lg rotate-3">
+                        <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 8L15 13M30 8L25 13M20 18V32M12 25C12 25 15 28 20 28C25 28 28 25 28 25M8 15L32 15" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div className="text-center mb-8">
+                    <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">회원가입</h2>
+                    <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">Premium Legal Tech Platform</p>
+                </div>
+
+                {/* 1. 회원 유형 선택 (Segmented Control) */}
+                <div className="relative flex mb-8 p-1 bg-slate-100 rounded-2xl w-full h-12">
+                    {/* ★ 무빙 배경 바 (이 녀석이 움직입니다) */}
+                    <div 
+                        className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-white rounded-xl shadow-sm transition-all duration-300 ease-out z-0 ${
+                            role === 'lawyer' ? 'translate-x-[calc(100%+0px)]' : 'translate-x-0'
+                        }`}
+                    ></div>
+                    
+                    {/* 버튼들: z-10을 줘서 글씨가 배경 바 위로 올라오게 합니다. */}
+                    <button 
+                        type="button"
+                        onClick={() => setRole('client')} 
+                        className={`flex-1 relative z-10 text-xs font-black transition-colors duration-300 ${
+                            role === 'client' ? 'text-slate-900' : 'text-slate-400'
+                        }`}
+                    >
+                        의뢰인 가입
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={() => setRole('lawyer')} 
+                        className={`flex-1 relative z-10 text-xs font-black transition-colors duration-300 ${
+                            role === 'lawyer' ? 'text-slate-900' : 'text-slate-400'
+                        }`}
+                    >
+                        변호사 회원 가입
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    
+                    {/* [공통 정보] */}
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">기본 정보</h3>
+                        
+                        {/* 아이디 */}
+                        <div className="space-y-1">
+                            <label className={labelStyle}>User ID</label>
+                            <div className="flex gap-2">
+                                <input type="text" name="userId" required placeholder="영문/숫자 조합" className={inputStyle} onChange={handleChange} />
+                                <button type="button" onClick={checkDuplicateID} className="px-4 bg-slate-900 text-white rounded-2xl text-[11px] font-bold hover:bg-blue-900 whitespace-nowrap">중복 확인</button>
+                            </div>
+                            <p className={`text-[10px] font-bold ml-1 mt-1 ${idMsg.color}`}>{idMsg.text}</p>
+                        </div>
+
+                        {/* 비밀번호 & 확인 */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className={labelStyle}>Password</label>
+                                <input type="password" name="password" required placeholder="8자 이상" className={inputStyle} onChange={handleChange} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className={labelStyle}>Confirm</label>
+                                <input type="password" name="confirmPassword" required placeholder="재입력" className={inputStyle} onChange={handleChange} />
+                            </div>
+                        </div>
+                        {pwMsg && <p className={`text-[10px] font-bold ml-1 ${pwMsg.includes('일치합니다') ? 'text-green-600' : 'text-red-500'}`}>{pwMsg}</p>}
+
+                        {/* 이름 & 전화번호 */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className={labelStyle}>Name</label>
+                                <input type="text" name="userName" required placeholder="성함" className={inputStyle} onChange={handleChange} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className={labelStyle}>Phone</label>
+                                <input type="text" name="phone" required placeholder="010-0000-0000" value={formData.phone} className={inputStyle} onChange={handlePhoneFormat} maxLength="13"/>
+                            </div>
+                        </div>
+
+                        {/* 이메일 */}
+                        <div className="space-y-1">
+                            <label className={labelStyle}>Email Address</label>
+                            <input type="email" name="email" required placeholder="example@lex.ai" className={inputStyle} onChange={handleChange} />
+                        </div>
+                    </div>
+
+                    {/* [변호사 전용 정보] - role이 lawyer일 때만 보임 */}
+                    {role === 'lawyer' && (
+                        <div className="space-y-4 pt-4 border-t-2 border-blue-50 animate-fade-in">
+                            <h3 className="text-xs font-black text-blue-900 uppercase tracking-widest border-b border-blue-50 pb-2">전문가 상세 정보</h3>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className={`${labelStyle} text-blue-900`}>License No</label>
+                                    <input type="text" name="licenseNo" placeholder="등록 번호" className={inputStyle} onChange={handleChange} />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className={`${labelStyle} text-blue-900`}>Origin</label>
+                                    <select name="origin" className={inputStyle} onChange={handleChange}>
+                                        <option value="">출신 선택</option>
+                                        <option value="EXAM">사법고시</option>
+                                        <option value="SCHOOL">로스쿨</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className={`${labelStyle} text-blue-900`}>Office Name</label>
+                                <input type="text" name="officeName" placeholder="법률사무소 명칭" className={inputStyle} onChange={handleChange} />
+                            </div>
+                            
+                            {/* 전문 분야 (체크박스) */}
+                            <div className="space-y-2">
+                                <label className={`${labelStyle} text-blue-900`}>Specialty Fields</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['민사', '형사', '이혼', '노동', '부동산', '기업'].map((field) => (
+                                        <label key={field} className="specialty-tag relative cursor-pointer">
+                                            <input type="checkbox" value={field} onChange={handleSpecialtyChange} className="hidden peer" />
+                                            <span className="block text-center py-2 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-500 hover:border-blue-300 peer-checked:bg-blue-900 peer-checked:text-white peer-checked:border-blue-900 transition-all">
+                                                {field}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 파일 업로드 */}
+                            <div className="space-y-1">
+                                <label className={`${labelStyle} text-blue-900`}>License File</label>
+                                <div className="flex items-center gap-3">
+                                    <label htmlFor="license-file" className="bg-blue-900 text-white px-4 py-2.5 rounded-xl text-[10px] font-bold cursor-pointer hover:bg-black transition-all">
+                                        파일 선택
+                                    </label>
+                                    <input type="file" id="license-file" className="hidden" accept=".jpg,.png,.pdf" onChange={handleFileChange} />
+                                    <span className="text-xs font-bold text-slate-400 truncate max-w-[200px]">
+                                        {selectedFile ? selectedFile.name : "선택된 파일 없음"}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 약관 동의 */}
+                    <div className="pt-2 bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" required className="w-4 h-4 rounded border-slate-300 text-blue-900" />
+                            <span className="text-[10px] font-bold text-slate-600">(필수) 서비스 이용약관 동의</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" required className="w-4 h-4 rounded border-slate-300 text-blue-900" />
+                            <span className="text-[10px] font-bold text-slate-600">(필수) 개인정보 수집 동의</span>
+                        </label>
+                    </div>
+
+                    {/* 제출 버튼 */}
+                    <button type="submit" className="w-full bg-blue-900 text-white py-3.5 rounded-2xl font-black text-base shadow-xl hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50">
+                        {role === 'lawyer' ? '전문가 심사 요청하기' : '회원가입 하기'}
+                    </button>
+                </form>
+
+                <div className="mt-6 text-center">
+                    <p className="text-slate-400 text-xs font-medium">이미 계정이 있으신가요? 
+                        <button onClick={() => navigate('/')} className="ml-2 font-black text-blue-900 hover:underline underline-offset-4">로그인하기</button>
+                    </p>
+                </div>
+            </div>
+        </main>
+    );
+};
+
+export default SignupPage;

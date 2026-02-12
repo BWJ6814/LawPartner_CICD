@@ -3,13 +3,15 @@ package com.example.backend_main.HSH.service;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
-import com.example.backend_main.common.util.CryptoUtil;
+import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.dto.TokenDTO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,11 +26,15 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class AuthService {
     // 미리 준비한 3가지 핵심 도구를 의존성 설정!
     private final UserRepository userRepository;        // DB 창고 관리자
-    private final CryptoUtil cryptoUtil;                // 암호화/해독 전문가
+    private final Aes256Util aes256Util;                // PII 전용 암호기
     private final JwtTokenProvider jwtTokenProvider;    // 신분증(토큰) 발급기
+    private final PasswordEncoder passwordEncoder;      // 비밀번호 전용 보초
+    private final LawyerService lawyerService;
+    private final RefreshTokenService refreshTokenService;
 
     /*
      [회원가입] USR-01 요구사항 반영
@@ -42,23 +48,31 @@ public class AuthService {
             throw new RuntimeException("이미 사용 중인 아이디입니다.");
         }
 
-        // 2. 암호화 도구(CryptoUtil)를 사용해 데이터 변환
-        String hashedPw = cryptoUtil.hashPassword(dto.getUserPw()); // 비번 으깨기 (BCrypt)
-        String encryptedEmail = cryptoUtil.encrypt(dto.getEmail()); // 이메일 잠그기 (AES)
-        String encryptedPhone = cryptoUtil.encrypt(dto.getPhone()); // 전화번호 잠그기 (AES)
+        // 2. 암호화 도구(CryptoUtil/BCrypt)를 사용해 데이터 변환
+        String hashedPw = passwordEncoder.encode(dto.getUserPw()); // 비번 으깨기 (BCrypt)
+        String encryptedEmail = aes256Util.encrypt(dto.getEmail()); // 이메일 잠그기 (AES)
+        String encryptedPhone = aes256Util.encrypt(dto.getPhone()); // 전화번호 잠그기 (AES)
 
         // 3. 시민 명부(Entity)에 담기
         User user = User.builder()
                 .userId(dto.getUserId())
                 .userPw(hashedPw)
                 .userNm(dto.getUserNm())
+                .nickNm(dto.getNickNm())
                 .email(encryptedEmail)
                 .phone(encryptedPhone)
-                .roleCode(dto.getRoleCode()) // ROLE_ADMIN 이면 관리자로 가입!
+                .addr(dto.getAddr())
+                .roleCode(dto.getRoleCode()) // ROLE_USER 또는 ROLE_LAWYER
                 .build();
 
-        // 4. DB 창고에 저장 [
         userRepository.save(user);
+        if ("ROLE_LAWYER".equals(user.getRoleCode())) {
+            log.info("⚖️ [변호사 회원가입] 상세 정보 및 전문 분야 등록을 시작합니다. (대상: {})", user.getUserId());
+            // 변호사일 때만 실행되므로, 일반 유저 가입 시에는 IMG_URL 등을 건드리지 않습니다.
+            lawyerService.registerLawyerInfo(user, dto);
+        } else {
+            log.info("👤 [일반 회원가입] 추가 상세 정보 없이 가입을 완료합니다. (대상: {})", user.getUserId());
+        }
     }
 
     /*
@@ -73,13 +87,15 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("아이디 또는 비밀번호가 일치하지 않습니다."));
 
         // 2. 비밀번호 확인
-        if (!cryptoUtil.checkPassword(password, user.getUserPw())) {
+        // matches(방금 입력한 비번, DB에 저장된 비번)
+        // 이 두개를 넣으면 스프링이 같으면 true / 다르면 false를 알려줍니다.
+        if (!passwordEncoder.matches(password, user.getUserPw())) {
             throw new RuntimeException("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
         // 3. [핵심] 이메일 복호화 (JWT의 식별자로 사용하기 위해)
         // DB에 잠겨있던 이메일을 해독기(decrypt)로 풀어서 꺼내기..
-        String decryptedEmail = cryptoUtil.decrypt(user.getEmail());
+        String decryptedEmail = aes256Util.decrypt(user.getEmail());
 
         // 4. 복호화된 이메일을 담은 공식 명찰(Authentication) 생성
         // user.getUserId() 대신 decryptedEmail을 첫 번째 인자로 넣습니다.
@@ -91,7 +107,20 @@ public class AuthService {
                 // 부여할 권한 배지 (예: ROLE_ADMIN)
                 List.of(new SimpleGrantedAuthority(user.getRoleCode()))
         );
-        // 5. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
-        return jwtTokenProvider.createToken(authentication);
+
+        // 5. 토큰 발급 후 추가 정보를 주머니에 담기!
+        TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm());
+        tokenDTO.setUserNm(user.getUserNm()); // 이제 리액트에서 undefined가 안 뜹니다!
+        tokenDTO.setRole(user.getRoleCode()); // RBAC 설계도에 따른 권한 전송
+        tokenDTO.setEmail(decryptedEmail);  // 복호화된 진짜 이메일
+        tokenDTO.setUserNo(user.getUserNo()); // DB 고유 번호
+
+        // ★ [REQ-SEC-02] 중복 로그인 차단 및 토큰 DB 저장은 추후 활성화 예정
+        // 현재는 토큰 발급 후 리액트로 전달만 하고, DB 기록은 생략합니다.
+        // refreshTokenService.saveRefreshToken(user.getUserNo(), tokenDTO.getRefreshToken());
+
+        log.info("★ 로그인 성공 ★ : {} ({})", user.getUserId(), user.getUserNm());
+        // 6. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
+        return tokenDTO;
     }
 }

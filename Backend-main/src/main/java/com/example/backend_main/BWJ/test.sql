@@ -13,8 +13,6 @@ CREATE TABLE TB_BOARD (
 
 select * from TB_BOARD;
 
-insert into TB_BOARD values ()
-
 select * from TB_USER;
 
 INSERT INTO TB_USER (USER_NO, USER_ID, USER_PW, USER_NM, NICK_NM, EMAIL, PHONE, ADDR, ROLE_CODE)
@@ -151,3 +149,30 @@ VALUES ('기업,노동', '스타트업 스톡옵션 행사 문의', '퇴사 후 
 
 -- 최종 저장
 COMMIT;
+
+select * from TB_BOARD;
+
+delete from tb_board where BOARD_NO in (26,27);
+
+select * from TB_USER;
+select * from TB_LAWYER_INFO;
+select * from tb_access_log;
+delete from TB_ACCESS_LOG;
+commit;
+
+delete from tb_user;
+
+SELECT a.table_name, a.constraint_name
+FROM all_constraints a
+         JOIN all_constraints b ON a.r_constraint_name = b.constraint_name
+WHERE b.table_name = 'TB_USER'
+  AND a.constraint_type = 'R';
+
+
+select * from TB_LAWYER_INFO;
+select * from TB_AI_CHAT_LOG;
+select * from TB_BOARD;
+select * from tb_user;
+delete  from tb_user;
+-- ALTER TABLE TB_USER MODIFY (USER_NO RESTART START WITH 1);
+commit ;

@@ -1,11 +1,9 @@
 package com.example.backend_main.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -16,4 +14,10 @@ public class TokenDTO {
     private String accessToken;
     // Access Token이 만료되면 교환할 때 쓰는 장기 통행증
     private String refreshToken;
+    private String userNm;
+    private String role;
+    // 이메일 처리..
+    private Long userNo;
+    // ★ 추가: 이메일과 유저 번호 필드
+    private String email;
 }
