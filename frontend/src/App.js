@@ -14,6 +14,8 @@ import ChatList from './KImMinSU/chatList'
 import Lawmainpage from './ky/Lawmainpage';
 import LoginPage from './HSH/LoginPage';
 import SignupPage from './HSH/SignupPage'; // ★ [추가 1] 회원가입 페이지 가져오기
+import ExpertsPage from './pages/ExpertsPage'; // ★ [추가 3] 전문가 찾기 페이지
+import ExpertDetailPage from './pages/ExpertDetailPage'; // 디테일
 
 
 function App() {
@@ -61,7 +63,13 @@ function App() {
                     <Route path="/signup" element={<SignupPage />} />
 
                     <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
-                    
+
+                    <Route path="/experts" element={<ExpertsPage />} />
+
+                    <Route path="/experts/:id" element={<ExpertDetailPage />} />
+
+
+
                     {/* (기존 코드에 /login이 중복되어 있어서 하나는 제거했습니다) */}
                     
                     <Route path="*" element={<div className="text-center p-20">404 Not Found</div>} />
