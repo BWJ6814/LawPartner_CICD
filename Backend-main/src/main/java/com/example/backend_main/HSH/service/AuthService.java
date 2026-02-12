@@ -45,23 +45,27 @@ public class AuthService {
         // 1. 아이디 중복 체크
         // DB창고 userRepository에 가서 아이디(UserId)를 이미 사용하는 사람이 있는지 확인하기..
         if (userRepository.existsByUserId(dto.getUserId())) {
+            // IllegalArgumentException
+            // RuntimeException
             throw new RuntimeException("이미 사용 중인 아이디입니다.");
         }
 
         // 2. 암호화 도구(CryptoUtil/BCrypt)를 사용해 데이터 변환
+        // 비밀번호 : 해싱 (복호화 불가능)
+        // 이메일/전화번호 : AES-256 암호화 (복호화 가능)
         String hashedPw = passwordEncoder.encode(dto.getUserPw()); // 비번 으깨기 (BCrypt)
         String encryptedEmail = aes256Util.encrypt(dto.getEmail()); // 이메일 잠그기 (AES)
         String encryptedPhone = aes256Util.encrypt(dto.getPhone()); // 전화번호 잠그기 (AES)
 
         // 3. 시민 명부(Entity)에 담기
         User user = User.builder()
-                .userId(dto.getUserId())
-                .userPw(hashedPw)
-                .userNm(dto.getUserNm())
-                .nickNm(dto.getNickNm())
-                .email(encryptedEmail)
-                .phone(encryptedPhone)
-                .addr(dto.getAddr())
+                .userId(dto.getUserId())    // 아이디
+                .userPw(hashedPw)           // 해시 처리된 비번
+                .userNm(dto.getUserNm())    // 이름
+                .nickNm(dto.getNickNm())    // 닉네임
+                .email(encryptedEmail)      // 암호화된 이메일
+                .phone(encryptedPhone)      // 암호화된 휴대폰 번호
+                .addr(dto.getAddr())        // 주소
                 .roleCode(dto.getRoleCode()) // ROLE_USER 또는 ROLE_LAWYER
                 .build();
 
@@ -123,4 +127,6 @@ public class AuthService {
         // 6. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
         return tokenDTO;
     }
+
+
 }

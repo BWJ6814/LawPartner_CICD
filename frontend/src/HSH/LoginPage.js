@@ -168,7 +168,7 @@ const LoginPage = () => {
                         계정 로그인
                     </button>
                 </form>
-
+                
                 <div className="mt-8 text-center">
                     <p className="text-slate-400 text-sm font-medium">아직 회원이 아니신가요? 
                         <button 

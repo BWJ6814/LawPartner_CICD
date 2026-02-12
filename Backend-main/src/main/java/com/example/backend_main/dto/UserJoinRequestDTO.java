@@ -52,5 +52,5 @@ public class UserJoinRequestDTO {
     private String officeAddr;   // 사무실 주소
     private String examType;     // 출신 (사시/로스쿨)
     private String introText;    // 자기소개
-    private List<String> specialtyCodes; // 전문분야 리스트 (L01, L02 등)
+    private String specialtyCodes; // 전문분야 리스트 (L01, L02 등)
 }
