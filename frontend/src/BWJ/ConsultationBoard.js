@@ -127,6 +127,7 @@ const ConsultationBoard = () => {
     const [userRole, setUserRole] = useState(
         (localStorage.getItem('userRole') || 'GENERAL').toUpperCase()
     );
+    console.log("이펙트전에 set 하고나서(userRole):", userRole);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -135,7 +136,7 @@ const ConsultationBoard = () => {
     const [searchType, setSearchType] = useState('title');
 
     // 디버깅용: 현재 리액트가 인식하는 권한을 콘솔에 찍습니다. (F12에서 확인 가능)
-    console.log("현재 인식된 권한(userRole):", userRole);
+
 
     useEffect(() => {
         // 컴포넌트 진입 시 다시 한 번 갱신 (확실하게 하기 위해)
@@ -143,6 +144,7 @@ const ConsultationBoard = () => {
         if (currentRole) {
             setUserRole(currentRole.toUpperCase());
         }
+        console.log("이펙트에서 set 하고나서(userRole):", userRole);
         fetchPosts();
     }, []);
 
@@ -184,7 +186,7 @@ const ConsultationBoard = () => {
      * [분기 처리 로직]
      * isGeneral 변수가 true여야 질문 카드가 보입니다.
      */
-    const isGeneral = userRole === 'GENERAL';
+    const isGeneral = userRole === 'ROLE_USER';
     const indexOfLastPost = currentPage * 16;
     const indexOfFirstPost = indexOfLastPost - 16;
 

@@ -31,12 +31,13 @@ public class BoardController {
         // 프론트에서 넘어온 categories 배열을 콤마 문자열로 변환
         List<String> cats = (List<String>) data.get("categories");
         String categoryString = String.join(",", cats);
+        Long userNo = Long.parseLong(data.get("userNo").toString());
 
         Board board = Board.builder()
                 .title((String) data.get("title"))
                 .content((String) data.get("content"))
                 .categoryCode(categoryString)
-                .writerNo(1L) // 로그인 기능 없으므로 1번 사용자로 고정
+                .writerNo(userNo)
                 .build();
 
         boardRepository.save(board);
