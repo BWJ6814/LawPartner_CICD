@@ -21,7 +21,6 @@ const SignupPage = () => {
         examType: '', 
         officeName: '', 
         officeAddr: '', 
-        officeDetail: '', 
         introText: '' // 초기값 이름
     });
     const [specialties, setSpecialties] = useState([]); // 전문분야 배열
@@ -129,7 +128,7 @@ const SignupPage = () => {
             submitData.append("licenseNo", formData.licenseNo);
             submitData.append("examType", formData.examType);
             submitData.append("officeName", formData.officeName);
-            submitData.append("officeAddr", formData.officeAddr + " " + formData.officeDetail);
+            submitData.append("officeAddr", formData.officeAddr);
             // 자기소개를 자동 인사말로 처리하기..
             const defaultIntro = `안녕하세요. 변호사 ${formData.userNm}입니다.`;
             submitData.append("introText", defaultIntro);
@@ -295,8 +294,8 @@ const SignupPage = () => {
                                     <label className={`${labelStyle} text-blue-900`}>Origin</label>
                                     <select name="examType" className={inputStyle} onChange={handleChange}>
                                         <option value="">출신 선택</option>
-                                        <option value="EXAM">사법고시</option>
-                                        <option value="SCHOOL">로스쿨</option>
+                                        <option value="BAR EXAM">사법고시</option>
+                                        <option value="LAW SCHOOL">로스쿨</option>
                                     </select>
                                 </div>
                             </div>
@@ -304,6 +303,11 @@ const SignupPage = () => {
                             <div className="space-y-1">
                                 <label className={`${labelStyle} text-blue-900`}>Office Name</label>
                                 <input type="text" name="officeName" placeholder="법률사무소 명칭" className={inputStyle} onChange={handleChange} />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className={`${labelStyle} text-blue-900`}>Office Address</label>
+                                <input type="text" name="officeAddr" placeholder="법률사무소 주소" className={inputStyle} onChange={handleChange} />
                             </div>
                             
                             {/* 전문 분야 (체크박스) */}
