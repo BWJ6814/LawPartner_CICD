@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 // JPA 전용 입구는 열어두되, 동료 개발자의 실수는 막는다..!
 // JPA는 DB에서 데이터를 가져와 객체를 만들 때, 기본 생성자를 반드시 사용!!
-// PROTECTED는 pulbic로 열어두게 되면, 누군가 코딩하다 new LawyerInfo()처럼 속성이 빈 가짜 객체를 만들 위험이 있음
+// PROTECTED는 public로 열어두게 되면, 누군가 코딩하다 new LawyerInfo()처럼 속성이 빈 가짜 객체를 만들 위험이 있음
 // 따라서 JPA 너만 쓰고, 일반 개발자는 함부로 빈 객체를 만들지 못함!
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor

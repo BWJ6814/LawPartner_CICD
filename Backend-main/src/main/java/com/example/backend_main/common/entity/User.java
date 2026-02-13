@@ -32,8 +32,8 @@ public class User {
     @Column(name = "USER_NM", nullable = false, length = 50)
     private String userNm; // 실명
 
-    @Column(name = "NICK_NM", length = 50)
-    private String nickNm; // 닉네임
+    @Column(name = "NICK_NM", length = 50, unique = true)
+    private String nickNm;
 
     // ================= [이메일 & 휴대폰 (보안 설계 핵심)] =================
 
@@ -78,7 +78,7 @@ public class User {
     // 변호사 정보와의 1:1 관계 설정
     // mappedBy = "user" : LawyerInfo 엔티티 안에 있는 'user' 필드가 주인이다!
     // cascade = CascadeType.ALL : 유저가 지워지면 변호사 정보도 같이 지워라!
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private LawyerInfo lawyerInfo;
 
     // 변호사인지 확인하는 편의 메서드

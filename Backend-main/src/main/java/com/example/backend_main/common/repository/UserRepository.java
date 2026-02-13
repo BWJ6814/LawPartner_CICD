@@ -25,15 +25,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUserId(String userId);
 
     // 4. 이메일 중복 확인 (회원가입 USR-01 대응)
-    boolean existsByEmail(String email);
-
-    // 이메일 중복 확인
     boolean existsByEmailHash(String emailHash);
-    // 번호 중복 확인
+    // 5. 번호 중복 확인
     boolean existsByPhoneHash(String phoneHash);
-    
-    // 5. 권한별 회원 목록 조회 (관리자 기능 ADM-02 대응 예정)
+
+    // 6. 닉네임 중복 확인
+    boolean existsByNickNm(String nickNm);
+
+    // 7. 권한별 회원 목록 조회 (관리자 기능 ADM-02 대응 예정)
     // 나중에 관리자 페이지에서 "변호사만 보기", "일반인만 보기"를 위해 쓰입니다.
     // List<User> findByRoleCode(String roleCode);
+
+
 
 }

@@ -64,6 +64,17 @@ public class AuthService {
             throw new RuntimeException("이미 가입된 휴대폰 번호입니다.");
         }
 
+        // 1-3 닉네임 결정 및 중복 체크 로직
+        String finalNickname = determineNickname(dto);
+
+        // 결정된 닉네임이 DB에 있는지 확인
+        if (userRepository.existsByNickNm(finalNickname)) {
+            // 변호사의 경우 실명이 중복된 것이므로 메시지를 다르게 줄 수도 있음
+            throw new RuntimeException("이미 사용 중인 닉네임(또는 이름)입니다.");
+        }
+
+
+
         // 2. 암호화 도구(CryptoUtil/BCrypt)를 사용해 데이터 변환
         // 비밀번호 : 해싱 (복호화 불가능)
         // 이메일/전화번호 : AES-256 암호화 (복호화 가능)
@@ -77,12 +88,13 @@ public class AuthService {
                 .userId(dto.getUserId())    // 아이디
                 .userPw(hashedPw)           // 해시 처리된 비번
                 .userNm(dto.getUserNm())    // 이름
-                .nickNm(dto.getNickNm())    // 닉네임
+                .nickNm(finalNickname)      // 닉네임
                 .email(encryptedEmail)      // 암호화된 이메일
                 .emailHash(inputEmailHash)  // Hash 값 (검색용)
                 .phone(encryptedPhone)      // 암호화된 휴대폰 번호
                 .phoneHash(inputPhoneHash)  // Hash 값 (검색용)
                 .roleCode(dto.getRoleCode()) // ROLE_USER 또는 ROLE_LAWYER
+                .statusCode("S01")           // 상태 (정상)
                 .build();
 
         userRepository.save(user);
@@ -137,12 +149,29 @@ public class AuthService {
 
         // ★ [REQ-SEC-02] 중복 로그인 차단 및 토큰 DB 저장은 추후 활성화 예정
         // 현재는 토큰 발급 후 리액트로 전달만 하고, DB 기록은 생략합니다.
-        // refreshTokenService.saveRefreshToken(user.getUserNo(), tokenDTO.getRefreshToken());
+        refreshTokenService.saveRefreshToken(user.getUserNo(), tokenDTO.getRefreshToken());
 
         log.info("★ 로그인 성공 ★ : {} ({})", user.getUserId(), user.getUserNm());
         // 6. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
         return tokenDTO;
     }
-
+    // =================================================================================
+    // [내부 헬퍼 메서드] 닉네임 결정 로직
+    // =================================================================================
+    private String determineNickname(UserJoinRequestDTO dto) {
+        // user의 isLawyer()을 못 쓰는 이유 : 분기가 다르기 때문에.
+        // dto.isLawyer() : join - 새로 만들기 때문에, 만들 dto에서 처리하는 것이 분기에 적합.
+        // user.isLawyer() : login - 이미 존재하는 계정이기 때문에 user의 엔티티 사용
+        if (dto.isLawyer()) {
+            // [변호사] 닉네임 = 실명 (강제 설정)
+            return dto.getUserNm();
+        } else {
+            // [일반 유저] 닉네임 = 입력값 (유효성 검사 필수)
+            if (dto.getNickNm() == null || dto.getNickNm().trim().isEmpty()) {
+                throw new RuntimeException("일반 회원은 닉네임을 반드시 입력해야 합니다.");
+            }
+            return dto.getNickNm();
+        }
+    }
 
 }

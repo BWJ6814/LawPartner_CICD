@@ -10,8 +10,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-
 /*
     [UserJoinRequestDTO]
     리액트에서 보낸 가입 정보를 담아 AuthService로 전달하는 바구니입니다.
@@ -54,4 +52,9 @@ public class UserJoinRequestDTO {
     private String examType;     // 출신 (사시/로스쿨)
     private String introText;    // 자기소개
     private String specialtyStr; // 전문분야 리스트 (L01, L02 등)
+
+    // 가입 로직(AuthService)에서 아직 User 객체를 만들기 전에 사용하기..!
+    public boolean isLawyer() {
+        return "ROLE_LAWYER".equals(this.roleCode);
+    }
 }
