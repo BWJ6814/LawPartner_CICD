@@ -82,7 +82,15 @@ public class AuthService {
         String encryptedEmail = aes256Util.encrypt(dto.getEmail()); // 이메일 잠그기 (AES)
         String encryptedPhone = aes256Util.encrypt(dto.getPhone()); // 전화번호 잠그기 (AES)
 
+        // 분기처리 하기 위한 코드 설정
+        String initialRole = dto.getRoleCode();
+        String initialStatus = "S01"; // 기본: 정상 활동
 
+        // 변호사(ROLE_LAWYER)로 가입 신청 시 -> '준회원'으로 강등 및 '대기' 상태로 설정
+        if ("ROLE_LAWYER".equals(dto.getRoleCode())) {
+            initialRole = "ROLE_ASSOCIATE"; // 준회원 (권한 없음)
+            initialStatus = "S02";          // 승인 대기 상태
+        }
         // 3. 시민 명부(Entity)에 담기
         User user = User.builder()
                 .userId(dto.getUserId())    // 아이디
@@ -93,8 +101,8 @@ public class AuthService {
                 .emailHash(inputEmailHash)  // Hash 값 (검색용)
                 .phone(encryptedPhone)      // 암호화된 휴대폰 번호
                 .phoneHash(inputPhoneHash)  // Hash 값 (검색용)
-                .roleCode(dto.getRoleCode()) // ROLE_USER 또는 ROLE_LAWYER
-                .statusCode("S01")           // 상태 (정상)
+                .roleCode(initialRole)      // ROLE_USER 또는 ROLE_LAWYER
+                .statusCode(initialStatus)  // 상태 (정상)
                 .build();
 
         userRepository.save(user);
