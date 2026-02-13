@@ -1,11 +1,13 @@
 package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AuthService;
+import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.TokenDTO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -25,6 +27,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserRepository userRepository;
 
     /*
         [회원 가입 API] - USR-01
@@ -33,10 +36,11 @@ public class AuthController {
         UserJoinRequestDTO : 사용자가 보낸 DTO
     */
     @PostMapping("/join")
-    public ResultVO<Void> join(@Valid @RequestBody UserJoinRequestDTO dto) throws Exception {
+    public ResultVO<Void> join(@Valid @ModelAttribute UserJoinRequestDTO dto) throws Exception {
         // AuthService : 데이터를 넘기는 곳, BCrypt와 AES-256 처리의 보안 작업..
+        // "SUCCESS" 코드와 상세 메시지를 담아 반환
         authService.join(dto);
-        return ResultVO.ok("회원가입이 성공적으로 완료되었습니다!",null);
+        return ResultVO.ok("JOIN-SUCCESS","회원가입이 성공적으로 완료되었습니다!",null);
     }
 
     /*
@@ -58,7 +62,24 @@ public class AuthController {
 
         // 서비스를 통해 로그인을 진행하고 토큰을 받습니다.
         TokenDTO token = authService.login(userId, password);
-
-        return ResultVO.ok("로그인에 성공하였습니다.", token);
+        // 로그인 성공 코드 "LOGIN-SUCCESS" 부여
+        return ResultVO.ok("LOGIN-SUCCESS","로그인에 성공하였습니다.", token);
     }
+
+    @GetMapping("/check-id")
+    public ResultVO<Boolean> checkId(@RequestParam("userId") String userId){
+        // DB에 해당 아이디가 없어야 (exists == false) 사용 가능
+        boolean isAvailable = !userRepository.existsByUserId(userId);
+        // ★ [수정] ResponseEntity 대신 표준 식판 ResultVO로 통일!
+        if (isAvailable) {
+            return ResultVO.ok("ID-AVAILABLE", "사용 가능한 아이디입니다.", true);
+        } else {
+            // 중복된 경우 success: false와 전용 코드 반환
+            return ResultVO.fail("ID-DUPLICATE", "이미 사용 중인 아이디입니다.");
+        }
+    }
+
+
+
+
 }

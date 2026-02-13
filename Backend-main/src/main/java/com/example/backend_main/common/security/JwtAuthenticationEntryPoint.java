@@ -45,7 +45,10 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
         // 5. 표준 객체(ResultVO)에 실패 메시지를 담습니다.
-        ResultVO<Void> result = ResultVO.fail("로그인이 필요한 서비스입니다.");
+        // AUTH : 로그인 관련 - 누구세요?
+        // 401 : HTTP 상태 코드 401에서 따온 숫자
+        // AUTH-401 : 당신이 누구신지는 모르겠으니, 신분증(JWT토큰)을 가져오세요!
+        ResultVO<Void> result = ResultVO.fail("AUTH-401","로그인이 필요한 서비스입니다.");
 
         // 6. 식판(객체)을 문자열(JSON)로 바꿔서 손님(리액트)에게 전송합니다.
         // 자바 객체(ResultVO)를 이렉트가 읽을 수 있는 텍스트(JSON) 으로 변환하는 마법의 도구

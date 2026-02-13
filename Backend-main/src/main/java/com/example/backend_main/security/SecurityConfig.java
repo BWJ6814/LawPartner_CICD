@@ -1,5 +1,6 @@
 package com.example.backend_main.security;
 
+import com.example.backend_main.common.security.JwtAccessDeniedHandler;
 import com.example.backend_main.common.security.JwtAuthenticationEntryPoint;
 import com.example.backend_main.common.security.JwtAuthenticationFilter;
 import com.example.backend_main.common.security.JwtTokenProvider;
@@ -26,8 +27,14 @@ import java.util.List;
 public class SecurityConfig {
     // 신분증 확인 기계 가져오기..!
     private final JwtTokenProvider jwtTokenProvider;
-    // 보안관 가져오기!
+    // 401 - 입구 보안관 가져오기! (인증 실패)
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    // 403 - 방문 보안관 가져오기!
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    // 401과 403처리를 다른 곳에서 한 이유
+    // 401 : 인증 실패 - 입구 컷 (신분증 -JWT가 없음)
+    // 403 : 인가 실패 - 권한 컷 (입장은 했으나, JWT 권한에 막힘)
+
 
     // 비밀번호 암호기 등록하기.
     @Bean
@@ -57,9 +64,12 @@ public class SecurityConfig {
                 // 세션을 보통 아이디를 확인하지만 JWT를 사용함으로 인해 JWT내부에 있는 이름과 권한을 사용할 것이기 때문!
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // 401 Unauthorized 에러를 처리할 보안관을 등록!
+                // 401 - 403 에러를 처리할 보안관을 등록!
                 .exceptionHandling(exception -> exception
+                        // [401 담당] 신분증 없을 때
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        // [403 담당] 권한 모자랄 때 -> JwtAccessDeniedHandler
+                        .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
 
                 // 4. 페이지별 출입 권한 설정

@@ -6,60 +6,70 @@ import lombok.Getter;
 /*
 # [ResultVO]
 - 모든 API 응답을 담는 표준 식판
-- 성공 여부, 메시지, 그리고 진짜 데이터(겍체)를 하나로 묶어줍니다.
-- <T> 어떤 것이든 담을 수 있는 만능 주머니..
-
-# 로그인 성공 시 (JWT 토큰 반환)
-return ResultVO.ok(jwtToken);
-- 결과: { "success": true, "message": "성공적으로 처리되었습니다.", "data": "ey..." }
-
-# 변호사 목록 조회 성공 시
-return ResultVO.ok(lawyerList);
-- 결과: { "success": true, "message": "변호사 등록이 완료되었습니다!", "data": { ... } }
+- 성공 여부, 메시지, 코드, 그리고 데이터(객체)를 하나로 묶어줍니다.
 */
 @Getter
 @Builder
 public class ResultVO<T> {
-    private boolean success;    // 성공 여부 (true/false)
-    private String message;     // 사용자나 개발자에게 보여줄 메시지
-    private T data;             // 실제 보낼 데이터(이메일, 리스트 등 무엇이든 담김)
+    private boolean success;    // 성공 여부
+    private String code;        // 비즈니스 로직 코드 (SUCCESS, AUTH-401, ERR-001 등)
+    private String message;     // 응답 메시지
+    private T data;             // 실제 데이터
 
-    // 성공했을 때 가장 깔끔하게 사용하는 도구 (메시지 포함)
-    // static : 매번 new ResultVO()를 해서 메모리에 올릴 필요가 없음! 바로 클래스 이름으로 가져다 사용하기
+    // ======================= [성공 응답 패턴] =======================
+
+    // 1. [가장 많이 씀] 데이터만 보내면 성공으로 처리 (Code: SUCCESS)
+    // 사용법: ResultVO.ok(userList);
     public static <T> ResultVO<T> ok(T data) {
         return ResultVO.<T>builder()
                 .success(true)
-                // 디폴트 메시지 출력내용
-                // 다른 내용 처리를 원하면 ok(String message, T data) 사용..
-                .message("성공적으로 처리되었습니다.") 
+                .code("SUCCESS") // 기본 성공 코드
+                .message("성공적으로 처리되었습니다.")
                 .data(data)
                 .build();
     }
 
-    // 만약 메시지까지 직접 지정하고 싶을 때를 위한 오버로딩
+    // 2. [메시지 변경] 데이터와 함께 안내 문구를 바꾸고 싶을 때 (Code: SUCCESS)
+    // 사용법: ResultVO.ok("회원가입 완료!", null);
     public static <T> ResultVO<T> ok(String message, T data) {
         return ResultVO.<T>builder()
                 .success(true)
+                .code("SUCCESS")
                 .message(message)
                 .data(data)
                 .build();
     }
 
-    // 가장 기본적인 실패 처리 (메시지만 보낼 때)
-    public static <T> ResultVO<T> fail(String message) {
+    // 3. [완전 커스텀] 코드까지 직접 지정하고 싶을 때 (특수 성공 케이스)
+    // 사용법: ResultVO.ok("JOIN-SUCCESS", "환영합니다!", userDTO);
+    public static <T> ResultVO<T> ok(String code, String message, T data) {
         return ResultVO.<T>builder()
-                // 실패니까 false!
-                .success(false)
+                .success(true)
+                .code(code)
                 .message(message)
-                // 실패니까 데이터는 없다!
+                .data(data)
+                .build();
+    }
+
+    // ======================= [실패 응답 패턴] =======================
+
+    // 4. [가장 많이 씀] 코드와 메시지만 보내서 실패 알리기
+    // 사용법: ResultVO.fail("AUTH-401", "로그인이 필요합니다.");
+    public static <T> ResultVO<T> fail(String code, String message) {
+        return ResultVO.<T>builder()
+                .success(false)
+                .code(code)     // ★ 실패는 코드가 필수입니다!
+                .message(message)
                 .data(null)
                 .build();
     }
 
-    // 만약 실패하면서도 어떤 데이터나 에러 코드를 같이 보내고 싶을 때
-    public static <T> ResultVO<T> fail(String message, T data) {
+    // 5. [상세 실패] 코드, 메시지, 그리고 '왜 틀렸는지' 상세 데이터까지 보낼 때
+    // 사용법: 유효성 검사 실패 시 "어떤 필드가 틀렸는지" 리스트를 data에 담아 보냄
+    public static <T> ResultVO<T> fail(String code, String message, T data) {
         return ResultVO.<T>builder()
                 .success(false)
+                .code(code)
                 .message(message)
                 .data(data)
                 .build();

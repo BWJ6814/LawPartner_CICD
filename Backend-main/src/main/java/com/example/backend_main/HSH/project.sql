@@ -116,7 +116,6 @@ CREATE TABLE TB_USER (
      NICK_NM     VARCHAR2(50),
      EMAIL       VARCHAR2(256) NOT NULL, -- 암호화 저장
      PHONE       VARCHAR2(256) NOT NULL, -- 암호화 저장
-     ADDR        VARCHAR2(200),          -- 기본주소
      -- ROLE_USER / ROLE_LAWYER / ROLE_ADMIN 등등 (상태 코드가 들어감)
      ROLE_CODE   VARCHAR2(20) DEFAULT 'ROLE_USER',
      -- 동일하게 S01, S99 등 (상태 테이블의 코드)
@@ -136,8 +135,16 @@ ALTER TABLE TB_USER ADD LOCK_DT DATE;
 -- TB_USER 테이블에 검색용 해시 컬럼 추가
 ALTER TABLE TB_USER ADD EMAIL_HASH VARCHAR2(64);
 ALTER TABLE TB_USER ADD PHONE_HASH VARCHAR2(64);
+/*
+-- 일반 유저는 휴대폰이 없을 수도 있다? (선택 사항이라면 NULL 허용)
+-- 하지만 '중복 가입 방지'를 위해선 NOT NULL을 유지하는 게 베스트!
+PHONE       VARCHAR2(256) NOT NULL, -- 알림용 (AES-256)
+PHONE_HASH  VARCHAR2(64)  NOT NULL, -- 중복가입 방지용 (SHA-256)
+*/
+
 -- 유니크 인덱스를 걸어 DB 수준에서 한 번 더 방어
 CREATE UNIQUE INDEX UQ_USER_EMAIL_HASH ON TB_USER(EMAIL_HASH);
+CREATE UNIQUE INDEX UQ_USER_PHONE_HASH ON TB_USER(PHONE_HASH);
 commit;
 
 
@@ -336,7 +343,7 @@ CREATE TABLE TB_CHAT_ROOM (
     -- 채팅방 상태 (종료 여부)
     -- 공통 상태 테이블 사용 X (직접 관리 예정) - 왜?
     STATUS_CODE   VARCHAR2(20) DEFAULT 'OPEN',
-    -- 사건 진행 단계 (접수->진행->판결)
+    -- 사건 진행 단계 (요청->접수->진행->완료)
     -- 공통 코드 그룹 사용 예정
     PROGRESS_CODE VARCHAR2(20) DEFAULT 'ST01',
     -- 생성일 (결제 직후)

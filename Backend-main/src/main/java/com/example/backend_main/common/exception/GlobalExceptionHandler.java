@@ -30,7 +30,8 @@ public class GlobalExceptionHandler {
         // .body(ResultVO.fail("...")) : 상자 안에 실패(false)라고 적힌 ResultVO 객체와 메시지를 담아
         //                               사용자에게 보내기
         return ResponseEntity.internalServerError()
-                .body(ResultVO.fail("죄송합니다. 서버에 문제가 발생했습니다."));
+                // ★ "SYSTEM_ERROR" 코드를 부여하여 시스템 결함임을 알림
+                .body(ResultVO.fail("SYSTEM_ERROR","죄송합니다. 서버에 문제가 발생했습니다."));
     }
 
     // IllegalArgumentException.class : 누군자잘못된 값(인자)을 보냈을 때(IllegalArgumentException)
@@ -41,7 +42,8 @@ public class GlobalExceptionHandler {
         // e.getMessage() : 에러 바구니(e)에 들어있는 구체적인 이유를 꺼내서 사용자에게 바로 보여주기
         // ex) AES 열쇠는 반드지 32자여야 합니다!
         return ResponseEntity.badRequest()
-                .body(ResultVO.fail(e.getMessage()));
+                // ★ "INVALID_INPUT" 코드로 사용자 입력값 문제임을 명시
+                .body(ResultVO.fail("INVALID_INPUT",e.getMessage()));
     }
 
     // @Valid 어노테이션으로 검사했을 때 통과하지 못하면 발생하는 에러 잡기
@@ -58,7 +60,8 @@ public class GlobalExceptionHandler {
         String errorMessage = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
         return ResponseEntity.badRequest()
                 // errorMessage : 친절한 설명 대입하기..
-                .body(ResultVO.fail(errorMessage));
+                // ★ "VALIDATION_ERROR" 코드로 어떤 형식이 틀렸는지 프론트가 인지하게 함
+                .body(ResultVO.fail("VALIDATION_ERROR",errorMessage));
     }
     /*
     public ResultVO<String> join(@Valid @RequestBody UserDTO userDTO) {

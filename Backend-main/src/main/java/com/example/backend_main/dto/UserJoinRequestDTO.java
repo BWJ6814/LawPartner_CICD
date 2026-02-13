@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 
 /*
@@ -39,18 +41,17 @@ public class UserJoinRequestDTO {
     @Pattern(regexp = "^[0-9]{10,11}$", message = "올바른 전화번호 형식이 아닙니다.")
     private String phone;
 
-    private String nickNm; // 별칭
-    private String addr;   // 주소
+    private String nickNm; // 별칭 - 추후에 개인 설정으로 처리 가능
     private String imgUrl;  // 변호사 이미지 URL
     // ROLE_USER, ROLE_LAWYER, ROLE_ADMIN
     private String roleCode;
 
     // --- [변호사 가입 시에만 사용하는 필드들] ---
     private String licenseNo;    // 자격번호
-    private String licenseFile;  // 증빙파일 경로
+    private MultipartFile licenseFile;  // 증빙파일 경로
     private String officeName;   // 소속 로펌
     private String officeAddr;   // 사무실 주소
     private String examType;     // 출신 (사시/로스쿨)
     private String introText;    // 자기소개
-    private String specialtyCodes; // 전문분야 리스트 (L01, L02 등)
+    private String specialtyStr; // 전문분야 리스트 (L01, L02 등)
 }

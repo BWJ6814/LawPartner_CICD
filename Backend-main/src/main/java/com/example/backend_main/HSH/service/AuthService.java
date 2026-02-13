@@ -4,6 +4,7 @@ import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.util.Aes256Util;
+import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.dto.TokenDTO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;      // 비밀번호 전용 보초
     private final LawyerService lawyerService;
     private final RefreshTokenService refreshTokenService;
+    private final HashUtil hashUtil;                    // 단방향 해시 처리 (검색용)
 
     /*
      [회원가입] USR-01 요구사항 반영
@@ -42,12 +44,24 @@ public class AuthService {
      */
     @Transactional
     public void join(UserJoinRequestDTO dto) throws Exception {
-        // 1. 아이디 중복 체크
+
+
+        // 1-1. 아이디 중복 체크
         // DB창고 userRepository에 가서 아이디(UserId)를 이미 사용하는 사람이 있는지 확인하기..
         if (userRepository.existsByUserId(dto.getUserId())) {
             // IllegalArgumentException
             // RuntimeException
             throw new RuntimeException("이미 사용 중인 아이디입니다.");
+        }
+        // 1-2. 중복 체크를 해시값으로 수행하기
+        String inputEmailHash = hashUtil.generateHash(dto.getEmail());
+        String inputPhoneHash = hashUtil.generateHash(dto.getPhone());
+
+        if (userRepository.existsByEmailHash(inputEmailHash)) {
+            throw new RuntimeException("이미 가입된 이메일입니다.");
+        }
+        if (userRepository.existsByPhoneHash(inputPhoneHash)) {
+            throw new RuntimeException("이미 가입된 휴대폰 번호입니다.");
         }
 
         // 2. 암호화 도구(CryptoUtil/BCrypt)를 사용해 데이터 변환
@@ -57,6 +71,7 @@ public class AuthService {
         String encryptedEmail = aes256Util.encrypt(dto.getEmail()); // 이메일 잠그기 (AES)
         String encryptedPhone = aes256Util.encrypt(dto.getPhone()); // 전화번호 잠그기 (AES)
 
+
         // 3. 시민 명부(Entity)에 담기
         User user = User.builder()
                 .userId(dto.getUserId())    // 아이디
@@ -64,13 +79,14 @@ public class AuthService {
                 .userNm(dto.getUserNm())    // 이름
                 .nickNm(dto.getNickNm())    // 닉네임
                 .email(encryptedEmail)      // 암호화된 이메일
+                .emailHash(inputEmailHash)  // Hash 값 (검색용)
                 .phone(encryptedPhone)      // 암호화된 휴대폰 번호
-                .addr(dto.getAddr())        // 주소
+                .phoneHash(inputPhoneHash)  // Hash 값 (검색용)
                 .roleCode(dto.getRoleCode()) // ROLE_USER 또는 ROLE_LAWYER
                 .build();
 
         userRepository.save(user);
-        if ("ROLE_LAWYER".equals(user.getRoleCode())) {
+        if (user.isLawyer()) {
             log.info("⚖️ [변호사 회원가입] 상세 정보 및 전문 분야 등록을 시작합니다. (대상: {})", user.getUserId());
             // 변호사일 때만 실행되므로, 일반 유저 가입 시에는 IMG_URL 등을 건드리지 않습니다.
             lawyerService.registerLawyerInfo(user, dto);

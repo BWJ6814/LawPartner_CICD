@@ -9,14 +9,25 @@ const SignupPage = () => {
     // 1. 상태 관리 (Role, Form Data, UI Status)
     const [role, setRole] = useState('client'); // 'client' or 'lawyer'
     const [formData, setFormData] = useState({
-        userId: '', password: '', confirmPassword: '',
-        userName: '', phone: '', email: '',
+        userId: '', 
+        userPw: '', 
+        confirmPassword: '',
+        userNm: '', 
+        phone: '', 
+        email: '',
         // 변호사 전용 필드
-        licenseNo: '', origin: '', officeName: '', officeAddr: '', officeDetail: '', intro: ''
+        licenseNo: '', 
+        examType: '', 
+        officeName: '', 
+        officeAddr: '', 
+        officeDetail: '', 
+        introText: '' // 초기값 이름
     });
     const [specialties, setSpecialties] = useState([]); // 전문분야 배열
     const [selectedFile, setSelectedFile] = useState(null); // 자격증 파일
     
+    // 제출 버튼 
+    const [isSubmitting, setIsSubmitting] = useState(false);
     // 검증 상태
     const [isIdChecked, setIsIdChecked] = useState(false);
     const [idMsg, setIdMsg] = useState({ text: '아이디 중복 확인을 해주세요.', color: 'text-slate-500' });
@@ -28,8 +39,8 @@ const SignupPage = () => {
         setFormData({ ...formData, [name]: value });
         
         // 비밀번호 실시간 체크
-        if (name === 'password' || name === 'confirmPassword') {
-            const pw = name === 'password' ? value : formData.password;
+        if (name === 'userPw' || name === 'confirmPassword') {
+            const pw = name === 'userPw' ? value : formData.userPw;
             const confirm = name === 'confirmPassword' ? value : formData.confirmPassword;
             
             if (confirm && pw !== confirm) setPwMsg('비밀번호가 일치하지 않습니다.');
@@ -39,23 +50,27 @@ const SignupPage = () => {
     };
 
     // 아이디 중복 체크 (Mock API Call)
-    const checkDuplicateID = async () => {
-        if (!formData.userId) return alert('아이디를 입력해주세요.');
-        
+    const checkDuplicateID = async() => {
+        if(!formData.userId) return alert("아이디를 입력해주세요.");
+    
         try {
-            // 실제 연동 시: await api.get(`/api/auth/check-id?id=${formData.userId}`);
-            // 여기서는 시뮬레이션
-            if (formData.userId === 'admin') {
-                setIdMsg({ text: '이미 사용 중인 아이디입니다.', color: 'text-red-500' });
-                setIsIdChecked(false);
-            } else {
-                setIdMsg({ text: '사용 가능한 아이디입니다.', color: 'text-green-600' });
+            const response = await api.get(`/api/auth/check-id`, {
+                params : {userId : formData.userId}
+            });
+
+            if (response.data === true) {
+                setIdMsg({ text: "사용 가능한 아이디입니다.", color: "text-green-600"});
                 setIsIdChecked(true);
+            } else {
+                setIdMsg({ text : "이미 사용중인 아이디입니다.", color: "text-red-500"});
+                setIsIdChecked(false);
             }
         } catch (error) {
-            console.error(error);
+        console.error("아이디 체크 실패:", error);
+        setIdMsg({ text: '서버 통신 오류가 발생했습니다.', color: 'text-red-500' });
         }
     };
+
 
     // 휴대폰 번호 포맷팅
     const handlePhoneFormat = (e) => {
@@ -84,26 +99,30 @@ const SignupPage = () => {
         e.preventDefault();
 
         if (!isIdChecked) return alert("아이디 중복 확인이 필요합니다.");
-        if (formData.password !== formData.confirmPassword) return alert("비밀번호가 일치하지 않습니다.");
+        if (formData.userPw !== formData.confirmPassword) return alert("비밀번호가 일치하지 않습니다.");
+        
+        setIsSubmitting(true); // 로딩 시작
 
         // FormData 객체 생성 (파일 업로드 때문에 필수!)
         const submitData = new FormData();
         // 기본 정보 append
         submitData.append("userId", formData.userId);
-        submitData.append("userPw", formData.password);
-        submitData.append("userNm", formData.userName);
+        submitData.append("userPw", formData.userPw);
+        submitData.append("userNm", formData.userNm);
         submitData.append("phone", formData.phone);
         submitData.append("email", formData.email);
-        submitData.append("role", role === 'client' ? 'ROLE_USER' : 'ROLE_LAWYER');
+        submitData.append("roleCode", role === 'client' ? 'ROLE_USER' : 'ROLE_LAWYER'); 
 
         // 변호사일 경우 추가 정보 append
         if (role === 'lawyer') {
             submitData.append("licenseNo", formData.licenseNo);
-            submitData.append("origin", formData.origin);
+            submitData.append("examType", formData.examType);
             submitData.append("officeName", formData.officeName);
             submitData.append("officeAddr", formData.officeAddr + " " + formData.officeDetail);
-            submitData.append("intro", formData.intro);
-            submitData.append("specialties", specialties.join(",")); // 배열을 문자열로
+            // 자기소개를 자동 인사말로 처리하기..
+            const defaultIntro = `안녕하세요. 변호사 ${formData.userNm}입니다.`;
+            submitData.append("introText", defaultIntro);
+            submitData.append("specialtyStr", specialties.join(",")); // 배열을 문자열로
             if (selectedFile) {
                 submitData.append("licenseFile", selectedFile); // 파일 객체
             }
@@ -111,14 +130,17 @@ const SignupPage = () => {
 
         try {
             // Content-Type은 axios가 알아서 multipart/form-data로 설정함
-            await api.post('/api/auth/signup', submitData);
+            await api.post('/api/auth/join', submitData);
             
             alert(role === 'lawyer' ? "전문가 심사 요청이 완료되었습니다." : "회원가입이 완료되었습니다!");
             navigate('/'); // 로그인 페이지로 이동
             
         } catch (error) {
-            console.error("가입 실패:", error);
-            alert("회원가입 중 오류가 발생했습니다.");
+            console.error("가입 실패:", error.response);
+            const errorMsg = error.response?.data?.message || "회원가입 중 오류가 발생했습니다.";
+            alert(errorMsg);
+        } finally {
+            setIsSubmitting(false) // 로딩 해제..
         }
     };
 
@@ -200,7 +222,7 @@ const SignupPage = () => {
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                                 <label className={labelStyle}>Password</label>
-                                <input type="password" name="password" required placeholder="8자 이상" className={inputStyle} onChange={handleChange} />
+                                <input type="password" name="userPw" required placeholder="8자 이상" className={inputStyle} onChange={handleChange} />
                             </div>
                             <div className="space-y-1">
                                 <label className={labelStyle}>Confirm</label>
@@ -213,7 +235,7 @@ const SignupPage = () => {
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                                 <label className={labelStyle}>Name</label>
-                                <input type="text" name="userName" required placeholder="성함" className={inputStyle} onChange={handleChange} />
+                                <input type="text" name="userNm" required placeholder="성함" className={inputStyle} onChange={handleChange} />
                             </div>
                             <div className="space-y-1">
                                 <label className={labelStyle}>Phone</label>
@@ -240,7 +262,7 @@ const SignupPage = () => {
                                 </div>
                                 <div className="space-y-1">
                                     <label className={`${labelStyle} text-blue-900`}>Origin</label>
-                                    <select name="origin" className={inputStyle} onChange={handleChange}>
+                                    <select name="examType" className={inputStyle} onChange={handleChange}>
                                         <option value="">출신 선택</option>
                                         <option value="EXAM">사법고시</option>
                                         <option value="SCHOOL">로스쿨</option>
@@ -297,8 +319,13 @@ const SignupPage = () => {
                     </div>
 
                     {/* 제출 버튼 */}
-                    <button type="submit" className="w-full bg-blue-900 text-white py-3.5 rounded-2xl font-black text-base shadow-xl hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50">
-                        {role === 'lawyer' ? '전문가 심사 요청하기' : '회원가입 하기'}
+                    <button 
+                        type="submit" 
+                        // 제출 중 버튼 비활성화
+                        disabled={isSubmitting} 
+                        className="w-full bg-blue-900 text-white py-3.5 rounded-2xl font-black text-base shadow-xl hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {isSubmitting ? '처리 중...' : (role === 'lawyer' ? '전문가 심사 요청하기' : '회원가입 하기')}
                     </button>
                 </form>
 
