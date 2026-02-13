@@ -9,6 +9,7 @@ import Footer from './common/components/Footer';
 import MainPage from './pages/mainpage';
 import ConsultationBoard from './BWJ/ConsultationBoard';
 import WriteQuestionPage from './BWJ/WriteQuestionPage';
+import ConsultationDetail from './BWJ/ConsultationDetail';
 import GeneralMyPage from './pages/GeneralMypage'
 import ChatList from './KImMinSU/chatList'
 import Lawmainpage from './ky/Lawmainpage';
@@ -57,6 +58,7 @@ function App() {
                     />
                     <Route path="/chatList" element={<ChatList />} />
                     <Route path="/consultation" element={<ConsultationBoard />} />
+                    <Route path="/consultation/:id" element={<ConsultationDetail />} />
                     <Route path="/write" element={<WriteQuestionPage />} />
 
                     {/* 로그인 페이지 */}

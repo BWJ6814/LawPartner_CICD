@@ -62,7 +62,7 @@ const WriteQuestionPage = () => {
                 userNo: userNo
             });
             alert("질문이 등록되었습니다.");
-            navigate('/'); // 메인으로 이동
+            navigate('/consultation'); // 메인으로 이동
         } catch (error) {
             console.error("등록 에러:", error);
             alert("등록 중 오류가 발생했습니다.");

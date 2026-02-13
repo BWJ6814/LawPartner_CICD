@@ -12,6 +12,7 @@ import com.example.backend_main.dto.BoardReply;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,54 +51,39 @@ public class BoardController {
         return boardRepository.findAllByOrderByRegDtDesc();
     }
 
-    // ==========================================
-    // ▼ [새로 추가된 기능] 상세 조회 & 답변 등록
-    // ==========================================
 
-    // 3. 게시글 상세 조회 (+ 댓글 목록 포함)
+    // BoardController.java에 추가
+
+    // 3. 글 상세보기 (게시글 정보 + 답변 리스트)
     @GetMapping("/{id}")
-    public BoardDetailDto getBoardDetail(@PathVariable Long id) {
-        // (1) 게시글 찾기 (없으면 에러)
+    public Map<String, Object> getBoardDetail(@PathVariable("id") Long id) {
+        // 1. 게시글 본문 가져오기
         Board board = boardRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다. id=" + id));
+                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
 
-        // (2) 해당 글의 댓글(답변) 목록 찾기
-        List<BoardReply> replies = boardReplyRepository.findAllByBoardNoOrderByRegDtAsc(id);
+        // 2. 해당 게시글의 답변(Reply) 리스트 가져오기 (Repository에 별도 생성 필요)
+        // List<BoardReply> replies = boardReplyRepository.findByBoardNoOrderByRegDtAsc(id);
 
-        // (3) Entity -> DTO 변환 (화면에 뿌려줄 형태로 가공)
-        return BoardDetailDto.builder()
-                .id(board.getBoardNo())
-                .category(board.getCategoryCode())
-                .title(board.getTitle())
-                .content(board.getContent())
-                .writerId(board.getWriterNo())
-                // 닉네임은 DB 조인 대신 임시로 "사용자+번호"로 표시
-                .writerName("사용자" + board.getWriterNo())
-                // 날짜 포맷 (YYYY-MM-DD)
-                .date(board.getRegDt().toString().substring(0, 10))
-                // 댓글 리스트 변환
-                .replies(replies.stream().map(r -> BoardDetailDto.ReplyDto.builder()
-                        .replyId(r.getReplyNo())
-                        .content(r.getContent())
-                        .lawyerId(r.getWriterNo())
-                        .lawyerName("변호사" + r.getWriterNo()) // 임시 변호사 이름
-                        .selectionYn(r.getSelectionYn())
-                        .date(r.getRegDt().toString().substring(0, 16)) // YYYY-MM-DD HH:mm 까지 자름
-                        .build()).collect(Collectors.toList()))
-                .build();
+        // 3. 결과 합치기 (실무에서는 DTO를 쓰지만 이해를 돕기 위해 Map 사용)
+        Map<String, Object> result = new HashMap<>();
+        result.put("boardNo", board.getBoardNo());
+        result.put("title", board.getTitle());
+        result.put("content", board.getContent());
+        result.put("categoryCode", board.getCategoryCode());
+        result.put("writerNo", board.getWriterNo());
+        result.put("regDt", board.getRegDt());
+
+        // 임시 데이터 (답변 리포지토리 연결 전 확인용)
+        // result.put("replies", replies);
+
+        return result;
     }
 
-    // 4. 답변(댓글) 등록 - 변호사 전용
+    // 4. 답변 등록 API
     @PostMapping("/{id}/replies")
-    public String createReply(@PathVariable Long id, @RequestBody Map<String, Object> data) {
-        BoardReply reply = BoardReply.builder()
-                .boardNo(id)
-                .content((String) data.get("content"))
-                // ★ 중요: 현재 로그인한 변호사 ID를 넣어야 함 (테스트용으로 3번 고정)
-                .writerNo(3L)
-                .build();
-
-        boardReplyRepository.save(reply);
+    public String createReply(@PathVariable("id") Long boardId, @RequestBody Map<String, Object> data) {
+        // 답변 저장 로직 (BoardReply 엔티티 필요)
         return "SUCCESS";
     }
+
 }

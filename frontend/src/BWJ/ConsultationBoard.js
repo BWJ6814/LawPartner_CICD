@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // 페이지 이동을 위해 필요해요!
 import axios from 'axios';
 import {
     Search, Menu, User, Scale, Gavel, Car, Home, Key,
@@ -65,13 +65,6 @@ const FilterSection = ({ selectedCategory, setSelectedCategory, selectedSort, se
                         ))}
                     </div>
                 )}
-                {activeTab === 'sort' && (
-                    <div className="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-lg animate-fadeIn">
-                        {['최신순', '답변많은순', '조회수순', '공감순'].map((sort) => (
-                            <button key={sort} onClick={() => setSelectedSort(sort)} className={`px-4 py-2 rounded-full text-sm border transition-colors ${selectedSort === sort ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}>{sort}</button>
-                        ))}
-                    </div>
-                )}
             </div>
         </div>
     );
@@ -79,8 +72,6 @@ const FilterSection = ({ selectedCategory, setSelectedCategory, selectedSort, se
 
 const WriteQuestionCard = ({ onClick }) => (
     <div onClick={onClick} className="group h-full min-h-[220px] bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-lg flex flex-col items-center justify-center cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
-        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-400/20 rounded-full blur-xl"></div>
         <div className="bg-white/20 p-4 rounded-full mb-4 backdrop-blur-sm group-hover:bg-white/30 transition-colors">
             <Plus size={32} className="text-white" />
         </div>
@@ -89,8 +80,12 @@ const WriteQuestionCard = ({ onClick }) => (
     </div>
 );
 
-const PostCard = ({ post }) => (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col h-full min-h-[220px]">
+// ★ PostCard 컴포넌트 수정: 클릭 이벤트(onClick)를 받아서 실행합니다.
+const PostCard = ({ post, onClick }) => (
+    <div
+        onClick={onClick} // 클릭하면 부모에서 전달한 함수 실행
+        className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col h-full min-h-[220px]"
+    >
         <div className="mb-3">
             <h3 className="font-bold text-lg text-gray-900 truncate pr-2">{post.title}</h3>
         </div>
@@ -114,20 +109,12 @@ const PostCard = ({ post }) => (
 // --- 메인 컴포넌트 ---
 
 const ConsultationBoard = () => {
-    const navigate = useNavigate();
+    const navigate = useNavigate(); // 페이지 이동을 위한 도구 소환
 
-    // 1. 상태 선언
     const [posts, setPosts] = useState([]);
-
-    /**
-     * [버그 수정 포인트]
-     * localStorage에서 꺼낸 값을 바로 .toUpperCase() 처리하여
-     * 대소문자 차이로 인한 비교 오류를 원천 차단합니다.
-     */
     const [userRole, setUserRole] = useState(
         (localStorage.getItem('userRole') || 'GENERAL').toUpperCase()
     );
-    console.log("이펙트전에 set 하고나서(userRole):", userRole);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -135,16 +122,11 @@ const ConsultationBoard = () => {
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchType, setSearchType] = useState('title');
 
-    // 디버깅용: 현재 리액트가 인식하는 권한을 콘솔에 찍습니다. (F12에서 확인 가능)
-
-
     useEffect(() => {
-        // 컴포넌트 진입 시 다시 한 번 갱신 (확실하게 하기 위해)
         const currentRole = localStorage.getItem('userRole');
         if (currentRole) {
             setUserRole(currentRole.toUpperCase());
         }
-        console.log("이펙트에서 set 하고나서(userRole):", userRole);
         fetchPosts();
     }, []);
 
@@ -152,7 +134,7 @@ const ConsultationBoard = () => {
         try {
             const response = await axios.get('http://localhost:8080/api/boards');
             const mappedData = response.data.map(board => ({
-                id: board.boardNo,
+                id: board.boardNo, // DB의 BOARD_NO
                 title: board.title,
                 content: board.content,
                 author: '익명',
@@ -181,15 +163,9 @@ const ConsultationBoard = () => {
     };
 
     const filteredPosts = getFilteredPosts();
-
-    /**
-     * [분기 처리 로직]
-     * isGeneral 변수가 true여야 질문 카드가 보입니다.
-     */
     const isGeneral = userRole === 'ROLE_USER';
     const indexOfLastPost = currentPage * 16;
     const indexOfFirstPost = indexOfLastPost - 16;
-
     let currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
 
     if (isGeneral && currentPage === 1) {
@@ -228,13 +204,19 @@ const ConsultationBoard = () => {
             <main className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
 
-                    {/* ★ 이 부분이 핵심 분기입니다 ★ */}
+                    {/* 질문 등록 카드 */}
                     {isGeneral && currentPage === 1 && (
                         <WriteQuestionCard onClick={() => navigate('/write')} />
                     )}
 
+                    {/* 게시글 리스트 렌더링 */}
                     {currentPosts.map((post) => (
-                        <PostCard key={post.id} post={post} />
+                        <PostCard
+                            key={post.id}
+                            post={post}
+                            // ★ 카드를 클릭했을 때 실행될 함수!
+                            onClick={() => navigate(`/consultation/${post.id}`)}
+                        />
                     ))}
 
                     {posts.length === 0 && (
@@ -244,6 +226,7 @@ const ConsultationBoard = () => {
                     )}
                 </div>
 
+                {/* 페이지네이션 (기존 유지) */}
                 <div className="flex flex-col items-center gap-8 mt-12">
                     <div className="flex items-center gap-2">
                         <button onClick={() => handlePageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-30">
@@ -258,23 +241,8 @@ const ConsultationBoard = () => {
                             <ChevronRight size={20} />
                         </button>
                     </div>
-
-                    <div className="w-full max-w-xl bg-white rounded-full border border-gray-300 px-6 py-3 flex items-center shadow-sm">
-                        <select value={searchType} onChange={(e) => setSearchType(e.target.value)} className="bg-transparent text-sm text-gray-700 font-medium outline-none mr-4">
-                            <option value="title">제목</option>
-                            <option value="author">작성자</option>
-                        </select>
-                        <div className="h-4 w-px bg-gray-300 mr-4"></div>
-                        <input type="text" value={searchKeyword} onChange={(e) => setSearchKeyword(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSearch()} className="flex-1 bg-transparent outline-none text-gray-700" placeholder="검색어를 입력하세요" />
-                        <button onClick={handleSearch} className="text-gray-400 hover:text-blue-600 p-1"><Search size={20} /></button>
-                    </div>
                 </div>
             </main>
-
-            <style jsx global>{`
-                @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-                .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
-            `}</style>
         </div>
     );
 };
