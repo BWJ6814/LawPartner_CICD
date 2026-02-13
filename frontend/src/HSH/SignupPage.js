@@ -113,6 +113,18 @@ const SignupPage = () => {
             setPhoneMsg({ text: '', color: '' }); // 번호 지우면 메시지도 삭제
         }
     };
+    // 자격증 번호 5자리 숫자 고정 핸들러
+    const handleLicenseChange = (e) => {
+        const { value } = e.target;
+        // 1. 숫자가 아닌 값은 들어오지 않겠지만, 혹시 모를 상황을 대비해 빈 값 처리
+        // 2. 최대 5자리까지만 상태값(state) 업데이트
+        if (value.length <= 5){
+            setFormData({
+                ...formData,
+                licenseNo: value
+            });
+        }
+    };
 
     const checkDuplicatePhone = async (phoneVal) => {
         try {
@@ -147,7 +159,12 @@ const SignupPage = () => {
 
         if (!isIdChecked) return alert("아이디 중복 확인이 필요합니다.");
         if (formData.userPw !== formData.confirmPassword) return alert("비밀번호가 일치하지 않습니다.");
-        
+        if (role === 'lawyer') {
+            if (formData.licenseNo.length !== 5) {
+                alert("자격증 번호 5자리를 정확하게 입력해야 회원가입이 가능합니다.");
+                return; // API 호출 중단
+            }
+        }
         setIsSubmitting(true); // 로딩 시작
 
         // FormData 객체 생성 (파일 업로드 때문에 필수!)
@@ -334,7 +351,7 @@ const SignupPage = () => {
                                 type="email" 
                                 name="email" 
                                 required 
-                                placeholder="example@lex.ai" 
+                                placeholder="example@email.ai" 
                                 className={inputStyle} 
                                 onChange={handleChange}
                                 onBlur={handleEmailCheck} // ★ 칸을 벗어날 때 실행!
@@ -350,10 +367,28 @@ const SignupPage = () => {
                             <h3 className="text-xs font-black text-blue-900 uppercase tracking-widest border-b border-blue-50 pb-2">전문가 상세 정보</h3>
                             
                             <div className="grid grid-cols-2 gap-3">
+
                                 <div className="space-y-1">
                                     <label className={`${labelStyle} text-blue-900`}>License No</label>
-                                    <input type="text" name="licenseNo" placeholder="등록 번호" className={inputStyle} onChange={handleChange} />
+                                    <input 
+                                        type="number" 
+                                        name="licenseNo" 
+                                        placeholder="5자리 숫자" 
+                                        className={inputStyle}
+                                        value={formData.licenseNo} 
+                                        onChange={handleLicenseChange}
+                                        // onInput을 사용하면 화살표 버튼으로 숫자를 올릴 때도 5자리 제한이 가능합니다.
+                                        onInput={(e) => {
+                                            if (e.target.value.length > 5) {
+                                                e.target.value = e.target.value.slice(0, 5);
+                                            }
+                                        }}
+                                    />
+                                    <p className="text-[10px] text-slate-400 ml-1 font-bold">
+                                        * 자격증 번호 5자리를 반드시 입력해 주세요.
+                                    </p>
                                 </div>
+
                                 <div className="space-y-1">
                                     <label className={`${labelStyle} text-blue-900`}>Origin</label>
                                     <select name="examType" className={inputStyle} onChange={handleChange}>

@@ -84,6 +84,7 @@ public class SecurityConfig {
                         /*
                         추후 상태 수정할 코드
                         .requestMatchers("/api/auth/**").permitAll() // 로그인/회원가입은 자유롭게
+                        .requestMatchers("/api/lawyer/advice/**", "/api/counsel/manage/**").hasRole("LAWYER")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용 구역 잠금
                         .anyRequest().authenticated() // 그 외 모든 곳은 신분증(JWT) 필수!
                         */
