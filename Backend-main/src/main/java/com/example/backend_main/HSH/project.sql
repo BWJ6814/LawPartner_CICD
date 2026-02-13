@@ -470,14 +470,19 @@ CREATE TABLE TB_ACCESS_LOG (
     -- FK를 걸면 저장할 때마다 회원이 진짜 있는지 확인 검사하느라 DB가 느려짐
     -- 로그는 빠르게 받아 적는 것이 최우선이라 검사 절차 생략
     USER_NO     NUMBER,
+    STATUS_CODE NUMBER(3),         -- 상태 코드 (200, 404, 500 등)
+    EXEC_TIME   NUMBER,            -- 실행 시간 (ms 단위)
+    ERROR_MSG   VARCHAR2(500),     -- 에러 메시지 (요약)
     REG_DT      DATE DEFAULT SYSDATE,
     CONSTRAINT PK_ACCESS_LOG PRIMARY KEY (LOG_NO)
 );
 -- 데이터가 너무 많으니, 인덱스는 날짜에만...!
-CREATE INDEX IX_ACCESS_LOG_DATE ON TB_ACCESS_LOG(REG_DT);
-
+CREATE INDEX IX_ACCESS_LOG_DATE ON TB_ACCESS_LOG(REG_DT);       -- 날짜별 조회
+CREATE INDEX IX_ACCESS_LOG_STATUS ON TB_ACCESS_LOG(STATUS_CODE); -- 에러(500) 조회
+commit;
 select * from TB_ACCESS_LOG;
 
+drop table TB_ACCESS_LOG;
 
 /* 11. 관리자 중요 감사 로그 (Audit Log - 보안 필수!)
 관리자 ID, 접속 IP, ACTION_TYPE 판별, TARGET_INFO 생성..
