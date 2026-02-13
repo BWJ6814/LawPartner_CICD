@@ -90,5 +90,3 @@ function App() {
 }
 
 export default App;
-
-// 김민수 깃 올리기!!
