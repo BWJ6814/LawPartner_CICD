@@ -1,62 +1,45 @@
 package com.example.backend_main.KimMinSu;
 
+import com.example.backend_main.common.Mapper.GeneralMyPageMapper;
 import com.example.backend_main.dto.GeneralMyPageDTO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor // final 필드 생성자 주입
 public class GeneralMyPageService {
+
+    private final GeneralMyPageMapper myPageMapper; // 매퍼 주입
 
     public GeneralMyPageDTO getDashboardData(Long userNo) {
         // 1. 빈 DTO 생성
         GeneralMyPageDTO dto = new GeneralMyPageDTO();
 
-        // 2. 기본 정보 채우기 (나중엔 DB에서 조회: userRepository.findById(userNo))
-        dto.setUserName("김길동"); // 로그인한 유저 이름
+        // 2. DB에서 유저 이름 조회
+        String userName = myPageMapper.getUserName(userNo);
+        dto.setUserName(userName != null ? userName : "알 수 없음");
 
-        // 3. 통계 카드 채우기
-        dto.setRecentReplyCount(5); // 최근 답글
-        dto.setRequestCount(1);     // 최근 상담 요청
-        dto.setDaysLeft(3);         // 다음 예약까지 남은 일수
+        // 3. 통계 데이터 조회
+        dto.setRecentReplyCount(myPageMapper.getRecentReplyCount(userNo));
+        dto.setRequestCount(myPageMapper.getRequestCount(userNo));
 
-        // 4. 최근 상담 요청 현황 (리스트) 만들기
-        List<GeneralMyPageDTO.ConsultationItemDTO> consultList = new ArrayList<>();
+        // *남은 일수는 로직이 복잡하므로 일단 DB에서 캘린더 이벤트를 가져와서 Java에서 계산하거나 0으로 설정
+        dto.setDaysLeft(0);
 
-        GeneralMyPageDTO.ConsultationItemDTO item1 = new GeneralMyPageDTO.ConsultationItemDTO();
-        item1.setLawyerName("박신드 변호사");
-        item1.setCategory("교통사고");
-        item1.setStatus("상담중");
-        item1.setRegDate("2026-02-11");
-        consultList.add(item1);
-
+        // 4. 최근 상담 리스트 조회
+        List<GeneralMyPageDTO.ConsultationItemDTO> consultList = myPageMapper.getRecentConsultations(userNo);
         dto.setRecentConsultations(consultList);
 
-        // 5. 최근 내 게시글 (리스트) 만들기
-        List<GeneralMyPageDTO.MyBoardDTO> postList = new ArrayList<>();
-
-        GeneralMyPageDTO.MyBoardDTO post1 = new GeneralMyPageDTO.MyBoardDTO();
-        post1.setBoardNo(1L);
-        post1.setTitle("전세 사기 관련 문의드립니다.");
-        post1.setRegDate("2026-02-10");
-        post1.setReplyCount(2);
-        postList.add(post1);
-
+        // 5. 최근 게시글 조회
+        List<GeneralMyPageDTO.MyBoardDTO> postList = myPageMapper.getRecentPosts(userNo);
         dto.setRecentPosts(postList);
 
-        // 6. 캘린더 일정 (리스트) 만들기
-        List<GeneralMyPageDTO.CalendarEventDTO> eventList = new ArrayList<>();
-
-        GeneralMyPageDTO.CalendarEventDTO event1 = new GeneralMyPageDTO.CalendarEventDTO();
-        event1.setTitle("교통사고 1차 공판");
-        event1.setDate("2026-02-15");
-        event1.setColor("#3b82f6"); // 파란색
-        eventList.add(event1);
-
+        // 6. 캘린더 일정 조회
+        List<GeneralMyPageDTO.CalendarEventDTO> eventList = myPageMapper.getCalendarEvents(userNo);
         dto.setCalendarEvents(eventList);
 
-        // 7. 꽉 채운 DTO 반환
         return dto;
     }
 }

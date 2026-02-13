@@ -39,6 +39,52 @@ const Header = ({auth, onLoginUpdate}) => {
   // 알림창 외부 클릭 시 닫기 위한 Ref
   const notificationRef = useRef(null);
 
+    // 1. 역할별 아우라 정의 (이게 디자인의 핵심)
+    const USER_AURA = {
+        ROLE_LAWYER: {
+            label: "PRO LAWYER",
+            nameSuffix: "변호사",
+            bg: "bg-indigo-600",
+            text: "text-white",
+            border: "border-indigo-400/50",
+            shadow: "shadow-[0_0_20px_rgba(79,70,229,0.4)]",
+            icon: (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 21.75c-2.676 0-5.216-.584-7.499-1.632A12.02 12.02 0 013 12c0-5.335 3.42-9.879 8.188-11.536L12 3l.812-2.536a11.954 11.954 0 018.688 11.536c0 3.513-1.5 6.676-3.89 8.868L12 21.75z" />
+                </svg>
+            )
+        },
+        ROLE_ADMIN: {
+            label: "SYSTEM OPS",
+            nameSuffix: "관리자",
+            bg: "bg-slate-900",
+            text: "text-cyan-400",
+            border: "border-cyan-500/50",
+            shadow: "shadow-[0_0_25px_rgba(6,182,212,0.5)]",
+            icon: (
+                <svg className="w-4 h-4 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            )
+        },
+        ROLE_USER: {
+            label: "CLIENT",
+            nameSuffix: "님",
+            bg: "bg-blue-50",
+            text: "text-blue-700",
+            border: "border-blue-200",
+            shadow: "shadow-sm",
+            icon: (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+            )
+        }
+    };
+    const currentAura = USER_AURA[auth.role] || USER_AURA.ROLE_USER;
+    const userName = auth.userNm || localStorage.getItem('userNm') || 'User';
+
   // 헤더 상단 네비게이션 메뉴 객체형 배열로 정리..
   const NAV_ITEMS = [
     { label: 'AI 상담', href: '/ai-chat' },
@@ -139,6 +185,43 @@ const Header = ({auth, onLoginUpdate}) => {
           <div className="hidden lg:flex items-center space-x-4">
             {auth.isLoggedIn ? (
               <>
+                  <div className="flex items-center gap-3 mr-4">
+                      {/* 아우라 배지 */}
+                      <div className={`
+                                  relative flex items-center gap-2 pl-2 pr-3 py-1 rounded-lg border transition-all duration-500
+                                  ${currentAura.bg} ${currentAura.text} ${currentAura.border} ${currentAura.shadow}
+                                  hover:brightness-110 active:scale-95 group
+                                `}>
+                          {/* 역할 레이블 (작게 상단에 띄움 - 감성 포인트) */}
+                          <span className={`
+                              absolute -top-2.5 left-2 px-1.5 py-0.5 rounded text-[8px] font-black tracking-widest leading-none border shadow-sm
+                              ${auth.role === 'ROLE_LAWYER'
+                                                          ? 'bg-white text-indigo-700 border-indigo-200'
+                                                          : 'bg-white text-gray-500 border-gray-100'}
+                                         `}>
+                              {currentAura.label}
+                          </span>
+
+                          {/* 아이콘 컨테이너 */}
+                          <div className="flex items-center justify-center w-6 h-6 rounded-md bg-white/20 backdrop-blur-md">
+                              {currentAura.icon}
+                          </div>
+
+                          {/* 이름 표시 */}
+                          <div className="flex flex-col items-start leading-none">
+                            <span className="text-[13px] font-black whitespace-nowrap">
+                              {userName}<span className="text-[11px] opacity-80 ml-0.5 font-normal">{currentAura.nameSuffix}</span>
+                            </span>
+                          </div>
+
+                          {/* 관리자일 때만 흐르는 광택 효과 (Shimmer) */}
+                          {auth.role === 'ROLE_ADMIN' && (
+                              <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
+                                  <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                              </div>
+                          )}
+                      </div>
+                  </div>
                 {/* 알림 아이콘 & 드롭다운 (핵심 구현) */}
                 <div className="relative" ref={notificationRef}>
                   <button 
