@@ -83,6 +83,6 @@ public class User {
 
     // 변호사인지 확인하는 편의 메서드
     public boolean isLawyer() {
-        return "ROLE_LAWYER".equals(this.roleCode);
+        return "ROLE_ASSOCIATE".equals(this.roleCode);
     }
 }
