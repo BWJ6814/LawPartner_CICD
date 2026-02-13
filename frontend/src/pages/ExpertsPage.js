@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     Gavel, Car, Home, Key,
@@ -37,6 +37,35 @@ const CATEGORY_GRID = [
     { key: "계약서 검토", label: "계약서 검토", icon: <FileText size={24} /> },
     { key: "기타", label: "기타", icon: <MoreHorizontal size={24} /> },
 ];
+const CATEGORY_MAP = {
+    형사: ["형사", "성범죄", "마약", "폭행", "사기", "보이스피싱", "구속영장", "형사합의", "명예훼손", "해킹"],
+
+    교통사고: ["교통사고", "음주운전", "보험", "합의", "휴업손해", "벌점", "진단서"],
+
+    부동산: ["부동산", "매매", "재개발", "분양", "등기", "명도"],
+
+    임대차: ["임대차", "전세", "월세"],
+
+    손해배상: ["손해배상", "위자료", "과실"],
+
+    "금전/채무": ["채무", "대여금", "보증", "채무불이행", "대출"],
+
+    채권추심: ["채권추심", "가압류", "가처분"],
+
+    "이혼/상속": ["이혼", "상속", "재산분할", "양육권", "유류분", "상속세", "협의이혼"],
+
+    "기업/노동": ["노동", "부당해고", "임금체불", "산재", "노동위원회", "취업규칙", "직장내괴롭힘"],
+
+    행정: ["행정", "행정소송", "처분취소", "행정심판", "정보공개", "운전면허", "영업정지", "이의신청"],
+
+    지식재산: ["특허", "저작권", "상표"],
+
+    "회생/파산": ["회생", "파산", "개인회생"],
+
+    "계약서 검토": ["계약서", "계약검토", "합의서", "내용증명"],
+
+    기타: []
+};
 
 
 const SORTS = [
@@ -362,6 +391,8 @@ const DUMMY_EXPERTS = [
 ];
 
 const ExpertsPage = () => {
+    const recommendRef = useRef(null);
+
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -384,30 +415,46 @@ const ExpertsPage = () => {
         setSearchParams(params, { replace: true });
     };
 
-    // ✅ 필터 + 검색
-    const filtered = useMemo(() => {
-        const roleFiltered = DUMMY_EXPERTS.filter((e) => e.role === selectedRole);
+        // ✅ 필터 + 검색
+        const filtered = useMemo(() => {
 
-        const categoryFiltered =
-            selectedCategory === "ALL"
-                ? roleFiltered
-                : roleFiltered.filter((e) => e.mainCategory === selectedCategory);
+            const roleFiltered = DUMMY_EXPERTS.filter(
+                (e) => e.role === selectedRole
+            );
 
-        const q = keyword.trim();
-        if (!q) return categoryFiltered;
+            const categoryFiltered =
+                selectedCategory === "ALL"
+                    ? roleFiltered
+                    : roleFiltered.filter((e) => {
+                        const keywords = CATEGORY_MAP[selectedCategory] || [];
 
-        return categoryFiltered.filter((e) => {
-            const hay = [
-                e.name,
-                e.mainCategory,
-                (e.tags || []).join(" "),
-                `${e.careerYears}년`,
-            ].join(" ");
-            return containsKoreanInsensitive(hay, q);
-        });
-    }, [selectedRole, selectedCategory, keyword]);
+                        const inMain = e.mainCategory === selectedCategory;
 
-    // ✅ 정렬
+                        const inTags = e.tags?.some((tag) =>
+                            keywords.some((kw) => tag.includes(kw))
+                        );
+
+                        return inMain || inTags;
+                    });
+
+            const q = keyword.trim();
+            if (!q) return categoryFiltered;
+
+            return categoryFiltered.filter((e) => {
+                const hay = [
+                    e.name,
+                    e.mainCategory,
+                    (e.tags || []).join(" "),
+                    `${e.careerYears}년`,
+                ].join(" ");
+
+                return containsKoreanInsensitive(hay, q);
+            });
+
+        }, [selectedRole, selectedCategory, keyword]);
+
+
+        // ✅ 정렬
     const sorted = useMemo(() => {
         const arr = [...filtered];
         switch (sortKey) {
@@ -438,7 +485,13 @@ const ExpertsPage = () => {
     const handleCategoryClick = (catKey) => {
         setSelectedCategory(catKey);
         syncParams({ category: catKey });
+
+        recommendRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+        });
     };
+
 
     const handleProfile = (id) => {
         navigate(`/experts/${id}`);
@@ -550,7 +603,7 @@ const ExpertsPage = () => {
             </div>
 
             {/* ✅ 추천 섹션: 메인 상단 (CARD-06 - 후기/평점 기반) */}
-            <div className="mb-10">
+            <div  ref={recommendRef} className="mb-10">
                 <div className="flex items-end justify-between mb-4">
                     <div>
                         <h3 className="text-xl font-black text-slate-900">⭐ 추천 전문가</h3>
@@ -566,8 +619,8 @@ const ExpertsPage = () => {
                         추천할 전문가가 없습니다. (필터/검색 조건을 변경해보세요)
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {topRecommended.map((e) => (
+                    <div className="grid grid-cols-3 gap-6">
+                    {topRecommended.map((e) => (
                             <div
                                 key={e.id}
                                 className="bg-white rounded-3xl shadow-lg p-7 border border-gray-100 hover:shadow-2xl transition"
@@ -630,8 +683,9 @@ const ExpertsPage = () => {
             </div>
 
             {/* 결과 카드 리스트 (CARD-05) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {sorted.map((e) => (
+            <div className="grid grid-cols-3 gap-8">
+
+            {sorted.map((e) => (
                     <div
                         key={e.id}
                         className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition"
