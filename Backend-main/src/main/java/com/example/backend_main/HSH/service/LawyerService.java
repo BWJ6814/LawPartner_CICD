@@ -31,6 +31,13 @@ public class LawyerService {
     @Transactional
     public void registerLawyerInfo(User user, UserJoinRequestDTO dto) {
 
+        // 0. 자격 번호 중복 체크 (조용한 거절)
+        if (lawyerInfoRepository.existsByLicenseNo(dto.getLicenseNo())) {
+            log.warn("⚠️ 중복된 자격 번호 가입 시도 감지: {}", dto.getLicenseNo());
+            // 사용자에게는 '중복'임을 알리지 않고 포괄적인 에러 메시지 전달
+            throw new IllegalArgumentException("입력하신 정보가 올바르지 않거나 확인이 필요합니다. 관리자에게 문의해주세요.");
+        }
+
         // 1. 파일 업로드 처리
         String savedFileName = null;
         if (dto.getLicenseFile() != null && !dto.getLicenseFile().isEmpty()) {
@@ -95,4 +102,6 @@ public class LawyerService {
 
         return savedName;
     }
+
+
 }

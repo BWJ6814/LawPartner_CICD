@@ -2,6 +2,7 @@ package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AuthService;
 import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.TokenDTO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
@@ -28,6 +29,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserRepository userRepository;
+    private final HashUtil hashUtil;
 
     /*
         [회원 가입 API] - USR-01
@@ -70,7 +72,7 @@ public class AuthController {
     public ResultVO<Boolean> checkId(@RequestParam("userId") String userId){
         // DB에 해당 아이디가 없어야 (exists == false) 사용 가능
         boolean isAvailable = !userRepository.existsByUserId(userId);
-        // ★ [수정] ResponseEntity 대신 표준 식판 ResultVO로 통일!
+        // ★  ResponseEntity 대신 표준 식판 ResultVO로 통일!
         if (isAvailable) {
             return ResultVO.ok("ID-AVAILABLE", "사용 가능한 아이디입니다.", true);
         } else {
@@ -78,8 +80,30 @@ public class AuthController {
             return ResultVO.fail("ID-DUPLICATE", "이미 사용 중인 아이디입니다.");
         }
     }
+    @GetMapping("/check-email")
+    public ResultVO<Boolean> checkEmail(@RequestParam("email") String email) {
+        // HashUtil을 사용해 해시값으로 변환 후 DB 조회 (AuthService의 로직 활용 추천)
+        String emailHash = hashUtil.generateHash(email);
+        boolean isAvailable = !userRepository.existsByEmailHash(emailHash);
 
+        if (isAvailable) {
+            return ResultVO.ok("EMAIL-AVAILABLE", "사용 가능한 이메일입니다.", true);
+        } else {
+            return ResultVO.fail("EMAIL-DUPLICATE", "이미 가입된 이메일입니다.");
+        }
+    }
 
+    @GetMapping("/check-phone")
+    public ResultVO<Boolean> checkPhone(@RequestParam("phone") String phone) {
+        // 1. 입력받은 전화번호(010-XXXX-XXXX)를 해시로 변환
+        String phoneHash = hashUtil.generateHash(phone);
+        boolean isAvailable = !userRepository.existsByPhoneHash(phoneHash);
 
+        if (isAvailable) {
+            return ResultVO.ok("PHONE-AVAILABLE", "사용 가능한 번호입니다.", true);
+        } else {
+            return ResultVO.fail("PHONE-DUPLICATE", "이미 가입된 번호입니다.");
+        }
 
+    }
 }
