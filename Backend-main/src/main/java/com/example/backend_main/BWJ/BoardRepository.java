@@ -7,4 +7,6 @@ import java.util.List;
 public interface BoardRepository extends JpaRepository<Board, Long> {
     // 최신순 정렬해서 가져오기
     List<Board> findAllByOrderByRegDtDesc();
+
+    List<Board> findTop5ByWriterNoOrderByRegDtDesc(Long writerNo);
 }
