@@ -32,7 +32,10 @@ const SignupPage = () => {
     const [isIdChecked, setIsIdChecked] = useState(false);
     const [idMsg, setIdMsg] = useState({ text: '아이디 중복 확인을 해주세요.', color: 'text-slate-500' });
     const [pwMsg, setPwMsg] = useState('');
-
+    // 이메일, 휴대폰 입력
+    const [emailMsg, setEmailMsg] = useState({ text: '', color: '' });
+    const [phoneMsg, setPhoneMsg] = useState({ text: '', color: '' });
+    
     // 2. 핸들러 함수들
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -75,13 +78,53 @@ const SignupPage = () => {
         }
     };
 
+    const handleEmailCheck = async () => {
+        if (!formData.email) return;
+        
+        // 이메일 형식 검사 (간단한 정규식)
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+            setEmailMsg({ text: "⚠️ 올바른 이메일 형식이 아닙니다. ⚠️", color: "text-red-500" });
+            return;
+        }
 
+        try {
+            const response = await api.get('/api/auth/check-email', { params: { email: formData.email } });
+            if (response.data.success) {
+                setEmailMsg({ text: "사용 가능한 이메일입니다.", color: "text-green-600" });
+            } else {
+                setEmailMsg({ text: response.data.message, color: "text-red-500" });
+            }
+        } catch (e) {
+            setEmailMsg({ text: "⚠️ 중복 확인 중 오류 발생 ⚠️", color: "text-red-500" });
+        }
+    };
+    
     // 휴대폰 번호 포맷팅
     const handlePhoneFormat = (e) => {
         let val = e.target.value.replace(/[^0-9]/g, "");
         if (val.length > 3 && val.length <= 7) val = val.slice(0, 3) + "-" + val.slice(3);
         else if (val.length > 7) val = val.slice(0, 3) + "-" + val.slice(3, 7) + "-" + val.slice(7);
         setFormData({ ...formData, phone: val });
+        // ★ 최적화: 13자(포맷 완료)가 되면 자동으로 중복 체크 실행
+        if (val.length === 13) {
+            checkDuplicatePhone(val);
+        } else {
+            setPhoneMsg({ text: '', color: '' }); // 번호 지우면 메시지도 삭제
+        }
+    };
+
+    const checkDuplicatePhone = async (phoneVal) => {
+        try {
+            const response = await api.get('/api/auth/check-phone', { params: { phone: phoneVal } });
+            if (response.data.success) {
+                setPhoneMsg({ text: "가입 가능한 번호입니다.", color: "text-green-600" });
+            } else {
+                setPhoneMsg({ text: response.data.message, color: "text-red-500" });
+            }
+        } catch (e) {
+            setPhoneMsg({ text: "번호 중복 확인 실패", color: "text-red-500" });
+        }
     };
 
     // 전문분야 체크박스 처리
@@ -254,9 +297,20 @@ const SignupPage = () => {
                             </div>
                             <div className="space-y-1">
                                 <label className={labelStyle}>Phone</label>
-                                <input type="text" name="phone" required placeholder="010-0000-0000" value={formData.phone} className={inputStyle} onChange={handlePhoneFormat} maxLength="13"/>
+                                <input 
+                                    type="text" 
+                                    name="phone" 
+                                    required 
+                                    placeholder="010-0000-0000" 
+                                    value={formData.phone} 
+                                    className={inputStyle} 
+                                    onChange={handlePhoneFormat} // ★ 입력 중 포맷팅 + 자동 체크
+                                    maxLength="13"
+                                />
+                                {phoneMsg.text && <p className={`text-[10px] font-bold ml-1 ${phoneMsg.color}`}>{phoneMsg.text}</p>}
                             </div>
                         </div>
+
                         {role === 'client' && (
                             <div className="space-y-1 animate-fade-in">
                                 <label className={labelStyle}>Nickname</label>
@@ -276,8 +330,18 @@ const SignupPage = () => {
                         {/* 이메일 */}
                         <div className="space-y-1">
                             <label className={labelStyle}>Email Address</label>
-                            <input type="email" name="email" required placeholder="example@lex.ai" className={inputStyle} onChange={handleChange} />
+                            <input 
+                                type="email" 
+                                name="email" 
+                                required 
+                                placeholder="example@lex.ai" 
+                                className={inputStyle} 
+                                onChange={handleChange}
+                                onBlur={handleEmailCheck} // ★ 칸을 벗어날 때 실행!
+                            />
+                            {emailMsg.text && <p className={`text-[10px] font-bold ml-1 ${emailMsg.color}`}>{emailMsg.text}</p>}
                         </div>
+
                     </div>
 
                     {/* [변호사 전용 정보] - role이 lawyer일 때만 보임 */}

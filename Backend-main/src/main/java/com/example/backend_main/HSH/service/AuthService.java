@@ -49,19 +49,19 @@ public class AuthService {
         // 1-1. 아이디 중복 체크
         // DB창고 userRepository에 가서 아이디(UserId)를 이미 사용하는 사람이 있는지 확인하기..
         if (userRepository.existsByUserId(dto.getUserId())) {
-            // IllegalArgumentException
-            // RuntimeException
-            throw new RuntimeException("이미 사용 중인 아이디입니다.");
+            // IllegalArgumentException : 너가 보낸 데이터가 우리 시스템 규칙에 안 맞아!
+            // RuntimeException         : 원인은 모르겠지만 실행 중에 터졌다
+            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
         }
         // 1-2. 중복 체크를 해시값으로 수행하기
         String inputEmailHash = hashUtil.generateHash(dto.getEmail());
         String inputPhoneHash = hashUtil.generateHash(dto.getPhone());
 
         if (userRepository.existsByEmailHash(inputEmailHash)) {
-            throw new RuntimeException("이미 가입된 이메일입니다.");
+            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
         if (userRepository.existsByPhoneHash(inputPhoneHash)) {
-            throw new RuntimeException("이미 가입된 휴대폰 번호입니다.");
+            throw new IllegalArgumentException("이미 가입된 휴대폰 번호입니다.");
         }
 
         // 1-3 닉네임 결정 및 중복 체크 로직
@@ -70,7 +70,7 @@ public class AuthService {
         // 결정된 닉네임이 DB에 있는지 확인
         if (userRepository.existsByNickNm(finalNickname)) {
             // 변호사의 경우 실명이 중복된 것이므로 메시지를 다르게 줄 수도 있음
-            throw new RuntimeException("이미 사용 중인 닉네임(또는 이름)입니다.");
+            throw new IllegalArgumentException("이미 사용 중인 닉네임(또는 이름)입니다.");
         }
 
 
@@ -116,13 +116,13 @@ public class AuthService {
         // 입력받은 아이디로 DB에서 해당 시민(User 객체)을 가져오기
         // 아이디가 없어도 아이디가 없습니다..! 라고 보내주는 것이 아닌 아이디/비밀번호 통째로 불일치 처리..
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("아이디 또는 비밀번호가 일치하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다."));
 
         // 2. 비밀번호 확인
         // matches(방금 입력한 비번, DB에 저장된 비번)
         // 이 두개를 넣으면 스프링이 같으면 true / 다르면 false를 알려줍니다.
         if (!passwordEncoder.matches(password, user.getUserPw())) {
-            throw new RuntimeException("아이디 또는 비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
         // 3. [핵심] 이메일 복호화 (JWT의 식별자로 사용하기 위해)
@@ -168,7 +168,7 @@ public class AuthService {
         } else {
             // [일반 유저] 닉네임 = 입력값 (유효성 검사 필수)
             if (dto.getNickNm() == null || dto.getNickNm().trim().isEmpty()) {
-                throw new RuntimeException("일반 회원은 닉네임을 반드시 입력해야 합니다.");
+                throw new IllegalArgumentException("일반 회원은 닉네임을 반드시 입력해야 합니다.");
             }
             return dto.getNickNm();
         }

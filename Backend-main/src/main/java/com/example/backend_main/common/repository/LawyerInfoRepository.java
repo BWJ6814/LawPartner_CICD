@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface LawyerInfoRepository extends JpaRepository<LawyerInfo, Long> {
     // JpaRepository를 상속받는 순간 save() 메서드는 자동으로 생성됩니다!
+    boolean existsByLicenseNo(String licenseNo);
 }
