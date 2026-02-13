@@ -93,9 +93,9 @@ public class LogingAspect {
                     .reqUri(uri)
                     .userAgent(userAgent)
                     .userNo(userNo)
-                    // .statusCode(status) // Entity에 필드 추가 필요
-                    // .execTime(duration) // Entity에 필드 추가 필요
-                    // .errorMsg(errorMsg) // Entity에 필드 추가 필요
+                    .statusCode(status) // Entity에 필드 추가 필요
+                    .execTime(duration) // Entity에 필드 추가 필요
+                    .errorMsg(errorMsg) // Entity에 필드 추가 필요
                     .build());
         }
 
