@@ -1,0 +1,36 @@
+package com.example.backend_main.common.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "TB_CALENDAR_EVENT")
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class CalendarEvent {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "EVENT_NO")
+    private Long eventNo;
+
+    @Column(name = "ROOM_ID", nullable = false)
+    private String roomId;
+
+    @Column(name = "USER_NO", nullable = false)
+    private Long userNo;
+
+    @Column(name = "LAWYER_NO", nullable = false)
+    private Long lawyerNo;
+
+    @Column(name = "TITLE", nullable = false)
+    private String title;
+
+    @Column(name = "START_DATE", nullable = false)
+    private String startDate; // DB에는 문자열로 저장하기로 함 (예: 2026-02-15)
+
+    @Column(name = "COLOR_CODE")
+    private String colorCode;
+}

@@ -1,6 +1,7 @@
 package com.example.backend_main.KimMinSu;
 
 import com.example.backend_main.BWJ.BoardRepository;
+import com.example.backend_main.common.entity.CalendarEvent;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.dto.Board;
@@ -19,6 +20,9 @@ public class GeneralMyPageService {
 
     private final UserRepository userRepository;
     private final BoardRepository boardRepository;
+
+    // ★ 방금 만든 캘린더 관리자 추가!
+    private final CalendarEventRepository calendarEventRepository;
 
     public GeneralMyPageDTO getDashboardData(Long userNo) {
         GeneralMyPageDTO dto = new GeneralMyPageDTO();
@@ -54,7 +58,17 @@ public class GeneralMyPageService {
         dto.setRecentPosts(postList);
 
         // 5. 캘린더 일정 (추후 연동, 일단 빈 배열)
-        dto.setCalendarEvents(new ArrayList<>());
+        List<CalendarEvent> myEvents = calendarEventRepository.findByUserNo(userNo);
+
+        List<GeneralMyPageDTO.CalendarEventDTO> eventList = myEvents.stream().map(event -> {
+            GeneralMyPageDTO.CalendarEventDTO calDTO = new GeneralMyPageDTO.CalendarEventDTO();
+            calDTO.setTitle(event.getTitle());
+            calDTO.setDate(event.getStartDate()); // FullCalendar가 인식하는 'date' 속성
+            calDTO.setColor(event.getColorCode());
+            return calDTO;
+        }).collect(Collectors.toList());
+
+        dto.setCalendarEvents(eventList);
 
         return dto;
     }
