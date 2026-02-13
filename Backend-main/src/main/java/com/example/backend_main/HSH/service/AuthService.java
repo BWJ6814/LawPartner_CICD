@@ -133,6 +133,17 @@ public class AuthService {
             throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
+        // 너.. 정지 된 계정이야..?! 체크
+        String status = user.getStatusCode();
+        // S03 : 정지된 회원
+        if ("S03".equals(status)) {
+            throw new IllegalStateException("운영 정책 위반으로 활동이 정지된 계정입니다. 고객센터에 문의하세요");
+        }
+        if("S02".equals(status)) {
+            throw new IllegalStateException("현재 가입 심사 대기중입니다. 승인 완료 후 이용 가능합니다.");
+        }
+
+
         // 3. [핵심] 이메일 복호화 (JWT의 식별자로 사용하기 위해)
         // DB에 잠겨있던 이메일을 해독기(decrypt)로 풀어서 꺼내기..
         String decryptedEmail = aes256Util.decrypt(user.getEmail());
