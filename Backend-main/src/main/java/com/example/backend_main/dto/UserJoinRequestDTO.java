@@ -4,18 +4,25 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
 /*
     [UserJoinRequestDTO]
     리액트에서 보낸 가입 정보를 담아 AuthService로 전달하는 바구니입니다.
     @Builder를 추가하여 서비스 단에서 다루기 편하게 만들었습니다.
+    
+    @Getter : 데이터를 읽는 창문 
+        클래스 내부의 필드 값을 [외부로 반환(Return)]해주는 메서드
+        --> get필드명 - 읽기 전용
+    @Setter : 데이터를 저장하는 문
+        외부에서 전달받은 값을 객체 내부 필드에 [저장하거나 수정(Update)]하는 메서드
+        추가로 유효성 검증(Validation)도 할 수 있음.
+        --> set필드명
+    
 */
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,7 +43,7 @@ public class UserJoinRequestDTO {
     private String email;
 
     @NotBlank(message = "전화번호는 필수 입력 항목입니다.")
-    @Pattern(regexp = "^[0-9]{10,11}$", message = "올바른 전화번호 형식이 아닙니다.")
+    @Pattern(regexp = "^010-\\d{3,4}-\\d{4}$", message = "올바른 전화번호 형식이 아닙니다. (010-0000-0000)")
     private String phone;
 
     private String nickNm; // 별칭 - 추후에 개인 설정으로 처리 가능

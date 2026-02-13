@@ -15,6 +15,7 @@ const SignupPage = () => {
         userNm: '', 
         phone: '', 
         email: '',
+        nickNm: '',
         // 변호사 전용 필드
         licenseNo: '', 
         examType: '', 
@@ -58,12 +59,16 @@ const SignupPage = () => {
                 params : {userId : formData.userId}
             });
 
-            if (response.data === true) {
+            // ★ [수정] ResultVO의 success 필드로 확인
+            if (response.data.success) { 
+                // ResultVO.ok("ID-AVAILABLE", ...)인 경우 여기로 들어옴
                 setIdMsg({ text: "사용 가능한 아이디입니다.", color: "text-green-600"});
                 setIsIdChecked(true);
             } else {
+                // ResultVO.fail("ID-DUPLICATE", ...)인 경우 여기로 들어옴
                 setIdMsg({ text : "이미 사용중인 아이디입니다.", color: "text-red-500"});
                 setIsIdChecked(false);
+                console.log("에러 코드:", response.data.code); // ID-DUPLICATE 출력
             }
         } catch (error) {
         console.error("아이디 체크 실패:", error);
@@ -113,6 +118,12 @@ const SignupPage = () => {
         submitData.append("email", formData.email);
         submitData.append("roleCode", role === 'client' ? 'ROLE_USER' : 'ROLE_LAWYER'); 
 
+        // ★  일반 유저일 때만 닉네임 전송 ★
+        if (role === 'client') {
+            if (!formData.nickNm) return alert("닉네임을 입력해주세요.");
+            submitData.append("nickNm", formData.nickNm);
+        }
+
         // 변호사일 경우 추가 정보 append
         if (role === 'lawyer') {
             submitData.append("licenseNo", formData.licenseNo);
@@ -128,19 +139,24 @@ const SignupPage = () => {
             }
         }
 
-        try {
+
             // Content-Type은 axios가 알아서 multipart/form-data로 설정함
-            await api.post('/api/auth/join', submitData);
-            
+            try {
+            // 3. axios 호출 시 헤더를 명시적으로 설정해줍니다.
+            await api.post('/api/auth/join', submitData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data' // ★ JSON이 아닌 Form-Data임을 명시! ★ 제일 중요함..
+                }
+            });
+
             alert(role === 'lawyer' ? "전문가 심사 요청이 완료되었습니다." : "회원가입이 완료되었습니다!");
-            navigate('/'); // 로그인 페이지로 이동
-            
+            navigate('/');
         } catch (error) {
-            console.error("가입 실패:", error.response);
-            const errorMsg = error.response?.data?.message || "회원가입 중 오류가 발생했습니다.";
-            alert(errorMsg);
+            // 에러 로그 확인용
+            console.error("가입 실패 상세:", error.response?.data);
+            alert(error.response?.data?.message || "회원가입 실패");
         } finally {
-            setIsSubmitting(false) // 로딩 해제..
+            setIsSubmitting(false);
         }
     };
 
@@ -242,7 +258,22 @@ const SignupPage = () => {
                                 <input type="text" name="phone" required placeholder="010-0000-0000" value={formData.phone} className={inputStyle} onChange={handlePhoneFormat} maxLength="13"/>
                             </div>
                         </div>
-
+                        {role === 'client' && (
+                            <div className="space-y-1 animate-fade-in">
+                                <label className={labelStyle}>Nickname</label>
+                                <input 
+                                    type="text" 
+                                    name="nickNm" 
+                                    required 
+                                    placeholder="활동명 (별명)" 
+                                    className={inputStyle} 
+                                    onChange={handleChange} 
+                                />
+                                <p className="text-[10px] text-slate-400 ml-1 font-bold">
+                                    * 커뮤니티 활동 시 사용될 별명입니다.
+                                </p>
+                            </div>
+                        )}
                         {/* 이메일 */}
                         <div className="space-y-1">
                             <label className={labelStyle}>Email Address</label>
