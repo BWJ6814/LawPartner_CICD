@@ -33,7 +33,7 @@ const GeneralMyPage = () => {
                     }
                 });
 
-                setDashboardData(response.data); // 받아온 데이터 저장
+                setDashboardData(response.data.data); // 받아온 데이터 저장
                 setLoading(false);
 
             } catch (error) {

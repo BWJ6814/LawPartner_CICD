@@ -1,44 +1,60 @@
 package com.example.backend_main.KimMinSu;
 
-import com.example.backend_main.common.Mapper.GeneralMyPageMapper;
+import com.example.backend_main.BWJ.BoardRepository;
+import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.GeneralMyPageDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor // final 필드 생성자 주입
+@RequiredArgsConstructor // ★ DB 관리자들을 데려오기 위해 필수!
 public class GeneralMyPageService {
 
-    private final GeneralMyPageMapper myPageMapper; // 매퍼 주입
+    private final UserRepository userRepository;
+    private final BoardRepository boardRepository;
 
     public GeneralMyPageDTO getDashboardData(Long userNo) {
-        // 1. 빈 DTO 생성
         GeneralMyPageDTO dto = new GeneralMyPageDTO();
 
-        // 2. DB에서 유저 이름 조회
-        String userName = myPageMapper.getUserName(userNo);
-        dto.setUserName(userName != null ? userName : "알 수 없음");
+        // 1. [DB 연동] 유저 이름 가져오기
+        User user = userRepository.findById(userNo)
+                .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
+        dto.setUserName(user.getUserNm());
 
-        // 3. 통계 데이터 조회
-        dto.setRecentReplyCount(myPageMapper.getRecentReplyCount(userNo));
-        dto.setRequestCount(myPageMapper.getRequestCount(userNo));
+        // 2. 통계 카드 (아직 관련 테이블이 미완성이면 일단 0으로 세팅)
+        dto.setRecentReplyCount(0);
+        dto.setRequestCount(0);
+        dto.setDaysLeft(null);
 
-        // *남은 일수는 로직이 복잡하므로 일단 DB에서 캘린더 이벤트를 가져와서 Java에서 계산하거나 0으로 설정
-        dto.setDaysLeft(0);
+        // 3. 최근 상담 (추후 상담 테이블 만들어지면 연동, 지금은 빈 배열)
+        dto.setRecentConsultations(new ArrayList<>());
 
-        // 4. 최근 상담 리스트 조회
-        List<GeneralMyPageDTO.ConsultationItemDTO> consultList = myPageMapper.getRecentConsultations(userNo);
-        dto.setRecentConsultations(consultList);
+        // 4. [DB 연동] 최근 내 게시판 목록 가져오기 (방금 1단계에서 만든 명령어 사용)
+        List<Board> myBoards = boardRepository.findTop5ByWriterNoOrderByRegDtDesc(userNo);
 
-        // 5. 최근 게시글 조회
-        List<GeneralMyPageDTO.MyBoardDTO> postList = myPageMapper.getRecentPosts(userNo);
+        List<GeneralMyPageDTO.MyBoardDTO> postList = myBoards.stream().map(board -> {
+            GeneralMyPageDTO.MyBoardDTO postDTO = new GeneralMyPageDTO.MyBoardDTO();
+            postDTO.setBoardNo(board.getBoardNo());
+            postDTO.setTitle(board.getTitle());
+            // 날짜 형식 예쁘게 변환
+            if(board.getRegDt() != null) {
+                postDTO.setRegDate(board.getRegDt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            }
+            postDTO.setReplyCount(0); // 추후 답글 개수 연동
+            return postDTO;
+        }).collect(Collectors.toList());
+
         dto.setRecentPosts(postList);
 
-        // 6. 캘린더 일정 조회
-        List<GeneralMyPageDTO.CalendarEventDTO> eventList = myPageMapper.getCalendarEvents(userNo);
-        dto.setCalendarEvents(eventList);
+        // 5. 캘린더 일정 (추후 연동, 일단 빈 배열)
+        dto.setCalendarEvents(new ArrayList<>());
 
         return dto;
     }
