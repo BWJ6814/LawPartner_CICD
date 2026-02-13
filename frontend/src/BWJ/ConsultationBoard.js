@@ -248,4 +248,3 @@ const ConsultationBoard = () => {
 };
 
 export default ConsultationBoard;
-// 깃허브 테스트용
