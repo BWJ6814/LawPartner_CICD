@@ -41,8 +41,8 @@ const Header = ({auth, onLoginUpdate}) => {
 
   // 헤더 상단 네비게이션 메뉴 객체형 배열로 정리..
   const NAV_ITEMS = [
-    { label: 'AI 법률상담', href: '/ai-chat' },
-    { label: '상담게시판 가기', href: '/consultation' },
+    { label: 'AI 상담', href: '/ai-chat' },
+    { label: '상담게시판', href: '/consultation' },
     { label: '전문가 찾기', href: '/experts' },
     { label: '고객센터', href: '/customer' },
   ];
@@ -125,9 +125,11 @@ const Header = ({auth, onLoginUpdate}) => {
             {/* 데스크탑 메뉴 */}
             <div className="hidden lg:flex space-x-6 text-gray-700 font-bold text-sm">
               {NAV_ITEMS.map((item) => (
-                <Link key={item.label} to={item.href} style={noUnderlineStyle} className="hover:text-blue-900 transition-colors relative group no-underline">
+                <Link key={item.label} to={item.href} style={noUnderlineStyle} className="hover:text-blue-900
+                    transition-colors relative group no-underline">
                   {item.label}
-                  <span className="absolute bottom-[-6px] left-0 w-0 h-0.5 bg-blue-900 transition-all duration-300 group-hover:w-full"></span>
+                  <span className="absolute bottom-[-6px] left-0 w-0 h-0.5 bg-blue-900
+                  transition-all duration-300 group-hover:w-full"></span>
                 </Link>
               ))}
             </div>

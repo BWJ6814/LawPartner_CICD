@@ -154,7 +154,7 @@ const GeneralMyPage = () => {
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shadow-md mb-8">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="font-bold text-slate-800 text-lg">최근 내 게시판</h3>
-                            <Link to="/board" className="text-xs text-blue-600 font-bold hover:underline">
+                            <Link to="/consultation" className="text-xs text-blue-600 font-bold hover:underline">
                                 전체 게시판
                             </Link>
                         </div>
@@ -162,7 +162,7 @@ const GeneralMyPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {dashboardData.recentPosts && dashboardData.recentPosts.length > 0 ? (
                                 dashboardData.recentPosts.map((post) => (
-                                    <Link to={`/board/${post.boardNo}`} key={post.boardNo} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition cursor-pointer border border-slate-100">
+                                    <Link to={`/consultation/${post.boardNo}`} key={post.boardNo} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition cursor-pointer border border-slate-100">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-slate-700 truncate max-w-[200px]">{post.title}</span>
                                             <span className="text-xs text-slate-400 mt-1">{post.regDate}</span>
