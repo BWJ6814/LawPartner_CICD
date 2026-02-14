@@ -45,22 +45,14 @@ public class LogingAspect {
         String userAgent = request.getHeader("User-Agent");
 
         // 3. 기타 접속 정보 수집
-        if (userAgent != null && userAgent.length() > 200) userAgent = userAgent.substring(0, 200);
+        String userAgent = request.getHeader("User-Agent");
+        if (userAgent != null && userAgent.length() > 200) {
+            userAgent = userAgent.substring(0, 200); // DB 컬럼 길이 제한 방어
+        }
         String ip = request.getRemoteAddr();
         String uri = request.getRequestURI();
         // 4. [USER_NO] 현재 로그인한 사용자 번호 가져오기
         Long userNo = getCurrentUserNo();
-
-
-        // 5. [AccessLog] 엔티티 생성 (새로운 SQL 규격 반영)
-        AccessLog accessLog = AccessLog.builder()
-                .traceId(traceId)
-                .reqIp(ip)
-                .reqUri(uri)
-                .userAgent(userAgent)
-                .userNo(userNo)
-                .statusCode(102) // 102: Processing (임시)
-                .build();
 
         // 일단 저장 (ID 확보를 위해) - *필요 시 생략하고 마지막에만 저장해도 됨
         // accessLogRepository.save(accessLog);
@@ -70,32 +62,36 @@ public class LogingAspect {
         int status = 200; // 기본 성공
 
         try {
-            // 3. 실제 타겟 메서드 실행
+            // ==========================================
+            // ★ 핵심: 실제 컨트롤러 메서드 실행
+            // ==========================================
             result = joinPoint.proceed();
         } catch (Exception e) {
-            // 4. 예외 발생 시 정보 캡처
-            status = 500;
-            errorMsg = e.getMessage();
-            throw e; // 예외는 다시 던져서 컨트롤러 어드바이스가 처리하게 함
-        } finally {
-            // 5. 종료 시간 및 최종 정보 업데이트
-            long duration = System.currentTimeMillis() - startTime;
+            // 예외 발생 시 정보 캡처
+            status = 500; // 에러 코드 설정
+            errorMsg = e.getMessage(); // 에러 메시지 캡처
 
-            // 엔티티에 statusCode, execTime 필드가 추가되었다고 가정 (DB 컬럼 추가 필요!)
-            // AccessLog 엔티티 수정이 필요합니다.
+            // DB 컬럼 길이(500자) 넘치지 않게 자르기
+            if (errorMsg != null && errorMsg.length() > 500) {
+                errorMsg = errorMsg.substring(0, 500);
+            }
+            throw e; // 예외는 다시 던져서 GlobalExceptionHandler가 처리하게 함
+        } finally {
+            // 5. 종료 시간 계산 및 로그 저장 (성공이든 실패든 무조건 실행)
+            long duration = System.currentTimeMillis() - startTime;
 
             log.info("📢 [Audit] TraceID: {}, URI: {}, Status: {}, Time: {}ms", traceId, uri, status, duration);
 
-            // 여기서 최종 저장 (DB 부하를 줄이려면 여기서 한 번만 저장하는 게 좋음)
+            // [최종 저장] 수정된 AccessLog 엔티티에 맞춰 데이터 삽입
             accessLogRepository.save(AccessLog.builder()
                     .traceId(traceId)
                     .reqIp(ip)
                     .reqUri(uri)
                     .userAgent(userAgent)
                     .userNo(userNo)
-                    .statusCode(status) // Entity에 필드 추가 필요
-                    .execTime(duration) // Entity에 필드 추가 필요
-                    .errorMsg(errorMsg) // Entity에 필드 추가 필요
+                    .statusCode(status)   // [추가됨] 상태 코드
+                    .execTime(duration)   // [추가됨] 실행 시간
+                    .errorMsg(errorMsg)   // [추가됨] 에러 메시지 (성공 시 null)
                     .build());
         }
 
