@@ -120,4 +120,9 @@ public class LogingAspect {
             return null;
         }
     }
+
+
+    // 커스텀 어노테이션(@ActionLog)이  붙은 메서드 실행 시 동작
+    @Arou
+
 }
