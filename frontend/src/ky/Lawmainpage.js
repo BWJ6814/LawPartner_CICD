@@ -1,291 +1,196 @@
-import React, { useState } from 'react';
+import { useState } from "react";
 import Sidebar from './lawpage/Sidebar';
 
-const Lawmainpage = () => {
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-    const [currentMonth, setCurrentMonth] = useState(0); // 0 = January 2026
+const FONT = "'Pretendard', 'Noto Sans KR', sans-serif";
+const BLUE = "#1D4ED8";
 
-    const toggleSidebar = () => {
-        setIsSidebarCollapsed(!isSidebarCollapsed);
-    };
+const stats = [
+    { label: "해결한 사건", sub: "해결된 사건 수", value: "0건", color: BLUE },
+    { label: "상담 요청 건수", sub: "요청원 건수", value: "0건", color: "#f97316" },
+];
 
-    // 달력 데이터 생성 (2026년 1월)
-    const generateCalendar = () => {
-        const year = 2026;
-        const month = currentMonth;
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const prevMonthDays = new Date(year, month, 0).getDate();
-        const days = [];
+const consultations = [
+    { name: "홍길동", category: "교통사고", status: "상담중", statusColor: "#f97316", date: "2026-02-03" },
+    { name: "김길동", category: "교통사고", status: "소송 진행중", statusColor: BLUE, date: "2026-01-03" },
+];
 
-        // 이전 달 날짜 (회색)
-        for (let i = firstDay - 1; i >= 0; i--) {
-            days.push({ day: prevMonthDays - i, isCurrentMonth: false, isPrev: true });
-        }
+const reviews = [
+    { name: "홍길동님", stars: 5, text: "어떻게 해결해야할지 모를 문제를 해결해주셨습니다. 정말 감사합니다." },
+    { name: "최길동님", stars: 5, text: "정말 친절하시는데 변호사님 덕분에 쉽게 해결해서 놀라고 좋던데..." },
+    { name: "김길동님", stars: 5, text: "정말 친절하시고 저희의 억울함을 풀어주시려고 열정적으로 하시는분 입니다..." },
+];
 
-        // 현재 달 날짜
-        for (let i = 1; i <= daysInMonth; i++) {
-            days.push({ day: i, isCurrentMonth: true, isPrev: false });
-        }
+const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-        // 다음 달 날짜 (회색)
-        const remainingDays = 42 - days.length; // 6주 표시
-        for (let i = 1; i <= remainingDays; i++) {
-            days.push({ day: i, isCurrentMonth: false, isPrev: false });
-        }
-
-        return days;
-    };
-
-    const calendarDays = generateCalendar();
-    const highlightedDates = [11, 18, 20, 25, 29]; // 빨간색 강조 날짜
-
-    // 최근 상담 요청 현황
-    const consultations = [
-        {
-            name: '홍길동',
-            category: '교통사고',
-            status: '상담중',
-            date: '2026-02-03',
-            statusColor: 'yellow'
-        },
-        {
-            name: '김철호',
-            category: '교통사고',
-            status: '소송 전행중',
-            date: '2026-01-03',
-            statusColor: 'blue'
-        }
-    ];
-
-    // 리뷰 데이터
-    const reviews = [
-        {
-            lawFirm: '종로법무법인',
-            rating: 5,
-            review: '이렇게 빠릿빠릿하게 모든 문제를 해결해주실거라 상상도 못했습니다.'
-        },
-        {
-            lawFirm: '최강법무법인',
-            rating: 5,
-            review: '당황 예방하려던 본정식나 관문과 성과 예방하지마 장애물없는 준비가...'
-        },
-        {
-            lawFirm: '검한법무법인',
-            rating: 5,
-            review: '정말 친절하시고 저의 사건을 해결해주실 수준으로써 많은 걱정이 없어서...'
-        }
-    ];
-
-    const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
-
-    return (
-        <div className="flex min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50">
-            {/* Sidebar */}
-            <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
-
-            {/* 메인 콘텐츠 영역 */}
-            <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-                <div className="p-6 max-w-7xl mx-auto w-full">
-                    {/* 헤더 - 스크롤 시 고정 */}
-                    <div className="sticky top-0 z-40 mb-6 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white shadow-xl">
-                        <h1 className="text-3xl font-bold mb-2">안녕하세요, 김구역 변호사님!</h1>
-                        <p className="text-blue-100 text-base">
-                            현재 처리해야 할 긴급 상담 건이 <span className="text-yellow-300 font-bold text-xl">0건</span> 있습니다.
-                        </p>
-                    </div>
-
-                    {/* 통계 카드 섹션 */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        {/* 해결한 사건 */}
-                        <div className="bg-white rounded-2xl shadow-sm p-6 border-2 border-blue-100 hover:shadow-lg transition-all duration-300">
-                            <div className="flex flex-col">
-                                <p className="text-sm text-gray-600 mb-1">해결한 사건</p>
-                                <p className="text-xs text-gray-500 mb-3">해결한 건수 수</p>
-                                <div className="flex items-end gap-1">
-                                    <p className="text-5xl font-bold text-gray-900">0</p>
-                                    <p className="text-2xl font-medium text-gray-600 mb-1">건</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 상담 요청 건 수 */}
-                        <div className="bg-white rounded-2xl shadow-sm p-6 border-2 border-orange-100 hover:shadow-lg transition-all duration-300">
-                            <div className="flex flex-col">
-                                <p className="text-sm text-gray-600 mb-1">상담 요청 건 수</p>
-                                <p className="text-xs text-gray-500 mb-3">상담한 건수</p>
-                                <div className="flex items-end gap-1">
-                                    <p className="text-5xl font-bold text-gray-900">0</p>
-                                    <p className="text-2xl font-medium text-gray-600 mb-1">건</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 평점 */}
-                        <div className="bg-white rounded-2xl shadow-sm p-6 border-2 border-green-100 hover:shadow-lg transition-all duration-300">
-                            <div className="flex flex-col">
-                                <p className="text-sm text-gray-600 mb-1">평점</p>
-                                <p className="text-xs text-gray-500 mb-3">리뷰 평점</p>
-                                <div className="flex items-end gap-2">
-                                    <p className="text-5xl font-bold text-gray-900">4.5</p>
-                                    <p className="text-2xl font-medium text-gray-500 mb-1">/ 5.0</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 하단 섹션 */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* 최근 상담 요청 현황 */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                                <h2 className="text-lg font-bold text-gray-900">최근 상담 요청 현황</h2>
-                                <button className="text-blue-600 text-sm font-medium hover:text-blue-700">
-                                    전체 보기
-                                </button>
-                            </div>
-                            <div className="p-6">
-                                <div className="space-y-4">
-                                    {consultations.map((item, index) => (
-                                        <div key={index} className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200">
-                                            <div className="space-y-3">
-                                                {/* 첫 번째 줄 */}
-                                                <div className="grid grid-cols-3 gap-2 text-sm">
-                                                    <div>
-                                                        <span className="text-gray-500 block mb-1">상담자</span>
-                                                        <span className="font-semibold text-gray-900">{item.name}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-gray-500 block mb-1">카테고리</span>
-                                                        <span className="font-semibold text-gray-900">{item.category}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-gray-500 block mb-1">상태</span>
-                                                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                                                            item.statusColor === 'yellow'
-                                                                ? 'bg-yellow-100 text-yellow-700'
-                                                                : 'bg-blue-100 text-blue-700'
-                                                        }`}>
-                                                            {item.status}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                {/* 두 번째 줄 */}
-                                                <div className="text-sm">
-                                                    <span className="text-gray-500">접수일 날짜</span>
-                                                    <span className="ml-2 font-semibold text-gray-900">{item.date}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 재판 일정 관리 */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                                <h2 className="text-lg font-bold text-gray-900">재판 일정 관리</h2>
-                                <button className="text-blue-600 text-sm font-medium hover:text-blue-700">
-                                    전체 보기
-                                </button>
-                            </div>
-                            <div className="p-6">
-                                {/* 월 선택 */}
-                                <div className="flex items-center justify-center gap-4 mb-4">
-                                    <button
-                                        onClick={() => setCurrentMonth(Math.max(0, currentMonth - 1))}
-                                        className="text-gray-600 hover:text-gray-900"
-                                    >
-                                        &lt;
-                                    </button>
-                                    <div className="text-center">
-                                        <div className="text-lg font-bold text-gray-900">2026년 {monthNames[currentMonth]}</div>
-                                    </div>
-                                    <button
-                                        onClick={() => setCurrentMonth(Math.min(11, currentMonth + 1))}
-                                        className="text-gray-600 hover:text-gray-900"
-                                    >
-                                        &gt;
-                                    </button>
-                                </div>
-
-                                {/* 달력 */}
-                                <div className="mb-4">
-                                    {/* 요일 헤더 */}
-                                    <div className="grid grid-cols-7 gap-1 mb-2">
-                                        {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day, index) => (
-                                            <div
-                                                key={day}
-                                                className={`text-center text-xs font-semibold py-2 ${
-                                                    index === 0 ? 'text-red-600' :
-                                                        index === 6 ? 'text-blue-600' :
-                                                            'text-gray-600'
-                                                }`}
-                                            >
-                                                {day}
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {/* 날짜 */}
-                                    <div className="grid grid-cols-7 gap-1">
-                                        {calendarDays.map((item, index) => {
-                                            const isHighlighted = item.isCurrentMonth && highlightedDates.includes(item.day);
-                                            const isSunday = index % 7 === 0;
-                                            const isSaturday = index % 7 === 6;
-
-                                            return (
-                                                <button
-                                                    key={index}
-                                                    className={`
-                                                        aspect-square flex items-center justify-center text-sm rounded-lg
-                                                        transition-all duration-200
-                                                        ${!item.isCurrentMonth ? 'text-gray-300' : ''}
-                                                        ${isHighlighted ? 'bg-red-500 text-white font-bold hover:bg-red-600' : ''}
-                                                        ${item.isCurrentMonth && !isHighlighted ? 'text-gray-700 hover:bg-blue-50' : ''}
-                                                        ${isSunday && item.isCurrentMonth && !isHighlighted ? 'text-red-500' : ''}
-                                                        ${isSaturday && item.isCurrentMonth && !isHighlighted ? 'text-blue-500' : ''}
-                                                    `}
-                                                >
-                                                    {item.day || ''}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 최근 의뢰인 후기 */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                <h2 className="text-lg font-bold text-gray-900">최근 의뢰인 후기</h2>
-                            </div>
-                            <div className="p-6">
-                                <div className="space-y-4 max-h-[400px] overflow-y-auto">
-                                    {reviews.map((review, index) => (
-                                        <div key={index} className="border-l-4 border-yellow-400 bg-blue-50 rounded-r-xl p-4 hover:shadow-md transition-all duration-200">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h3 className="font-bold text-blue-900">{review.lawFirm}</h3>
-                                                <div className="flex gap-0.5">
-                                                    {[...Array(review.rating)].map((_, i) => (
-                                                        <span key={i} className="text-yellow-400 text-sm">★</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-gray-700 leading-relaxed">
-                                                {review.review}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
-    );
+// 공통 카드 스타일
+const cardStyle = {
+    background: "#fff",
+    borderRadius: 12,
+    padding: "20px 24px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)",
 };
 
-export default Lawmainpage;
+function Calendar() {
+    const [year, setYear] = useState(2026);
+    const [month, setMonth] = useState(0);
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+    const monthName = `${year}년 ${month + 1}월`;
+
+    return (
+        <div style={{ fontSize: 13, fontFamily: FONT }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <button onClick={() => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); }}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#6b7280" }}>‹</button>
+                <span style={{ fontWeight: 700, color: "#111827" }}>{monthName}</span>
+                <button onClick={() => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); }}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#6b7280" }}>›</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", gap: 2 }}>
+                {DAYS.map((d, i) => (
+                    <div key={d} style={{ fontWeight: 700, fontSize: 11, color: i === 0 ? "#ef4444" : i === 6 ? BLUE : "#9ca3af", padding: "4px 0" }}>{d}</div>
+                ))}
+                {cells.map((d, i) => {
+                    const col = i % 7;
+                    const isSun = col === 0;
+                    const isSat = col === 6;
+                    return (
+                        <div key={i} style={{
+                            padding: "4px 0",
+                            borderRadius: 6,
+                            color: !d ? "transparent" : isSun ? "#ef4444" : isSat ? BLUE : "#374151",
+                            fontWeight: d ? 500 : 400,
+                            cursor: d ? "pointer" : "default",
+                        }}>
+                            {d || ""}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function Stars({ count }) {
+    return (
+        <span style={{ color: "#facc15", fontSize: 14 }}>
+      {"★".repeat(count)}{"☆".repeat(5 - count)}
+    </span>
+    );
+}
+
+export default function LawyerDashboard() {
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+    return (
+        <div style={{ display: "flex", minHeight: "100vh", fontFamily: FONT }}>
+            <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
+
+            <div style={{
+                flex: 1,
+                background: "#F9FAFB",
+                padding: "32px",
+                boxSizing: "border-box",
+                overflowY: "auto",
+            }}>
+            {/* Header */}
+            <div style={{ marginBottom: 24 }}>
+                <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#111827", letterSpacing: "-0.02em" }}>
+                    안녕하세요, 김구역 변호사님!
+                </h2>
+                <p style={{ margin: "8px 0 0", fontSize: 14, fontWeight: 400, color: "#6b7280" }}>
+                    현재 처리해야 할 긴급 상담 건이 <span style={{ color: BLUE, fontWeight: 700 }}>0건</span> 있습니다.
+                </p>
+            </div>
+
+            {/* Stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
+                {stats.map((s) => (
+                    <div key={s.label} style={{
+                        ...cardStyle,
+                        borderTop: `3px solid ${s.color}`,
+                    }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 4 }}>{s.label}</div>
+                        <div style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginBottom: 12 }}>{s.sub}</div>
+                        <div style={{ fontSize: 30, fontWeight: 800, color: "#111827" }}>{s.value}</div>
+                    </div>
+                ))}
+
+                {/* Rating */}
+                <div style={{
+                    ...cardStyle,
+                    borderTop: "3px solid #10b981",
+                }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 4 }}>평점</div>
+                    <div style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af", marginBottom: 12 }}>리뷰 평점</div>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: "#111827" }}>4.5 <span style={{ fontSize: 16, fontWeight: 400, color: "#9ca3af" }}>/ 5.0</span></div>
+                </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+                {/* Left column */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {/* Consultation Table */}
+                    <div style={cardStyle}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                            <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>최근 상담 요청 현황</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: BLUE, cursor: "pointer" }}>전체 보기</span>
+                        </div>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                            <thead>
+                            <tr style={{ background: "#F9FAFB" }}>
+                                {["상담자", "카테고리", "상태", "접수된 날짜"].map(h => (
+                                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#6b7280", fontWeight: 700, fontSize: 12 }}>{h}</th>
+                                ))}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {consultations.map((c, i) => (
+                                <tr key={i} style={{ borderTop: "1px solid #f3f4f6" }}>
+                                    <td style={{ padding: "10px 12px", color: "#111827", fontWeight: 500 }}>{c.name}</td>
+                                    <td style={{ padding: "10px 12px", color: BLUE, fontWeight: 600 }}>{c.category}</td>
+                                    <td style={{ padding: "10px 12px" }}>
+                                        <span style={{ color: c.statusColor, fontWeight: 700 }}>{c.status}</span>
+                                    </td>
+                                    <td style={{ padding: "10px 12px", color: "#9ca3af", fontWeight: 400 }}>{c.date}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Calendar */}
+                    <div style={cardStyle}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                            <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>재판 일정 관리</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: BLUE, cursor: "pointer" }}>전체 보기</span>
+                        </div>
+                        <Calendar />
+                    </div>
+                </div>
+
+                {/* Right column - Reviews */}
+                <div style={cardStyle}>
+                    <div style={{ fontWeight: 700, fontSize: 16, color: "#111827", marginBottom: 16 }}>최근 의뢰인 후기</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        {reviews.map((r, i) => (
+                            <div key={i} style={{ paddingBottom: 16, borderBottom: i < reviews.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                    <span style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{r.name}</span>
+                                    <Stars count={r.stars} />
+                                </div>
+                                <p style={{ margin: 0, fontSize: 13, fontWeight: 400, color: "#6b7280", lineHeight: 1.6 }}>{r.text}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+    );
+}

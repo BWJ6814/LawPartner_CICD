@@ -25,7 +25,10 @@ const ProfileCard = () => {
                 {/* 프로필 버튼 */}
                 <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center gap-3 w-full p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    className="flex items-center gap-3 w-full p-3 rounded-lg transition-colors"
+                    style={{ ':hover': { background: 'rgba(255,255,255,0.08)' } }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
                     {/* 프로필 이미지 또는 이니셜 */}
                     <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
@@ -41,14 +44,14 @@ const ProfileCard = () => {
                     </div>
                     <div className="flex-1 text-left">
                         <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-900">{user.name}</span>
+                            <span className="font-semibold text-white">{user.name}</span>
                             {isSubscribed && (
                                 <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                                     구독중
                                 </span>
                             )}
                         </div>
-                        <span className="text-sm text-gray-500">{user.username}</span>
+                        <span className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>{user.username}</span>
                     </div>
                 </button>
 
