@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Sidebar from './lawpage/Sidebar';
+import { Calendar, ScheduleModal } from './lawpage/ScheduleCalendar';
+import ReviewsModal, { Stars } from './lawpage/ReviewsModal';
 
 const FONT = "'Pretendard', 'Noto Sans KR', sans-serif";
 const BLUE = "#1D4ED8";
@@ -14,15 +16,15 @@ const consultations = [
     { name: "김길동", category: "교통사고", status: "소송 진행중", statusColor: BLUE, date: "2026-01-03" },
 ];
 
+// 후기 데이터 (나중에 API 연동 시 fetch로 교체)
 const reviews = [
-    { name: "홍길동님", stars: 5, text: "어떻게 해결해야할지 모를 문제를 해결해주셨습니다. 정말 감사합니다." },
-    { name: "최길동님", stars: 5, text: "정말 친절하시는데 변호사님 덕분에 쉽게 해결해서 놀라고 좋던데..." },
-    { name: "김길동님", stars: 5, text: "정말 친절하시고 저희의 억울함을 풀어주시려고 열정적으로 하시는분 입니다..." },
+    { name: "홍길동님", stars: 5, text: "어떻게 해결해야할지 모를 문제를 해결해주셨습니다. 정말 감사합니다.", date: "2026-02-10", category: "교통사고" },
+    { name: "최길동님", stars: 5, text: "정말 친절하시는데 변호사님 덕분에 쉽게 해결해서 놀라고 좋던데...", date: "2026-02-05", category: "이혼/가사" },
+    { name: "김길동님", stars: 5, text: "정말 친절하시고 저희의 억울함을 풀어주시려고 열정적으로 하시는분 입니다...", date: "2026-01-28", category: "형사" },
+    { name: "박길동님", stars: 4, text: "상담 과정이 매우 체계적이었고, 결과도 만족스러웠습니다.", date: "2026-01-20", category: "부동산" },
+    { name: "이길동님", stars: 5, text: "빠른 대응과 정확한 법률 조언 감사합니다. 다음에도 의뢰드리고 싶습니다.", date: "2026-01-15", category: "교통사고" },
 ];
 
-const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-
-// 공통 카드 스타일
 const cardStyle = {
     background: "#fff",
     borderRadius: 12,
@@ -30,62 +32,11 @@ const cardStyle = {
     boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)",
 };
 
-function Calendar() {
-    const [year, setYear] = useState(2026);
-    const [month, setMonth] = useState(0);
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const cells = [];
-    for (let i = 0; i < firstDay; i++) cells.push(null);
-    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-    const monthName = `${year}년 ${month + 1}월`;
-
-    return (
-        <div style={{ fontSize: 13, fontFamily: FONT }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                <button onClick={() => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); }}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#6b7280" }}>‹</button>
-                <span style={{ fontWeight: 700, color: "#111827" }}>{monthName}</span>
-                <button onClick={() => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); }}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#6b7280" }}>›</button>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", gap: 2 }}>
-                {DAYS.map((d, i) => (
-                    <div key={d} style={{ fontWeight: 700, fontSize: 11, color: i === 0 ? "#ef4444" : i === 6 ? BLUE : "#9ca3af", padding: "4px 0" }}>{d}</div>
-                ))}
-                {cells.map((d, i) => {
-                    const col = i % 7;
-                    const isSun = col === 0;
-                    const isSat = col === 6;
-                    return (
-                        <div key={i} style={{
-                            padding: "4px 0",
-                            borderRadius: 6,
-                            color: !d ? "transparent" : isSun ? "#ef4444" : isSat ? BLUE : "#374151",
-                            fontWeight: d ? 500 : 400,
-                            cursor: d ? "pointer" : "default",
-                        }}>
-                            {d || ""}
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
-
-function Stars({ count }) {
-    return (
-        <span style={{ color: "#facc15", fontSize: 14 }}>
-      {"★".repeat(count)}{"☆".repeat(5 - count)}
-    </span>
-    );
-}
-
 export default function LawyerDashboard() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+    const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
+    const [schedules, setSchedules] = useState({});
 
     return (
         <div style={{ display: "flex", minHeight: "100vh", fontFamily: FONT }}>
@@ -168,18 +119,27 @@ export default function LawyerDashboard() {
                     <div style={cardStyle}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                             <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>재판 일정 관리</span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: BLUE, cursor: "pointer" }}>전체 보기</span>
+                            <span
+                                onClick={() => setIsScheduleModalOpen(true)}
+                                style={{ fontSize: 12, fontWeight: 600, color: BLUE, cursor: "pointer" }}
+                            >전체 보기</span>
                         </div>
-                        <Calendar />
+                        <Calendar schedules={schedules} />
                     </div>
                 </div>
 
                 {/* Right column - Reviews */}
                 <div style={cardStyle}>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: "#111827", marginBottom: 16 }}>최근 의뢰인 후기</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>최근 의뢰인 후기</span>
+                        <span
+                            onClick={() => setIsReviewsModalOpen(true)}
+                            style={{ fontSize: 12, fontWeight: 600, color: BLUE, cursor: "pointer" }}
+                        >전체 보기</span>
+                    </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        {reviews.map((r, i) => (
-                            <div key={i} style={{ paddingBottom: 16, borderBottom: i < reviews.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                        {reviews.slice(0, 3).map((r, i) => (
+                            <div key={i} style={{ paddingBottom: 16, borderBottom: i < 2 ? "1px solid #f3f4f6" : "none" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                                     <span style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{r.name}</span>
                                     <Stars count={r.stars} />
@@ -191,6 +151,21 @@ export default function LawyerDashboard() {
                 </div>
             </div>
             </div>
+
+            {/* 일정 관리 모달 */}
+            <ScheduleModal
+                isOpen={isScheduleModalOpen}
+                onClose={() => setIsScheduleModalOpen(false)}
+                schedules={schedules}
+                setSchedules={setSchedules}
+            />
+
+            {/* 후기 모달 */}
+            <ReviewsModal
+                isOpen={isReviewsModalOpen}
+                onClose={() => setIsReviewsModalOpen(false)}
+                reviews={reviews}
+            />
         </div>
     );
 }
