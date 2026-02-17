@@ -24,7 +24,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                 channelKey: 'channel-key-3ee761d6-41ec-48e1-8898-51fe9e22b136',
                 paymentId: `lawpartner_${new Date().getTime()}`,
                 orderName: 'LawPartner 프리미엄 구독',
-                totalAmount: 29900,
+                totalAmount: 10000,
                 currency: 'CURRENCY_KRW',
                 payMethod: 'CARD',
                 customer: {
@@ -79,7 +79,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                                 <p className="text-sm text-gray-600 mt-1">무제한 법률 상담 + 프리미엄 기능</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-3xl font-bold text-blue-600">₩29,800</p>
+                                <p className="text-3xl font-bold text-blue-600">₩10,000</p>
                                 <p className="text-sm text-gray-500">/ 월</p>
                             </div>
                         </div>
@@ -119,7 +119,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                             <div>
                                 <p className="font-bold text-green-900 mb-1">🧪 테스트 모드</p>
                                 <p className="text-sm text-green-700">
-                                    테스트 결제입니다. 실제 금액(29900원)이 결제되지만  포트원에서 결제 취소함
+                                    테스트 결제입니다. 실제 금액(10,000원)이 결제되지만  포트원에서 결제 취소함
                                 </p>
                             </div>
                         </div>
@@ -144,16 +144,16 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                     <div className="bg-gray-50 rounded-lg p-4 mb-6">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-600">상품 금액</span>
-                            <span className="font-semibold text-gray-900">₩29,800</span>
+                            <span className="font-semibold text-gray-900">₩10,000</span>
                         </div>
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-600">테스트 할인</span>
-                            <span className="font-semibold text-red-600">-₩29,800</span>
+                            <span className="font-semibold text-red-600">-₩10,000</span>
                         </div>
                         <div className="border-t border-gray-300 my-3"></div>
                         <div className="flex justify-between items-center">
                             <span className="text-lg font-bold text-gray-900">최종 결제 금액</span>
-                            <span className="text-2xl font-bold text-blue-600">₩29,800</span>
+                            <span className="text-2xl font-bold text-blue-600">₩10,000</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-2">* 테스트 결제는 자동 취소됩니다</p>
                     </div>
@@ -163,7 +163,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                         onClick={handlePayment}
                         className="w-full bg-blue-600 text-white py-4 rounded-xl text-lg font-bold hover:bg-blue-700 transition-colors shadow-lg"
                     >
-                        ₩29800 테스트 결제하기
+                        ₩10,000 테스트 결제하기
                     </button>
 
                     <p className="text-xs text-gray-500 text-center mt-4">
