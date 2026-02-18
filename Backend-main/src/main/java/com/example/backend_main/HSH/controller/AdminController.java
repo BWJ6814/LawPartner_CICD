@@ -1,3 +1,4 @@
+/*
 package com.example.backend_main.HSH.controller;
 
 
@@ -16,10 +17,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+*/
 /*
 
 @RequestMapping("/api/admin") : 관리자 전용 구역으로 들어오는 주소는 /api/admin이라고 설정..!
-*/
+*//*
+
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -39,21 +42,25 @@ public class AdminController {
         return ResultVO.ok("전체 회원 목록을 성공적으로 불러왔습니다.",usersList);
     }
 
-    /*
+    */
+/*
         [회원 상태 변경] - ADM-02/ADM-03
         특정 회원을 정지(S02), 변호사를 승인할 때 사용...
         나중에 AdminService에 로직 추가하여 완성할 예정
-    */
+    *//*
+
     @PutMapping("/user/status")
     public ResultVO<Void> changeUserStatus(@RequestBody String userId, @RequestParam String statusCode){
         // 우선 문만 만들어두기
         return ResultVO.ok("외원 상태가 성공적으로 변경되었습니다.",null);
     }
 
-    /*
+    */
+/*
     [하위 관리자 생성]
     @ActionLog 적용 -> "누가 생성했는가?"를 자동 기록하게 처리
-    */
+    *//*
+
     @PostMapping("/create-operator")
     @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER") // ★ 여기가 핵심!
     public ResultVO<String> createOperator(@RequestBody UserJoinRequestDTO joinDto,
@@ -83,3 +90,4 @@ public class AdminController {
         }
     }
 }
+*/

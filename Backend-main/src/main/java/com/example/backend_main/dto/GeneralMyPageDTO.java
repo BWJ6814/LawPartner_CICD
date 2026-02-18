@@ -1,9 +1,13 @@
 package com.example.backend_main.dto;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+@Getter @Setter @NoArgsConstructor
 @Data
 public class GeneralMyPageDTO {
 
@@ -42,9 +46,10 @@ public class GeneralMyPageDTO {
 
     @Data
     public static class CalendarEventDTO {
+        private Long id; // 프론트에서 수정/삭제할 때 쓸 타겟 식별표. 무조건 추가
         private String title;
-        private String date;  // YYYY-MM-DD
-        private String color; // 색상 코드
+        private String start;  // YYYY-MM-DD
+        private String backgroundColor; // 색상 코드
     }
 
 

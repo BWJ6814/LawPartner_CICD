@@ -62,14 +62,67 @@ public class GeneralMyPageService {
 
         List<GeneralMyPageDTO.CalendarEventDTO> eventList = myEvents.stream().map(event -> {
             GeneralMyPageDTO.CalendarEventDTO calDTO = new GeneralMyPageDTO.CalendarEventDTO();
-            calDTO.setTitle(event.getTitle());
-            calDTO.setDate(event.getStartDate()); // FullCalendar가 인식하는 'date' 속성
-            calDTO.setColor(event.getColorCode());
+
+            // 1. 방금 DTO에 추가한 ID 꽂아주기 (필수)
+            calDTO.setId(event.getEventNo());
+
+            calDTO.setId(event.getEventNo()); // ★ ID 꽂아주기
+            calDTO.setTitle(event.getTitle()); // ★ "[개인]" 떼고 깔끔하게 제목만
+            calDTO.setStart(event.getStartDate());
+            calDTO.setBackgroundColor(event.getColorCode());
             return calDTO;
         }).collect(Collectors.toList());
 
         dto.setCalendarEvents(eventList);
 
         return dto;
+
+
+    }
+    @org.springframework.transaction.annotation.Transactional
+    public Long saveCalendarEvent(Long userNo, GeneralMyPageDTO.CalendarEventDTO dto) {
+
+        // 프론트에서 넘어온 데이터와 임시 기본값을 조합해 Entity를 조립합니다.
+        CalendarEvent event = CalendarEvent.builder()
+                .userNo(userNo)
+                .title(dto.getTitle())
+                .startDate(dto.getStart())
+                .colorCode(dto.getBackgroundColor())
+                .roomId(null)
+                .lawyerNo(null)
+                .build();
+
+        // 조립된 Entity를 DB에 저장합니다.
+        CalendarEvent savedEvent = calendarEventRepository.save(event);
+
+        // 저장 직후 DB에서 자동 생성된 eventNo를 꺼내서 컨트롤러로 돌려줍니다.
+        return savedEvent.getEventNo();
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void updateCalendarEvent(Long eventNo, Long userNo, GeneralMyPageDTO.CalendarEventDTO dto) {
+        CalendarEvent event = calendarEventRepository.findById(eventNo)
+                .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다."));
+
+        // ★ 내 일정이 맞는지 팩트 체크
+        if (!event.getUserNo().equals(userNo)) {
+            throw new RuntimeException("수정 권한이 없습니다.");
+        }
+        event.setTitle(dto.getTitle());
+        event.setColorCode(dto.getBackgroundColor());
+        // JPA의 더티 체킹(Dirty Checking) 덕분에 별도로 save()를 안 해도 DB에 반영됨
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteCalendarEvent(Long eventNo, Long userNo) {
+
+        CalendarEvent event = calendarEventRepository.findById(eventNo)
+                .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다."));
+
+        if (!event.getUserNo().equals(userNo)) {
+            throw new RuntimeException("삭제 권한이 없습니다.");
+        }
+
+        calendarEventRepository.deleteById(eventNo);
     }
 }

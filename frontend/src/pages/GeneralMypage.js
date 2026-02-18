@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
+import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import DashboardSidebar from '../common/components/DashboardSidebar';
 import axios from 'axios'; // ★ axios import 필수
@@ -12,6 +13,18 @@ const GeneralMyPage = () => {
     // ★ 1. 데이터를 저장할 State 생성 (초기값 null 또는 기본 구조)
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // ============== [ 캘린더 모달 상태 관리 (State)] ===================
+    const [isModalOpen, setIsModalOpen] = useState(false); // 모달창 열림/닫힘
+    const [modalMode, setModalMode] = useState('create'); // 'create'(생성)
+    const [eventInput, setEventInput] = useState({
+        id : '',
+        title : '',
+        start : '',
+        backgroundColor : '#1e3a8a' // 기본 색상 (네이비)
+    })
+
+
 
     // 2. 데이터 가져오기 (API 호출)
     useEffect(() => {
@@ -52,6 +65,144 @@ const GeneralMyPage = () => {
         alert("로그아웃 되었습니다.");
         navigate('/');
     };
+
+    // =========== [캘린더 이벤트 핸들러] ==============
+
+    // 1. 빈 날짜 클릭 시(새 일정 추가 모드)
+    const handleDateClick = (arg) => {
+        setModalMode('create');
+        setEventInput({
+            id : '',
+            title : '',
+            start : arg.dateStr,
+            backgroundColor: '#1e3a8a'
+        });
+        setIsModalOpen(true);
+    };
+
+    // 2. 기존 일정 클릭 시 (일정 수정/삭제 모드)
+    const handleEventClick = (arg) => {
+        setModalMode('edit');
+        setEventInput({
+            id : arg.event.id, // 실무에서는 백엔드 PK값이 들어갑니다.
+            title : arg.event.title,
+            start : arg.event.startStr,
+            backgroundColor: arg.event.backgroundColor || '#1e3a8a'
+        });
+        setIsModalOpen(true);
+    };
+    const CloseModal = () => {
+        setIsModalOpen(false);
+        setEventInput({
+            id : '',
+            title : '',
+            start : '',
+            backgroundColor : "#1e3a8a"
+        });
+    };
+
+    // 4. 일정 저장 (추가 또는 수정)
+    const handleSaveEvent = async () => {
+      if (!eventInput.title.trim()){
+          alert('일정 제목을 입력해주세요.')
+          return;
+      }
+
+      const token = localStorage.getItem('accessToken');
+
+      try {
+          if (modalMode === 'create'){
+              // HTTP 'POST' 메서드는 서버에 새로운 데이터를 만들어달라고 요청할 때 씁니다.
+              // 전송할 데이터로 제목, 날짜, 색상을 객체 형태로 묶어서 보냅니다.
+              const response = await axios.post('http://localhost:8080/api/mypage/calendar', {
+                  title: eventInput.title,
+                  start: eventInput.start,
+                  backgroundColor: eventInput.backgroundColor,
+                  allDay: true
+              },{
+                  headers : {
+                      Authorization : `Bearer ${token}`
+                  }
+              });
+
+              const newEvent = {
+                  id : response.data.data, // Controller가 리턴한 savedEventNo (ResultVO 구조에 맞춤)
+                  title : eventInput.title,
+                  start : eventInput.start,
+                  backgroundColor : eventInput.backgroundColor,
+                  allDay : true
+              };
+
+              setDashboardData(prevData => ({
+                  ...prevData,
+                  calendarEvents : [...prevData.calendarEvents, newEvent]
+              }));
+              alert('일정이 추가되었습니다.');
+          } else {
+              // HTTP 'PUT' 또는 'PATCH' 메서드는 '기존 데이터를 수정해달라'고 요청 할 때 씁니다.
+              // 어떤 일정을 수정할 지 서버가 알아야 하므로 URL 끝에 해당 일정의 고유 ID를 붙여서 보냅니다.
+              await axios.put(`http://localhost:8080/api/mypage/calendar/${eventInput.id}`, {
+                  title: eventInput.title,
+                  backgroundColor: eventInput.backgroundColor
+              },{
+                  headers : {
+                      Authorization : `Bearer ${token}`
+                  }
+              });
+
+              // 화면 업데이트
+              setDashboardData(prevData => {
+                  const updatedEvents = (prevData.calendarEvents || []).map(event =>
+                  String(event.id) === String(eventInput.id) ? {
+                      ...event,
+                      title: eventInput.title,
+                      backgroundColor: eventInput.backgroundColor
+                  } : event
+              );
+              return {...prevData, calendarEvents: updatedEvents};
+              });
+              alert('일정이 수정되었습니다.');
+          }
+
+          CloseModal(); // 저장 성공시 모달창 닫기
+
+          } catch (error) {
+              // 서버가 죽었거나, 권한이 없거나, 백엔드가 주소가 틀렸을 때
+              console.error('일정 저장 실패',error);
+              alert('일정 저장에 실패했습니다. 서버 상태를 확인해주세요.');
+          }
+      };
+
+
+    // 5. 일정 삭제
+    const handleDeleteEvent = async () => {
+       if (!window.confirm('일정을 삭제하시겠습니까?')) return;
+
+       const token = localStorage.getItem('accessToken');
+
+       try {
+           // HTTP 'DELETE' 메서드는 데이터를 삭제할 때 씁니다.
+           // URL에 삭제할 ID만 명시해서 보내면 되기 때문에, 별도의 전송 데이터가 필요없습니다.
+           await axios.delete(`http://localhost:8080/api/mypage/calendar/${eventInput.id}`,{
+               headers : {
+                   Authorization : `Bearer ${token}`
+               }
+           });
+
+           // 프론트엔드 화면에서 해당 일정 날리기
+           setDashboardData(prevData =>({
+               ...prevData,
+               calendarEvents : (prevData.calendarEvents || []).filter(event => String(event.id) !== String(eventInput.id))
+           }));
+           alert("일정이 삭제되었습니다.");
+           CloseModal();
+       } catch (error) {
+            console.error('일정 삭제 실패 :',error);
+            alert('일정 삭제에 실패했습니다.');
+       }
+
+    };
+
 
     // ★ 로딩 중일 때 보여줄 화면
     if (loading) {
@@ -186,7 +337,9 @@ const GeneralMyPage = () => {
 
                         <div className="calendar-container">
                             <FullCalendar
-                                plugins={[dayGridPlugin]}
+                                // 초심자를 위한 핵심: 달력을 눈으로 보기만 하던 dayGridPlugin 옆에,
+                                // 클릭이나 드래그 같은 '상호작용'을 담당하는 interactionPlugin을 같이 넣어줘야 작동해!
+                                plugins={[dayGridPlugin, interactionPlugin]}
                                 initialView="dayGridMonth"
                                 locale="ko"
                                 headerToolbar={{
@@ -194,17 +347,92 @@ const GeneralMyPage = () => {
                                     center: 'title',
                                     right: ''
                                 }}
-                                // ★ 서버 데이터 연결
                                 events={dashboardData.calendarEvents || []}
+                                dateClick={handleDateClick}
+                                eventClick={handleEventClick}
                                 height="auto"
                                 contentHeight="auto"
                                 aspectRatio={2.5}
+
                             />
                         </div>
                     </div>
 
                 </div>
             </main>
+
+            {/* ================= [커스텀 모달 UI 영역] ================= */}
+            {/* 초심자를 위한 핵심: isModalOpen이 true일 때만 화면에 렌더링되도록 조건부 처리합니다. */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="bg-white p-6 rounded-2xl shadow-xl w-96 max-w-full m-4 border border-slate-200">
+                        <h2 className="text-xl font-black text-slate-800 mb-4 border-b pb-2">
+                            {modalMode === 'create' ? '새 일정 추가' : '일정 수정'}
+                        </h2>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-bold text-slate-600 mb-1">날짜</label>
+                            <input
+                                type="text"
+                                value={eventInput.start}
+                                disabled
+                                className="w-full p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 font-medium cursor-not-allowed"
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-bold text-slate-600 mb-1">일정 제목</label>
+                            <input
+                                type="text"
+                                value={eventInput.title}
+                                onChange={(e) => setEventInput({...eventInput, title: e.target.value})}
+                                placeholder="상담이나 재판 내용을 입력하세요"
+                                className="w-full p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-bold text-slate-600 mb-2">카테고리 색상</label>
+                            <div className="flex gap-2">
+                                {/* 색상 선택 버튼들 */}
+                                {[
+                                    { color: '#1e3a8a', label: '네이비' },
+                                    { color: '#f97316', label: '오렌지' },
+                                    { color: '#10b981', label: '그린' },
+                                    { color: '#ef4444', label: '레드' }
+                                ].map(item => (
+                                    <button
+                                        key={item.color}
+                                        onClick={() => setEventInput({...eventInput, backgroundColor: item.color})}
+                                        className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${eventInput.backgroundColor === item.color ? 'border-slate-800 scale-110 shadow-md' : 'border-transparent'}`}
+                                        style={{ backgroundColor: item.color }}
+                                        title={item.label}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
+                            {/* 초심자를 위한 핵심: 수정 모드일 때만 삭제 버튼이 보입니다. */}
+                            {modalMode === 'edit' ? (
+                                <button onClick={handleDeleteEvent} className="px-4 py-2 text-sm font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition">
+                                    삭제
+                                </button>
+                            ) : <div></div> /* 레이아웃 유지를 위한 빈 div */}
+
+                            <div className="flex space-x-2">
+                                <button onClick={CloseModal} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                                    취소
+                                </button>
+                                <button onClick={handleSaveEvent} className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition">
+                                    저장
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

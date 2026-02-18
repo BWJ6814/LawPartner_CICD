@@ -1,3 +1,4 @@
+/*
 package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.entity.User;
@@ -174,3 +175,4 @@ public class AdminService {
 
 
 }
+*/

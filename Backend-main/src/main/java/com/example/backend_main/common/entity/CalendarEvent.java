@@ -16,13 +16,13 @@ public class CalendarEvent {
     @Column(name = "EVENT_NO")
     private Long eventNo;
 
-    @Column(name = "ROOM_ID", nullable = false)
+    @Column(name = "ROOM_ID")
     private String roomId;
 
     @Column(name = "USER_NO", nullable = false)
     private Long userNo;
 
-    @Column(name = "LAWYER_NO", nullable = false)
+    @Column(name = "LAWYER_NO")
     private Long lawyerNo;
 
     @Column(name = "TITLE", nullable = false)
