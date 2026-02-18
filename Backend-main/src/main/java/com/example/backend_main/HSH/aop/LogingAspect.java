@@ -1,23 +1,25 @@
 package com.example.backend_main.HSH.aop;
 
-import com.example.backend_main.common.annotation.ActionLog; // 커스텀 어노테이션 import
+imimport com.example.backend_main.common.annotation.ActionLog;
 import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AccessLogRepository;
 import com.example.backend_main.common.repository.UserRepository;
+// ★ [최적화] CustomUserDetails를 사용하기 위해 import 추가
+import com.example.backend_main.common.security.CustomUserDetails;
+
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.reflect.MethodSignature; // 메소드 정보 읽기용 import
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
 import java.util.UUID;
 
 @Aspect
@@ -85,6 +87,7 @@ public class LogingAspect {
             log.info("📢 [Audit] TraceID: {}, URI: {}, Status: {}, Time: {}ms", traceId, uri, status, duration);
 
             // [최종 저장] 수정된 AccessLog 엔티티에 맞춰 데이터 삽입
+            // 비동기 처리(@Async)를 고려해볼 수 있으나, 데이터 무결성을 위해 동기로 저장
             accessLogRepository.save(AccessLog.builder()
                     .traceId(traceId)
                     .reqIp(ip)
@@ -141,6 +144,7 @@ public class LogingAspect {
 
     /*
      SecurityContext에서 현재 로그인한 유저의 PK(USER_NO)를 찾는 헬퍼 메서드
+     CustomUserDetails를 사용하여 DB 조회를 피하기
      */
     private Long getCurrentUserNo() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -151,11 +155,19 @@ public class LogingAspect {
         }
 
         try {
-            // 현재 인증된 주체(Principal)는 이메일이므로, DB에서 해당 유저의 번호를 조회합니다.
+            Object principal = auth.getPrincipal();
+
+            // 1. [최적화] CustomUserDetails라면 DB 조회 없이 바로 PK 반환
+            if (principal instanceof CustomUserDetails) {
+                return ((CustomUserDetails) principal).getUserNo();
+            }
+
+            // 2. [기본] 만약 다른 방식으로 로그인했다면 DB 조회 (안전장치)
             String email = auth.getName();
             return userRepository.findByEmail(email)
-                    .map(User::getUserNo) // User 엔티티의 @Id인 userNo 필드 가져오기
+                    .map(User::getUserNo)
                     .orElse(null);
+
         } catch (Exception e) {
             log.warn("⚠️ 사용자 번호 조회 중 오류 발생: {}", e.getMessage());
             return null;

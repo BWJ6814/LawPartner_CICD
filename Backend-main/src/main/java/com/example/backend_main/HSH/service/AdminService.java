@@ -1,16 +1,24 @@
 package com.example.backend_main.HSH.service;
 
+import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.repository.AccessLogRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.util.Aes256Util;
+import com.example.backend_main.common.util.HashUtil; // 해시 유틸
+import com.example.backend_main.dto.UserJoinRequestDTO;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.*; // Excel 관련
+import org.apache.poi.xssf.streaming.SXSSFWorkbook; // 대용량 Excel
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // 트랜잭션
+
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import com.example.backend_main.dto.UserJoinRequestDTO;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import com.example.backend_main.common.util.HashUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +34,7 @@ public class AdminService {
     // [화면 조회용] 회왼 목록 조회 API
     // 모든 회원 목록을 가져오는 함수 정의하기
     // List<User> : 여러 명의 유저 정보를 리스트 형태의 묶음으로 반환처리.. - JSON 데이터 반환
+    @Transactional(readOnly = true)
     public List<User> getAllUsers() {
 
         // userRepository.findAll() : DB의 TB_USER 테이블에 있는 모든 데이터를 싹 긁어오기
@@ -71,7 +80,7 @@ public class AdminService {
     @Transactional(readOnly = true)
     public void downloadAccessLogExcel(HttpServletResponse response) throws IOException {
         // 핵심!!! : 메모리에 100행만 유지, 나머지는 임시 파일로 기록하기 (OOM 방지)
-        SXSSFWorkbook wrokbook = new SXSSFWorkbook(100);
+        SXSSFWorkbook workbook = new SXSSFWorkbook(100);
 
         try {
             Sheet sheet = workbook.createSheet("보안 감사 로그");
@@ -129,8 +138,11 @@ public class AdminService {
         }
     }
 
-    @Transctional
-    public void createSubAdmin(UserJoinRequestDTO joinDto, Long currentAdminNo) thoews Exception{
+    /*
+    [슈퍼 관리자 전용] 하위 관리자 생성 로직
+    */
+    @Transactional
+    public void createSubAdmin(UserJoinRequestDTO joinDto, Long currentAdminNo) throws Exception{
 
         // 1. 요청자가 진짜 슈퍼 관리자인지 DB에서 다시 확인하기(철통 보안)!!
         User currentAdmin = userRepository.findById(currentAdminNo)
@@ -143,7 +155,7 @@ public class AdminService {
         }
 
         // 2. 아이디 중복 체크 하기
-        if(userRepository.existByUserId(join.Dto.getUserID())) {
+        if(userRepository.existsByUserId(joinDto.getUserID())) {
             throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
         }
 
@@ -166,9 +178,11 @@ public class AdminService {
                 .phoneHash(phoneHash)
                 .roleCode("ROLE_OPERATOR")                              // 운영자
                 .statusCode("S01")                                      // 상태 정상 처리
-                .builde();
+                .build();
 
         userRepository.save(subAdmin)
+
+        log.info("✅ 관리자 생성 완료: Admin[{}] created by SuperAdmin[{}]", subAdmin.getUserId(), currentAdmin.getUserId());
 
     }
 

@@ -1,28 +1,33 @@
 package com.example.backend_main.HSH.controller;
 
 
-import com.example.backend_main.dto.UserJoinRequestDTO;
-import com.example.backend_main.common.vo.ResultVO;
-import com.example.backend_main.common.annotation.ActionLog;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import com.example.backend_main.common.entity.User;
-import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.HSH.service.AdminService;
+import com.example.backend_main.common.annotation.ActionLog;
+import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.security.CustomUserDetails; // ★ 최적화용
+import com.example.backend_main.common.vo.ResultVO;
+import com.example.backend_main.dto.UserJoinRequestDTO;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize; // ★ 권한 체크
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 /*
 
 @RequestMapping("/api/admin") : 관리자 전용 구역으로 들어오는 주소는 /api/admin이라고 설정..!
+
+- 회원 관리, 로그 다운르도, 관리자 계정 생성 등 수행
+- 모든 API는 SecurityConfig에서 1차, @PreAuthorize에서 2차 검증
 */
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
+@Slf4j
 public class AdminController {
 
     private final AdminService adminService;
@@ -47,39 +52,52 @@ public class AdminController {
     @PutMapping("/user/status")
     public ResultVO<Void> changeUserStatus(@RequestBody String userId, @RequestParam String statusCode){
         // 우선 문만 만들어두기
+        // AdminService에 changeUserStatus 메서드 구현 후 연결 필요
         return ResultVO.ok("외원 상태가 성공적으로 변경되었습니다.",null);
     }
 
     /*
     [하위 관리자 생성]
-    @ActionLog 적용 -> "누가 생성했는가?"를 자동 기록하게 처리
+    - @ActionLog 적용 -> "누가 생성했는가?"를 자동 기록하게 처리
+    - ★ 슈퍼 관리자(SUPER_ADMIN)만 가능
+    - CustomUserDetails를 사용해 DB 재조회 없이 PK 추출 (성능 최적화)
     */
     @PostMapping("/create-operator")
-    @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER") // ★ 여기가 핵심!
+    @PreAuthorize("hasRole('SUPER_ADMIN')") // ★ 2중 보안 (슈퍼 관리자만!)
+    @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER")
     public ResultVO<String> createOperator(@RequestBody UserJoinRequestDTO joinDto,
-                                           @AuthenticationPrincipal UserDetails userDetails) {
+                                           @AuthenticationPrincipal CustomUserDetails userDetails) {
         try {
-            // 현재 로그인한 관리자의 ID(PK)를 추출하는 로직 필요
-            // (UserDetails에는 보통 username(ID)만 들어있으므로, Service에서 조회하거나 여기서 변환)
-            // 여기서는 편의상 Service 안에서 조회하도록 처리했으므로,
-            // userDetails.getUsername()을 이용해 User 엔티티를 찾는 로직이 필요하지만,
-            // 일단 앞서 구현한 LogingAspect에서 getCurrentUserNo()를 쓰므로
-            // Service에는 PK 대신 ID(String)를 넘기거나, Service 내부에서 다시 조회하는 게 안전함.
+            // [Pro Level 최적화]
+            // 로그인 시 저장해둔 CustomUserDetails에서 PK(userNo)를 바로 꺼냄
+            // 불필요한 DB 조회(SELECT)를 방지함
+            Long currentAdminNo = userDetails.getUserNo();
 
-            // UserDetails 구현체(UserPrincipal)에 userNo를 넣어두면 바로 꺼낼 수 있음.
-            // 현재는 간단히 Service 로직에 의존.
+            // 서비스 호출
+            adminService.createSubAdmin(joinDto, currentAdminNo);
 
-            // 임시: 현재 로그인한 관리자의 userNo를 DB에서 찾아야 함 (Service에 위임 권장)
-            // 하지만 Service 로직 상 PK가 필요하므로, 여기서는 개념적으로만 설명합니다.
-            // 실제로는 userDetails에서 userNo를 꺼내오는 커스텀 로직이 있으면 좋습니다.
+            return ResultVO.success("하위 관리자(운영자)가 성공적으로 생성되었습니다.");
 
-            // (임시 조치: Service 내부에서 처리하도록 코드를 짰다면 OK,
-            //  지금은 토큰에서 PK를 바로 못 꺼내면 Service에서 findByUserId 해야 함)
-
-            return ResultVO.success("하위 관리자가 생성되었습니다.");
-
+        } catch (SecurityException e) {
+            log.warn("🚨 권한 없는 관리자 생성 시도: AdminID={}", userDetails.getUsername());
+            return ResultVO.fail("권한 오류: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResultVO.fail("입력 오류: " + e.getMessage());
         } catch (Exception e) {
-            return ResultVO.fail("관리자 생성 실패: " + e.getMessage());
+            log.error("관리자 생성 중 시스템 오류", e);
+            return ResultVO.fail("시스템 오류가 발생했습니다.");
         }
+    }
+
+    /*
+     [보안 감사 로그 엑셀 다운로드] (SXSSF 방식)
+     - @ActionLog: 다운로드 이력 자동 저장
+     - 대용량 데이터도 메모리 오류 없이 다운로드 가능
+     */
+    @GetMapping("/logs/download")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')") // 관리자급 이상 접근 가능
+    @ActionLog(action = "DOWNLOAD_EXCEL", target = "TB_ACCESS_LOG")
+    public void downloadLogs(HttpServletResponse response) throws IOException {
+        adminService.downloadAccessLogExcel(response);
     }
 }
