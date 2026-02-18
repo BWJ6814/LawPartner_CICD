@@ -146,7 +146,7 @@ public class AdminService {
 
         // 1. 요청자가 진짜 슈퍼 관리자인지 DB에서 다시 확인하기(철통 보안)!!
         User currentAdmin = userRepository.findById(currentAdminNo)
-                .orElseThrow(() -> new IllegalArgumentException("접근 권한이 없습니다."))
+                .orElseThrow(() -> new IllegalArgumentException("접근 권한이 없습니다."));
 
         // 슈퍼 관리자가 아닐 경우 즉시 차단하기.
         // DB에 ROLE_SUPER_ADMIN을 가진 계정 하나 만들기
@@ -155,7 +155,7 @@ public class AdminService {
         }
 
         // 2. 아이디 중복 체크 하기
-        if(userRepository.existsByUserId(joinDto.getUserID())) {
+        if(userRepository.existsByUserId(joinDto.getUserId())) {
             throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
         }
 
@@ -180,7 +180,7 @@ public class AdminService {
                 .statusCode("S01")                                      // 상태 정상 처리
                 .build();
 
-        userRepository.save(subAdmin)
+        userRepository.save(subAdmin);
 
         log.info("✅ 관리자 생성 완료: Admin[{}] created by SuperAdmin[{}]", subAdmin.getUserId(), currentAdmin.getUserId());
 

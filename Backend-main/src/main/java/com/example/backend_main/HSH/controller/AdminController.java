@@ -21,7 +21,7 @@ import java.util.List;
 
 @RequestMapping("/api/admin") : 관리자 전용 구역으로 들어오는 주소는 /api/admin이라고 설정..!
 
-- 회원 관리, 로그 다운르도, 관리자 계정 생성 등 수행
+- 회원 관리, 로그 다운로드, 관리자 계정 생성 등 수행
 - 모든 API는 SecurityConfig에서 1차, @PreAuthorize에서 2차 검증
 */
 @RestController
@@ -53,7 +53,7 @@ public class AdminController {
     public ResultVO<Void> changeUserStatus(@RequestBody String userId, @RequestParam String statusCode){
         // 우선 문만 만들어두기
         // AdminService에 changeUserStatus 메서드 구현 후 연결 필요
-        return ResultVO.ok("외원 상태가 성공적으로 변경되었습니다.",null);
+        return ResultVO.ok("회원 상태가 성공적으로 변경되었습니다.",null);
     }
 
     /*
