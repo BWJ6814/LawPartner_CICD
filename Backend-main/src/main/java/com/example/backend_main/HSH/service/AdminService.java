@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import com.example.backend_main.dto.UserJoinRequestDTO;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.example.backend_main.common.util.HashUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -17,7 +20,9 @@ public class AdminService {
     private final UserRepository userRepository;            // 회원 정보 DB
     private final AccessLogRepository accessLogRepository;  // 로그 정보 DB
     private final Aes256Util aes256Util;                    // PII 전용 암호기
-    
+    private final PasswordEncoder passwordEncoder;          // 비밀번호 암호기
+    private final HashUtil hashUtil;                        // 단방향 해시 처리 (검색용)
+
     // [화면 조회용] 회왼 목록 조회 API
     // 모든 회원 목록을 가져오는 함수 정의하기
     // List<User> : 여러 명의 유저 정보를 리스트 형태의 묶음으로 반환처리.. - JSON 데이터 반환
@@ -124,6 +129,48 @@ public class AdminService {
         }
     }
 
+    @Transctional
+    public void createSubAdmin(UserJoinRequestDTO joinDto, Long currentAdminNo) thoews Exception{
+
+        // 1. 요청자가 진짜 슈퍼 관리자인지 DB에서 다시 확인하기(철통 보안)!!
+        User currentAdmin = userRepository.findById(currentAdminNo)
+                .orElseThrow(() -> new IllegalArgumentException("접근 권한이 없습니다."))
+
+        // 슈퍼 관리자가 아닐 경우 즉시 차단하기.
+        // DB에 ROLE_SUPER_ADMIN을 가진 계정 하나 만들기
+        if (!"ROLE_SUPER_ADMIN".equals(currentAdmin.getRoleCode())){
+            throw new SecurityException("하위 관리자 생성 권한이 없습니다. (슈퍼 관리자만 가능)");
+        }
+
+        // 2. 아이디 중복 체크 하기
+        if(userRepository.existByUserId(join.Dto.getUserID())) {
+            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+        }
+
+        // 3. PII(개인정보) 암호화 (이메일/전화번호)
+        String encEmail = aes256Util.encrypt(joinDto.getEmail());
+        String encPhone = aes256Util.encrypt(joinDto.getPhone());
+
+        // 4. 검색용 해시값 생성하기
+        String emailHash = hashUtil.sha256(joinDto.getEmail());
+        String phoneHash = hashUtil.sha256(joinDto.getPhone());
+
+        // 5. 하위 관리자(Operator) 엔티티 생성하기
+        User subAdmin = User.builder()
+                .userId(joinDto.getUserId())
+                .userPw(passwordEncoder.encode(joinDto.getUserPw()))    // 비밀번호는 암호화
+                .userNm(joinDto.getUserNm())
+                .email(encEmail)
+                .phone(encPhone)
+                .emailHash(emailHash)
+                .phoneHash(phoneHash)
+                .roleCode("ROLE_OPERATOR")                              // 운영자
+                .statusCode("S01")                                      // 상태 정상 처리
+                .builde();
+
+        userRepository.save(subAdmin)
+
+    }
 
 
 }

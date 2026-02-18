@@ -1,5 +1,6 @@
 package com.example.backend_main.HSH.aop;
 
+import com.example.backend_main.common.annotation.ActionLog; // 커스텀 어노테이션 import
 import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AccessLogRepository;
@@ -10,13 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature; // 메소드 정보 읽기용 import
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Aspect
@@ -27,8 +28,12 @@ public class LogingAspect {
 
     private final AccessLogRepository accessLogRepository;
     private final UserRepository userRepository; // USER_NO 조회를 위해 추가
-    private final HttpServletRequest request;
 
+
+    /*
+    1. [기본 접속 로그] 모든 컨트롤러 요청 시 작동
+    누가 - 언제 - 어디로 - 접속했는가?
+    */
     @Around("execution(* com.example.backend_main.HSH.controller..*(..))")
     public Object logAccess(ProceedingJoinPoint joinPoint) throws Throwable {
 
@@ -43,14 +48,13 @@ public class LogingAspect {
         // 2-2. [USER_AGENT] 접속 환경 정보 (최대 200자 제한으로 안전하게 처리)
         // request.getHeader("User-Agent") : 사용자 브라우저, 운영체제, 기기 정보를 낚아챔..
         String userAgent = request.getHeader("User-Agent");
-
-        // 3. 기타 접속 정보 수집
-        String userAgent = request.getHeader("User-Agent");
         if (userAgent != null && userAgent.length() > 200) {
             userAgent = userAgent.substring(0, 200); // DB 컬럼 길이 제한 방어
         }
+
         String ip = request.getRemoteAddr();
         String uri = request.getRequestURI();
+
         // 4. [USER_NO] 현재 로그인한 사용자 번호 가져오기
         Long userNo = getCurrentUserNo();
 
@@ -62,9 +66,7 @@ public class LogingAspect {
         int status = 200; // 기본 성공
 
         try {
-            // ==========================================
             // ★ 핵심: 실제 컨트롤러 메서드 실행
-            // ==========================================
             result = joinPoint.proceed();
         } catch (Exception e) {
             // 예외 발생 시 정보 캡처
@@ -99,6 +101,45 @@ public class LogingAspect {
     }
 
     /*
+     2. [커스텀 행위 로그] @ActionLog가 붙은 메소드만 골라서 작동
+     "관리자가 엑셀을 다운로드했다", "승인했다" 등 중요 행위 추적용
+     */
+    @Around("@annotation(com.example.backend_main.common.annotation.ActionLog)")
+    public Object logAdminAction(ProceedingJoinPoint joinPoint) throws Throwable {
+
+        // 1. 어노테이션에 적힌 내용 읽어오기 (action="엑셀다운", target="로그테이블")
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        ActionLog actionLog = signature.getMethod().getAnnotation(ActionLog.class);
+
+        String actionType = actionLog.action();
+        String targetInfo = actionLog.target();
+
+        // 2. 관리자 정보
+        Long adminNo = getCurrentUserNo();
+        String traceId = UUID.randomUUID().toString().substring(0, 8);
+
+        // 3. 시작 로그
+        log.info("👀 [Admin Action Start] Admin: {}, Action: {}, Target: {}", adminNo, actionType, targetInfo);
+
+        Object result = null;
+        try {
+            // 4. 비즈니스 로직 실행 (엑셀 다운로드 등)
+            result = joinPoint.proceed();
+
+            // 5. 성공 로그
+            log.info("✅ [Admin Action Success] Admin: {}, Action: {}, TraceID: {}", adminNo, actionType, traceId);
+            // (나중에 여기에 TB_ADMIN_AUDIT 테이블 저장 로직 추가 가능)
+
+        } catch (Exception e) {
+            // 6. 실패 로그
+            log.error("❌ [Admin Action Fail] Admin: {}, Action: {}, Error: {}", adminNo, actionType, e.getMessage());
+            throw e;
+        }
+
+        return result;
+    }
+
+    /*
      SecurityContext에서 현재 로그인한 유저의 PK(USER_NO)를 찾는 헬퍼 메서드
      */
     private Long getCurrentUserNo() {
@@ -120,9 +161,5 @@ public class LogingAspect {
             return null;
         }
     }
-
-
-    // 커스텀 어노테이션(@ActionLog)이  붙은 메서드 실행 시 동작
-    @Arou
 
 }

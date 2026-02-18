@@ -1,5 +1,13 @@
 package com.example.backend_main.HSH.controller;
 
+
+import com.example.backend_main.dto.UserJoinRequestDTO;
+import com.example.backend_main.common.vo.ResultVO;
+import com.example.backend_main.common.annotation.ActionLog;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.HSH.service.AdminService;
@@ -40,5 +48,38 @@ public class AdminController {
     public ResultVO<Void> changeUserStatus(@RequestBody String userId, @RequestParam String statusCode){
         // 우선 문만 만들어두기
         return ResultVO.ok("외원 상태가 성공적으로 변경되었습니다.",null);
+    }
+
+    /*
+    [하위 관리자 생성]
+    @ActionLog 적용 -> "누가 생성했는가?"를 자동 기록하게 처리
+    */
+    @PostMapping("/create-operator")
+    @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER") // ★ 여기가 핵심!
+    public ResultVO<String> createOperator(@RequestBody UserJoinRequestDTO joinDto,
+                                           @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            // 현재 로그인한 관리자의 ID(PK)를 추출하는 로직 필요
+            // (UserDetails에는 보통 username(ID)만 들어있으므로, Service에서 조회하거나 여기서 변환)
+            // 여기서는 편의상 Service 안에서 조회하도록 처리했으므로,
+            // userDetails.getUsername()을 이용해 User 엔티티를 찾는 로직이 필요하지만,
+            // 일단 앞서 구현한 LogingAspect에서 getCurrentUserNo()를 쓰므로
+            // Service에는 PK 대신 ID(String)를 넘기거나, Service 내부에서 다시 조회하는 게 안전함.
+
+            // UserDetails 구현체(UserPrincipal)에 userNo를 넣어두면 바로 꺼낼 수 있음.
+            // 현재는 간단히 Service 로직에 의존.
+
+            // 임시: 현재 로그인한 관리자의 userNo를 DB에서 찾아야 함 (Service에 위임 권장)
+            // 하지만 Service 로직 상 PK가 필요하므로, 여기서는 개념적으로만 설명합니다.
+            // 실제로는 userDetails에서 userNo를 꺼내오는 커스텀 로직이 있으면 좋습니다.
+
+            // (임시 조치: Service 내부에서 처리하도록 코드를 짰다면 OK,
+            //  지금은 토큰에서 PK를 바로 못 꺼내면 Service에서 findByUserId 해야 함)
+
+            return ResultVO.success("하위 관리자가 생성되었습니다.");
+
+        } catch (Exception e) {
+            return ResultVO.fail("관리자 생성 실패: " + e.getMessage());
+        }
     }
 }
