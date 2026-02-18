@@ -7,6 +7,7 @@ import com.example.backend_main.common.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; // ★ 이 import가 필요합니다!
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -21,8 +22,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 @Configuration
+// @EnableMethodSecurity : 컨틀로러의 메소드 위에 붙은 @PreAuthorize가 살아있는 코드로 변함
+// 만일 없을 경우 권한 체크가 무시하됨..!
 @EnableWebSecurity
-// // JwtTokenProvider를 가져오기 위해 필요합니당~
+// ★ [핵심] 이 줄이 있어야 컨트롤러의 권한 체크가 작동합니다!
+@EnableMethodSecurity(securedEnabled = true, prePostEnabled = true)
+// JwtTokenProvider를 가져오기 위해 필요합니당~
 @RequiredArgsConstructor
 public class SecurityConfig {
     // 신분증 확인 기계 가져오기..!
