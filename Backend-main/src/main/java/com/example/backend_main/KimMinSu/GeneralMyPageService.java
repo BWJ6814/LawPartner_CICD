@@ -9,6 +9,7 @@ import com.example.backend_main.dto.GeneralMyPageDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +59,16 @@ public class GeneralMyPageService {
         dto.setRecentPosts(postList);
 
         // 5. 캘린더 일정 (추후 연동, 일단 빈 배열)
-        List<CalendarEvent> myEvents = calendarEventRepository.findByUserNo(userNo);
+
+        LocalDateTime today = LocalDateTime.now();
+
+        String startOfMonth = today.withDayOfMonth(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        String endOfMonth = today.withDayOfMonth(today.getMonth().maxLength()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        System.out.println("조회 기간 :" + startOfMonth + " ~ " + endOfMonth);
+
+        List<CalendarEvent> myEvents = calendarEventRepository.findByUserNoAndStartDateBetween(userNo, startOfMonth, endOfMonth);
 
         List<GeneralMyPageDTO.CalendarEventDTO> eventList = myEvents.stream().map(event -> {
             GeneralMyPageDTO.CalendarEventDTO calDTO = new GeneralMyPageDTO.CalendarEventDTO();
@@ -79,6 +89,8 @@ public class GeneralMyPageService {
 
 
     }
+
+
     @org.springframework.transaction.annotation.Transactional
     public Long saveCalendarEvent(Long userNo, GeneralMyPageDTO.CalendarEventDTO dto) {
 

@@ -6,5 +6,7 @@ import java.util.List;
 
 public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Long> {
     // 캘린더에 뿌릴 '내 일정'을 전부 가져오는 명령어
-    List<CalendarEvent> findByUserNo(Long userNo);
+    List<CalendarEvent> findByUserNo(Long userNo, String start, String end);
+
+    List<CalendarEvent> findByUserNoAndStartDateBetween(Long userNo, String start, String end);
 }

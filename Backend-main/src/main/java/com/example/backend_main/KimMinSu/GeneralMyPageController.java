@@ -4,6 +4,7 @@ import com.example.backend_main.common.entity.CalendarEvent;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.GeneralMyPageDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,7 +45,7 @@ public class GeneralMyPageController {
     @PostMapping("/calendar")
     public ResultVO<Long> addCalendarEvents(
             @RequestHeader(value = "Authorization") String token,
-            @RequestBody GeneralMyPageDTO.CalendarEventDTO dto
+            @Valid @RequestBody GeneralMyPageDTO.CalendarEventDTO dto
     ){
         // 1. token에서 실제 userNo를 추출한다.
         String actualToken = token;
@@ -66,7 +67,7 @@ public class GeneralMyPageController {
     public ResultVO<String> updateCalendarEvent(
             @PathVariable("eventNo") Long eventNo,
             @RequestHeader(value = "Authorization") String token,
-            @RequestBody GeneralMyPageDTO.CalendarEventDTO dto
+            @Valid @RequestBody GeneralMyPageDTO.CalendarEventDTO dto
     ){
         // 1. 토큰 까서 유저 번호 꺼내기
         String actualToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : null;

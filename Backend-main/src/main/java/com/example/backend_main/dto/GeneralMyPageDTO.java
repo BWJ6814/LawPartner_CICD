@@ -1,9 +1,11 @@
 package com.example.backend_main.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
+
 
 import java.util.List;
 
@@ -47,8 +49,11 @@ public class GeneralMyPageDTO {
     @Data
     public static class CalendarEventDTO {
         private Long id; // 프론트에서 수정/삭제할 때 쓸 타겟 식별표. 무조건 추가
+        @NotBlank(message = "일정 제목을 입력해주세요.")
         private String title;
+        @NotBlank(message = "날짜를 입력해주세요.")
         private String start;  // YYYY-MM-DD
+        @NotBlank(message = "색상을 입력해주세요.")
         private String backgroundColor; // 색상 코드
     }
 
