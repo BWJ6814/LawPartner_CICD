@@ -48,7 +48,7 @@ const WriteQuestionPage = () => {
         if (!content.trim()) return alert("내용을 입력해주세요.");
 
         const userNo = localStorage.getItem('userNo');
-        const userNm = localStorage.getItem('userNM'); // [추가됨] 로컬스토리지에서 닉네임 가져오기
+        const nickNm = localStorage.getItem('nickNm'); // [추가됨] 로컬스토리지에서 닉네임 가져오기
 
         if(!userNo){
             alert("로그인 정보가 없습니다. 다시 로그인 해주세요.")
@@ -61,7 +61,7 @@ const WriteQuestionPage = () => {
                 content: content,
                 categories: selectedCategories,
                 userNo: userNo,
-                userNm: userNm, // [추가됨] 닉네임 데이터
+                nickNm: nickNm, // [추가됨] 닉네임 데이터
                 isNicknameVisible: isNicknameVisible // [추가됨] 체크박스 상태 데이터
             });
             alert("질문이 등록되었습니다.");

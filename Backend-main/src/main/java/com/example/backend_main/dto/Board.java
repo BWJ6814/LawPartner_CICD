@@ -57,10 +57,19 @@ public class Board {
     @ColumnDefault("'N'")
     private String nicknameVisibleYn;
 
+    @Column(name = "REPLY_CNT")
+    @ColumnDefault("0")
+    private Integer replyCnt;
+
+    // [추가됨] 매칭 완료 여부 (Y/N)
+    @Column(name = "MATCH_YN", length = 1)
+    @ColumnDefault("'N'")
+    private String matchYn;
+
     // [추가된 부분] 프론트로 닉네임을 전달하기 위한 임시 필드
     // DB 테이블의 컬럼으로는 생성되지 않도록 @Transient를 붙입니다.
     // (JPA에서는 일반적으로 별도의 DTO 클래스를 만들어서 응답하지만,
     // 현재 구조를 최대한 유지하기 위해 추가했습니다.)
     @Transient
-    private String userNickname;
+    private String nickNm;
 }

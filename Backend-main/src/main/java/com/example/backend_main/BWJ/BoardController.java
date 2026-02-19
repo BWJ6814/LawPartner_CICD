@@ -1,16 +1,13 @@
 package com.example.backend_main.BWJ;
 
-// DTO 관련 Import
 import com.example.backend_main.dto.Board;
-import com.example.backend_main.dto.BoardDetailDto;
 import com.example.backend_main.dto.BoardReply;
-
-// User Repository 관련 Import (경로가 맞는지 확인해 주세요)
 import com.example.backend_main.common.repository.UserRepository;
-import com.example.backend_main.common.entity.User;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+// [추가됨] 삭제 시 DB 에러 방지를 위한 트랜잭션 처리
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,24 +17,19 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/boards")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000") // 리액트 포트 허용
+@CrossOrigin(origins = "http://localhost:3000")
 public class BoardController {
 
     private final BoardRepository boardRepository;
     private final BoardReplyRepository boardReplyRepository;
-
-    // [추가됨] 글 작성자의 닉네임을 조회하기 위해 UserRepository 주입
     private final UserRepository userRepository;
 
-    // 1. 글 등록 (닉네임 공개 여부 처리 추가)
     @PostMapping
     public String createBoard(@RequestBody Map<String, Object> data) {
-        // 프론트에서 넘어온 categories 배열을 콤마 문자열로 변환
         List<String> cats = (List<String>) data.get("categories");
         String categoryString = String.join(",", cats);
         Long userNo = Long.parseLong(data.get("userNo").toString());
 
-        // [추가됨] 프론트엔드에서 보낸 isNicknameVisible 값을 확인하여 'Y' 또는 'N' 문자열로 변환합니다.
         Boolean isVisible = (Boolean) data.get("isNicknameVisible");
         String nicknameVisibleYn = (isVisible != null && isVisible) ? "Y" : "N";
 
@@ -46,35 +38,28 @@ public class BoardController {
                 .content((String) data.get("content"))
                 .categoryCode(categoryString)
                 .writerNo(userNo)
-                .nicknameVisibleYn(nicknameVisibleYn) // 공개여부 데이터 세팅
+                .replyCnt(0)
+                .matchYn("N")
+                .nicknameVisibleYn(nicknameVisibleYn)
                 .build();
 
         boardRepository.save(board);
         return "SUCCESS";
     }
 
-    // 2. 글 목록 조회 (작성자 닉네임 세팅 추가)
     @GetMapping
     public List<Board> getBoardList() {
-        // 우선 데이터베이스에서 게시글 목록을 최신순으로 가져옵니다.
         List<Board> boards = boardRepository.findAllByOrderByRegDtDesc();
-
-        // [추가됨] 게시글마다 작성자 번호(writerNo)를 이용해 유저 정보를 찾고, Transient 필드에 닉네임을 넣어줍니다.
         for (Board board : boards) {
-            userRepository.findById(board.getWriterNo()).ifPresent(user -> {
-                // ※ user.getUserNm() 부분이 실제 User 엔티티의 닉네임 Getter 메서드와 동일한지 확인해 주세요!
-                board.setUserNickname(user.getUserNm());
-            });
+            userRepository.findById(board.getWriterNo()).ifPresent(user -> board.setNickNm(user.getNickNm()));
+            if (board.getReplyCnt() == null) board.setReplyCnt(0);
         }
-
         return boards;
     }
 
-    // 3. 글 상세보기 (기존 유지)
     @GetMapping("/{id}")
     public Map<String, Object> getBoardDetail(@PathVariable("id") Long id) {
-        Board board = boardRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+        Board board = boardRepository.findById(id).orElseThrow();
 
         Map<String, Object> result = new HashMap<>();
         result.put("boardNo", board.getBoardNo());
@@ -83,17 +68,104 @@ public class BoardController {
         result.put("categoryCode", board.getCategoryCode());
         result.put("writerNo", board.getWriterNo());
         result.put("regDt", board.getRegDt());
+        result.put("matchYn", board.getMatchYn());
 
-        // 상세보기에서도 닉네임이 필요하다면 아래 코드를 활용하세요!
-        // result.put("nicknameVisibleYn", board.getNicknameVisibleYn());
-        // userRepository.findById(board.getWriterNo()).ifPresent(user -> result.put("userNickname", user.getUserNm()));
+        if ("Y".equals(board.getNicknameVisibleYn())) {
+            userRepository.findById(board.getWriterNo()).ifPresent(u -> result.put("nickNm", u.getNickNm()));
+        } else {
+            result.put("nickNm", "익명 질문자");
+        }
+
+        List<BoardReply> replies = boardReplyRepository.findByBoardNo(id);
+        List<Map<String, Object>> replyList = replies.stream().map(reply -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("replyNo", reply.getReplyNo());
+            map.put("content", reply.getContent());
+            map.put("regDt", reply.getRegDt());
+            map.put("lawyerNo", reply.getWriterNo());
+
+            userRepository.findById(reply.getWriterNo()).ifPresent(lawyer -> {
+                map.put("lawyerNm", lawyer.getNickNm());
+            });
+            return map;
+        }).collect(Collectors.toList());
+
+        result.put("replies", replyList);
 
         return result;
     }
 
-    // 4. 답변 등록 API (기존 유지)
     @PostMapping("/{id}/replies")
     public String createReply(@PathVariable("id") Long boardId, @RequestBody Map<String, Object> data) {
+        Board board = boardRepository.findById(boardId).orElseThrow();
+        if ("Y".equals(board.getMatchYn())) return "FAIL";
+
+        Long lawyerNo = Long.parseLong(data.get("lawyerNo").toString());
+
+        BoardReply reply = BoardReply.builder()
+                .boardNo(boardId)
+                .writerNo(lawyerNo)
+                .content((String) data.get("content"))
+                .selectionYn("N")
+                .build();
+        boardReplyRepository.save(reply);
+
+        board.setReplyCnt((board.getReplyCnt() == null ? 0 : board.getReplyCnt()) + 1);
+        boardRepository.save(board);
+
+        return "SUCCESS";
+    }
+
+    @PostMapping("/{id}/reviews")
+    public String createReview(@PathVariable("id") Long boardId, @RequestBody Map<String, Object> data) {
+        Long lawyerNo = Long.parseLong(data.get("lawyerNo").toString());
+        Long writerNo = Long.parseLong(data.get("writerNo").toString());
+        String writerNm = (String) data.get("writerNm");
+        Integer stars = Integer.parseInt(data.get("stars").toString());
+        String content = (String) data.get("content");
+        String category = (String) data.get("category");
+
+        boardRepository.insertReviewNative(lawyerNo, writerNo, writerNm, stars, content, category);
+        return "SUCCESS";
+    }
+
+    @PutMapping("/{id}/match")
+    public String completeMatch(@PathVariable("id") Long id) {
+        Board board = boardRepository.findById(id).orElseThrow();
+        board.setMatchYn("Y");
+        boardRepository.save(board);
+        return "SUCCESS";
+    }
+
+    // ==========================================
+    // [추가됨] 1. 게시글 수정 API
+    // ==========================================
+    @PutMapping("/{id}")
+    public String updateBoard(@PathVariable("id") Long id, @RequestBody Map<String, Object> data) {
+        Board board = boardRepository.findById(id).orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+
+        // 프론트에서 넘겨준 제목과 내용으로 업데이트합니다.
+        board.setTitle((String) data.get("title"));
+        board.setContent((String) data.get("content"));
+
+        boardRepository.save(board);
+        return "SUCCESS";
+    }
+
+    // ==========================================
+    // [추가됨] 2. 게시글 삭제 API
+    // ==========================================
+    @DeleteMapping("/{id}")
+    @Transactional // 삭제 중 하나라도 실패하면 원상복구(롤백) 하기 위해 필수!
+    public String deleteBoard(@PathVariable("id") Long id) {
+        // 1. 게시글을 지우기 전에 달린 답변들을 먼저 지워줍니다 (외래키 제약조건 위배 방지)
+        List<BoardReply> replies = boardReplyRepository.findByBoardNo(id);
+        if (!replies.isEmpty()) {
+            boardReplyRepository.deleteAll(replies);
+        }
+
+        // 2. 답변을 다 지웠으니 이제 안전하게 게시글을 삭제합니다.
+        boardRepository.deleteById(id);
         return "SUCCESS";
     }
 }

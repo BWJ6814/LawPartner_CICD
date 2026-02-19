@@ -5,6 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface BoardReplyRepository extends JpaRepository<BoardReply, Long> {
-    // 특정 게시글의 댓글 목록 조회 (작성일순)
-    List<BoardReply> findAllByBoardNoOrderByRegDtAsc(Long boardNo);
+    // 게시글 번호로 답변 목록 가져오기
+    List<BoardReply> findByBoardNo(Long boardNo);
 }

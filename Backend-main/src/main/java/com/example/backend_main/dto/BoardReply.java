@@ -20,17 +20,22 @@ public class BoardReply {
     @Column(name = "BOARD_NO")
     private Long boardNo;
 
+    // 변호사 ID (팀원 코드는 writerNo로 되어 있습니다)
     @Column(name = "WRITER_NO")
-    private Long writerNo; // 변호사 ID
+    private Long writerNo;
 
     @Column(name = "CONTENT", length = 4000, nullable = false)
     private String content;
 
     @Column(name = "SELECTION_YN")
     @ColumnDefault("'N'")
-    private String selectionYn; // 채택 여부
+    private String selectionYn;
 
     @CreationTimestamp
     @Column(name = "REG_DT")
     private LocalDateTime regDt;
+
+    // [추가됨] 화면에 변호사 이름을 보여주기 위한 임시 필드
+    @Transient
+    private String lawyerNm;
 }
