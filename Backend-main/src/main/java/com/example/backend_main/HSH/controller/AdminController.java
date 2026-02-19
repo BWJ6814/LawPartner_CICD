@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /*
 
@@ -50,10 +51,26 @@ public class AdminController {
         나중에 AdminService에 로직 추가하여 완성할 예정
     */
     @PutMapping("/user/status")
-    public ResultVO<Void> changeUserStatus(@RequestBody String userId, @RequestParam String statusCode){
-        // 우선 문만 만들어두기
-        // AdminService에 changeUserStatus 메서드 구현 후 연결 필요
-        return ResultVO.ok("회원 상태가 성공적으로 변경되었습니다.",null);
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')") // 슈퍼 관리자, 일반 리자
+    @ActionLog(action = "CHANGE_STATUS", target = "TB_USER") // 감시 로그 기록
+    public ResultVO<String> changeUserStatus(@RequestBody Map<String, String> requestBody) {
+        String userId = requestBody.get("userId");
+        String statusCode = requestBody.get("statusCode");
+
+        if (userId == null || statusCode == null) {
+            // ResultVO.fail(String code, String message) 사용
+            return ResultVO.fail("PARAM-ERROR", "필수 파라미터가 누락되었습니다.");
+        }
+
+        try {
+            adminService.changeUserStatus(userId, statusCode);
+            return ResultVO.ok("회원 상태가 성공적으로 변경되었습니다.",null);
+        } catch (IllegalArgumentException e) {
+            return ResultVO.fail("BAD-REQUEST", e.getMessage());
+        } catch (Exception e) {
+            log.error("회원 상태 변경 중 오류", e);
+            return ResultVO.fail("SYS-ERROR", "시스템 오류가 발생했습니다.");
+        }
     }
 
     /*
@@ -76,16 +93,17 @@ public class AdminController {
             // 서비스 호출
             adminService.createSubAdmin(joinDto, currentAdminNo);
 
-            return ResultVO.success("하위 관리자(운영자)가 성공적으로 생성되었습니다.");
+            return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.",null);
 
         } catch (SecurityException e) {
             log.warn("🚨 권한 없는 관리자 생성 시도: AdminID={}", userDetails.getUsername());
-            return ResultVO.fail("권한 오류: " + e.getMessage());
+            // ★ fail("메시지") -> fail("코드", "메시지")
+            return ResultVO.fail("AUTH-FORBIDDEN", "권한 오류: " + e.getMessage());
         } catch (IllegalArgumentException e) {
-            return ResultVO.fail("입력 오류: " + e.getMessage());
+            return ResultVO.fail("BAD-INPUT", "입력 오류: " + e.getMessage());
         } catch (Exception e) {
             log.error("관리자 생성 중 시스템 오류", e);
-            return ResultVO.fail("시스템 오류가 발생했습니다.");
+            return ResultVO.fail("SYS-ERROR", "시스템 오류가 발생했습니다.");
         }
     }
 

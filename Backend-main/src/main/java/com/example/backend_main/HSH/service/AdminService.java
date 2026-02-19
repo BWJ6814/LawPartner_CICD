@@ -187,6 +187,28 @@ public class AdminService {
 
     }
 
+    @Transactional
+    public void changeUserStatus(String userId, String targetStatusCode) {
+        // 1. 대상 회원 찾기
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        // 2. 상태 변경 (Setter 사용)
+        user.setStatusCode(targetStatusCode);
+
+        // 3. [비즈니스 로직] 승인(S02) 처리 시 권한 승격
+        // 기존 권한이 ROLE_USER인 경우에만 ROLE_LAWYER로 올려줌..(이미 관리잠녀 건드리지 않음)
+        if ("S02".equals(targetStatusCode) && "ROLE_USER".equals(user.getRoleCode())) {
+            user.setRoleCode("ROLE_LAWYER");
+            log.info("🎉 회원[{}]의 권한이 변호사(ROLE_LAWYER)로 승격되었습니다.", user.getUserId());
+        }
+
+        // JPA의 Dirty Checking으로 인해 save를 호출하지 않아도 트랜잭션 종료 시 자동 업데이트되지만,
+        // 명시적으로 작성하는 것이 가독성에 좋습니다.
+        userRepository.save(user);
+
+        log.info("🔧 회원[{}] 상태 변경 완료: {} -> {}", user.getUserId(), user.getStatusCode(), targetStatusCode);
+    }
 
 }
 
