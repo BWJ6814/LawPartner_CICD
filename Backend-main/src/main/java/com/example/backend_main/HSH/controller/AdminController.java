@@ -15,6 +15,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize; // ★ 권한 체크
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.util.List;
@@ -115,10 +119,15 @@ public class AdminController {
     - 엑셀이 아닌, JSON 데이터로 로그 리스트를 반환합니다.
     */
     @GetMapping("/logs")
-    public ResultVO<List<AccessLog>> getAccessLogs() {
-        // 원래는 페이징(Pageable) 처리를 해야 하지만, 일단 전체 리스트로 MVP 구현
-        List<AccessLog> logs = accessLogRepository.findAll();
-        return ResultVO.ok("로그 목록을 성공적으로 불러왔습니다.", logs);
+    public ResultVO<Page<AccessLog>> getAccessLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
+
+        // 최신 로그가 먼저 오도록 내림차순(DESC) 정렬하여 페이지 단위로 자름
+        Pageable pageable = PageRequest.of(page, size, Sort.by("regDt").descending());
+        Page<AccessLog> logPage = accessLogRepository.findAll(pageable);
+
+        return ResultVO.ok("로그 목록을 성공적으로 불러왔습니다.", logPage);
     }
 
     /*
