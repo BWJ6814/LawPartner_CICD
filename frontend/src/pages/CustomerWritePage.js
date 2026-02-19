@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const STORAGE_KEY = "customer_inquiries";
 const TOKEN_KEY = "accessToken";
@@ -22,8 +22,12 @@ function saveInquiries(list) {
 
 export default function CustomerWritePage() {
     const navigate = useNavigate();
+    const location = useLocation();
 
-    const [type, setType] = useState("서비스 이용 문의");
+    const [type, setType] = useState(
+        location.state?.type || "서비스 이용 문의"
+    );
+
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
 
@@ -36,10 +40,9 @@ export default function CustomerWritePage() {
         if (!content.trim()) return alert("문의 내용을 입력하세요.");
 
         const now = new Date();
-        const id = String(now.getTime());
 
         const newItem = {
-            id,
+            id: String(now.getTime()),
             type,
             title: title.trim(),
             content: content.trim(),
@@ -57,23 +60,31 @@ export default function CustomerWritePage() {
     return (
         <main style={main}>
             <div style={container}>
-
                 <div style={topBar}>
                     <div>
                         <h2 style={h2}>1:1 문의 작성</h2>
-                        <p style={subText}>문의 유형을 선택하고 내용을 작성해주세요.</p>
+                        <p style={subText}>
+                            문의 유형을 선택하고 내용을 작성해주세요.
+                        </p>
                     </div>
-                    <button style={miniBtn} onClick={() => navigate("/customer/list")}>
+
+                    <button
+                        style={miniBtn}
+                        onClick={() => navigate("/customer/list")}
+                    >
                         문의 목록
                     </button>
                 </div>
 
                 {blocked ? (
                     <div style={card}>
-                        <p style={{ marginBottom: 20, fontSize: 16 }}>
+                        <p style={{ marginBottom: 20 }}>
                             로그인한 사용자만 작성 가능합니다.
                         </p>
-                        <button style={btnPrimary} onClick={() => navigate("/login")}>
+                        <button
+                            style={btnPrimary}
+                            onClick={() => navigate("/login")}
+                        >
                             로그인 하러가기
                         </button>
                     </div>
@@ -82,15 +93,19 @@ export default function CustomerWritePage() {
 
                         <div style={field}>
                             <label style={label}>문의 유형</label>
-                            <select value={type} onChange={(e) => setType(e.target.value)} style={control}>
-                                <option>서비스 이용 문의</option>
-                                <option>결제 / 환불 문의</option>
-                                <option>계정 / 로그인</option>
-                                <option>전문가 관련 문의</option>
-                                <option>신고 / 권리침해</option>
-                                <option>AI 작성 문의</option>
-                                <option>버그 제보</option>
-                                <option>기타 문의</option>
+                            <select
+                                value={type}
+                                onChange={(e) => setType(e.target.value)}
+                                style={control}
+                            >
+                                <option value="서비스 이용 문의">서비스 이용 문의</option>
+                                <option value="결제 / 환불 문의">결제 / 환불 문의</option>
+                                <option value="계정 / 로그인">계정 / 로그인</option>
+                                <option value="전문가 관련 문의">전문가 관련 문의</option>
+                                <option value="신고 / 권리침해">신고 / 권리침해</option>
+                                <option value="AI 작성 문의">AI 작성 문의</option>
+                                <option value="버그 제보">버그 제보</option>
+                                <option value="기타 문의">기타 문의</option>
                             </select>
                         </div>
 
@@ -115,8 +130,14 @@ export default function CustomerWritePage() {
                         </div>
 
                         <div style={btnRow}>
-                            <button type="submit" style={btnPrimary}>문의 등록</button>
-                            <button type="button" style={btnGhost} onClick={() => navigate("/customer")}>
+                            <button type="submit" style={btnPrimary}>
+                                문의 등록
+                            </button>
+                            <button
+                                type="button"
+                                style={btnGhost}
+                                onClick={() => navigate("/customer")}
+                            >
                                 취소
                             </button>
                         </div>
@@ -125,15 +146,15 @@ export default function CustomerWritePage() {
                             <strong>안내</strong><br />
                             등록 후 상태는 기본 “대기”로 표시됩니다.
                         </div>
+
                     </form>
                 )}
-
             </div>
         </main>
     );
 }
 
-/* ====================== 레이아웃 ====================== */
+/* ================= 스타일 정의 ================= */
 
 const main = {
     background: "#0f172a",
@@ -144,14 +165,10 @@ const main = {
     minHeight: "100vh",
 };
 
-/* ====================== 컨테이너 ====================== */
-
 const container = {
     maxWidth: 960,
     margin: "0 auto",
 };
-
-/* ====================== 상단 ====================== */
 
 const topBar = {
     display: "flex",
@@ -165,15 +182,12 @@ const h2 = {
     fontWeight: 900,
     color: "#fff",
     marginBottom: 6,
-    letterSpacing: "-0.5px"
 };
 
 const subText = {
     color: "rgba(255,255,255,0.6)",
     fontSize: 15
 };
-
-/* ====================== 카드 ====================== */
 
 const card = {
     background: "#111c34",
@@ -184,15 +198,12 @@ const card = {
     boxShadow: "0 10px 30px rgba(0,0,0,0.3)"
 };
 
-/* ====================== 폼 ====================== */
-
 const field = { marginBottom: 20 };
 
 const label = {
     display: "block",
     marginBottom: 8,
     fontWeight: 700,
-    fontSize: 15
 };
 
 const control = {
@@ -202,10 +213,7 @@ const control = {
     border: "1px solid rgba(255,255,255,0.15)",
     background: "#0b1224",
     color: "white",
-    fontSize: 15
 };
-
-/* ====================== 버튼 ====================== */
 
 const btnRow = { display: "flex", gap: 14, marginTop: 24 };
 
@@ -217,7 +225,6 @@ const btnPrimary = {
     background: "#2563eb",
     color: "white",
     fontWeight: 800,
-    fontSize: 16,
     cursor: "pointer"
 };
 
@@ -228,8 +235,6 @@ const btnGhost = {
     border: "1px solid rgba(255,255,255,0.15)",
     background: "transparent",
     color: "white",
-    fontWeight: 700,
-    fontSize: 16,
     cursor: "pointer"
 };
 
@@ -239,7 +244,6 @@ const miniBtn = {
     border: "1px solid rgba(255,255,255,0.15)",
     background: "#1e293b",
     color: "white",
-    fontSize: 14,
     cursor: "pointer"
 };
 
@@ -247,6 +251,5 @@ const hintBox = {
     marginTop: 28,
     padding: 16,
     borderRadius: 14,
-    background: "rgba(255,255,255,0.05)",
-    fontSize: 14
+    background: "rgba(255,255,255,0.05)"
 };

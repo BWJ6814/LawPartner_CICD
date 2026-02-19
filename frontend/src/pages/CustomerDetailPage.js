@@ -21,25 +21,23 @@ function formatDateTime(iso) {
     return `${yyyy}.${mm}.${dd} ${hh}:${mi}`;
 }
 
-// 상태값이 지금 "대기"로만 들어오지만, 나중에 확장해도 깨지지 않게 매핑
 function getStatusBadgeStyle(status) {
     const s = String(status || "").trim();
 
-    // 기본값
-    let bg = "rgba(245, 158, 11, 0.18)"; // amber
+    let bg = "rgba(245, 158, 11, 0.18)";
     let bd = "rgba(245, 158, 11, 0.35)";
     let tx = "#fbbf24";
 
     if (s.includes("완료") || s.toLowerCase().includes("answered")) {
-        bg = "rgba(34, 197, 94, 0.16)";  // green
+        bg = "rgba(34, 197, 94, 0.16)";
         bd = "rgba(34, 197, 94, 0.34)";
         tx = "#4ade80";
     } else if (s.includes("반려") || s.includes("거절") || s.toLowerCase().includes("rejected")) {
-        bg = "rgba(239, 68, 68, 0.16)";  // red
+        bg = "rgba(239, 68, 68, 0.16)";
         bd = "rgba(239, 68, 68, 0.34)";
         tx = "#f87171";
     } else if (s.includes("진행") || s.toLowerCase().includes("progress")) {
-        bg = "rgba(59, 130, 246, 0.16)"; // blue
+        bg = "rgba(59, 130, 246, 0.16)";
         bd = "rgba(59, 130, 246, 0.34)";
         tx = "#60a5fa";
     }
@@ -61,10 +59,26 @@ export default function CustomerDetailPage() {
         return list.find((x) => x.id === id);
     }, [id]);
 
+    function handleDelete() {
+        if (!item) return;
+        const ok = window.confirm("정말 삭제하시겠습니까?");
+        if (!ok) return;
+
+        const list = loadInquiries();
+        const updated = list.filter((x) => x.id !== id);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+        alert("삭제되었습니다.");
+        navigate("/customer/list");
+    }
+
+    function handleEdit() {
+        navigate(`/customer/edit/${id}`);
+    }
+
     return (
         <main style={page}>
             <div style={container}>
-                {/* 상단 네비 (버튼처럼 보이지 않게) */}
                 <div style={backRow}>
           <span style={backLink} onClick={() => navigate("/customer/list")}>
             ← 문의 목록
@@ -86,13 +100,10 @@ export default function CustomerDetailPage() {
                     </section>
                 ) : (
                     <section style={panel}>
-                        {/* 페이지 타이틀 */}
                         <h1 style={pageTitle}>문의 상세</h1>
 
-                        {/* 제목 (가장 큰 위계) */}
                         <div style={subject}>{item.title}</div>
 
-                        {/* 메타라인: 상태 배지 + 유형 + 작성일 */}
                         <div style={metaRow}>
                             <span style={getStatusBadgeStyle(item.status)}>{item.status}</span>
 
@@ -111,18 +122,23 @@ export default function CustomerDetailPage() {
               </span>
                         </div>
 
-                        {/* 구분선 */}
                         <div style={divider} />
 
-                        {/* 본문 */}
                         <div style={sectionHeader}>
                             <div style={sectionTitle}>문의 내용</div>
                         </div>
 
                         <div style={contentBox}>{item.content}</div>
 
-                        {/* 하단 네비: 버튼 느낌 줄이고 가벼운 액션만 */}
                         <div style={footerRow}>
+                            <button style={btnDanger} onClick={handleDelete}>
+                                삭제
+                            </button>
+
+                            <button style={btnPrimaryAction} onClick={handleEdit}>
+                                수정
+                            </button>
+
                             <button style={btnGhost} onClick={() => navigate("/customer/list")}>
                                 목록으로
                             </button>
@@ -135,7 +151,7 @@ export default function CustomerDetailPage() {
 }
 
 /* =========================
-   Styles (서비스형 위계)
+   Styles
 ========================= */
 
 const page = {
@@ -175,16 +191,12 @@ const panel = {
 const pageTitle = {
     fontSize: 20,
     fontWeight: 900,
-    letterSpacing: "-0.3px",
-    margin: 0,
     marginBottom: 14,
-    color: "rgba(255,255,255,0.9)",
 };
 
 const subject = {
     fontSize: 34,
     fontWeight: 900,
-    letterSpacing: "-0.6px",
     lineHeight: 1.15,
     marginBottom: 16,
 };
@@ -194,7 +206,6 @@ const metaRow = {
     alignItems: "center",
     gap: 10,
     flexWrap: "wrap",
-    color: "rgba(255,255,255,0.75)",
 };
 
 const badge = {
@@ -205,7 +216,6 @@ const badge = {
     borderRadius: 999,
     fontSize: 13,
     fontWeight: 900,
-    letterSpacing: "-0.2px",
 };
 
 const metaDot = {
@@ -214,7 +224,6 @@ const metaDot = {
 
 const metaText = {
     display: "inline-flex",
-    alignItems: "center",
     gap: 8,
     fontSize: 14,
 };
@@ -225,7 +234,6 @@ const metaKey = {
 
 const metaValue = {
     fontWeight: 800,
-    color: "rgba(255,255,255,0.92)",
 };
 
 const divider = {
@@ -236,16 +244,12 @@ const divider = {
 };
 
 const sectionHeader = {
-    display: "flex",
-    alignItems: "baseline",
-    justifyContent: "space-between",
     marginBottom: 12,
 };
 
 const sectionTitle = {
     fontSize: 18,
     fontWeight: 900,
-    letterSpacing: "-0.3px",
 };
 
 const contentBox = {
@@ -254,9 +258,7 @@ const contentBox = {
     borderRadius: 18,
     padding: 26,
     lineHeight: 1.9,
-    fontSize: 15,
     whiteSpace: "pre-wrap",
-    color: "rgba(255,255,255,0.92)",
 };
 
 const footerRow = {
@@ -280,9 +282,32 @@ const btnGhost = {
     borderRadius: 14,
     border: "1px solid rgba(255,255,255,0.15)",
     background: "transparent",
-    color: "rgba(255,255,255,0.9)",
+    color: "white",
     fontWeight: 800,
     cursor: "pointer",
+    marginLeft: 10,
+};
+
+const btnDanger = {
+    padding: "12px 16px",
+    borderRadius: 14,
+    border: "1px solid rgba(239,68,68,0.5)",
+    background: "rgba(239,68,68,0.15)",
+    color: "#f87171",
+    fontWeight: 800,
+    cursor: "pointer",
+    marginRight: 10,
+};
+
+const btnPrimaryAction = {
+    padding: "12px 16px",
+    borderRadius: 14,
+    border: "none",
+    background: "#2563eb",
+    color: "white",
+    fontWeight: 900,
+    cursor: "pointer",
+    marginRight: 10,
 };
 
 const emptyState = {

@@ -28,6 +28,7 @@ export default function CustomerHomePage() {
 
                 <div style={card}>
 
+                    {/* 일반 작성 버튼 (기본값으로 이동) */}
                     <button
                         onClick={() => navigate("/customer/write")}
                         style={btnPrimary}
@@ -44,7 +45,11 @@ export default function CustomerHomePage() {
                             <div
                                 key={idx}
                                 style={typeCard}
-                                onClick={() => navigate("/customer/write")}
+                                onClick={() =>
+                                    navigate("/customer/write", {
+                                        state: { type: item }
+                                    })
+                                }
                             >
                                 {item}
                             </div>
@@ -78,14 +83,10 @@ const main = {
     paddingRight: "24px",
 };
 
-/* ====== 컨테이너 ====== */
-
 const container = {
     maxWidth: 1000,
     margin: "0 auto",
 };
-
-/* ====== 상단 ====== */
 
 const headerArea = {
     marginBottom: 40,
@@ -104,8 +105,6 @@ const subText = {
     color: "rgba(255,255,255,0.6)"
 };
 
-/* ====== 카드 ====== */
-
 const card = {
     background: "#111c34",
     border: "1px solid rgba(255,255,255,0.08)",
@@ -113,8 +112,6 @@ const card = {
     padding: 40,
     boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
 };
-
-/* ====== 버튼 ====== */
 
 const btnBase = {
     width: "100%",
@@ -139,8 +136,6 @@ const btnSecondary = {
     color: "white",
 };
 
-/* ====== 구분선 ====== */
-
 const divider = {
     height: 1,
     background: "rgba(255,255,255,0.08)",
@@ -153,8 +148,6 @@ const sectionTitle = {
     marginBottom: 20,
     color: "#fff"
 };
-
-/* ====== 유형 그리드 ====== */
 
 const grid = {
     display: "grid",
@@ -170,6 +163,5 @@ const typeCard = {
     cursor: "pointer",
     fontWeight: 700,
     fontSize: 15,
-    transition: "all 0.25s ease",
     color: "#ffffff",
 };
