@@ -2,8 +2,10 @@ package com.example.backend_main.HSH.aop;
 
 import com.example.backend_main.common.annotation.ActionLog;
 import com.example.backend_main.common.entity.AccessLog;
+import com.example.backend_main.common.entity.AdminAudit;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AccessLogRepository;
+import com.example.backend_main.common.repository.AdminAuditRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.CustomUserDetails;
 import org.slf4j.MDC;
@@ -19,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
 import java.util.UUID;
 
 @Aspect
@@ -29,6 +32,7 @@ public class LogingAspect {
 
     private final AccessLogRepository accessLogRepository;
     private final UserRepository userRepository; // USER_NO 조회를 위해 추가
+    private final AdminAuditRepository adminAuditRepository;
 
 
     /*
@@ -40,7 +44,10 @@ public class LogingAspect {
 
         // 1. [TRACE_ID] 요청 고유 식별자 생성 (UUID 8자리)
         String traceId = UUID.randomUUID().toString().substring(0, 8);
-        // 1.1 요청 시작 시간 기록
+        // 1.1 입구에서부터 쓰레드 명찰(MDC), 달기!
+        MDC.put("TRACE_ID", traceId);
+
+        // 1.2 요청 시작 시간 기록
         long startTime = System.currentTimeMillis();
 
         // 2-1. Request 객체 가져오기
@@ -58,9 +65,6 @@ public class LogingAspect {
 
         // 4. [USER_NO] 현재 로그인한 사용자 번호 가져오기
         Long userNo = getCurrentUserNo();
-
-        // 일단 저장 (ID 확보를 위해) - *필요 시 생략하고 마지막에만 저장해도 됨
-        // accessLogRepository.save(accessLog);
 
         Object result;
         String errorMsg = null;
@@ -93,10 +97,12 @@ public class LogingAspect {
                     .reqUri(uri)
                     .userAgent(userAgent)
                     .userNo(userNo)
-                    .statusCode(status)   // [추가됨] 상태 코드
-                    .execTime(duration)   // [추가됨] 실행 시간
-                    .errorMsg(errorMsg)   // [추가됨] 에러 메시지 (성공 시 null)
+                    .statusCode(status)   // 상태 코드
+                    .execTime(duration)   // 실행 시간
+                    .errorMsg(errorMsg)   // 에러 메시지 (성공 시 null)
                     .build());
+
+            MDC.clear();                  // 퇴근할 땐 명찰 반납하세요! (메모리 누스 방지)
         }
 
         return result;
@@ -116,26 +122,59 @@ public class LogingAspect {
         String actionType = actionLog.action();
         String targetInfo = actionLog.target();
 
-        // 2. 관리자 정보
-        Long adminNo = getCurrentUserNo();
-        String traceId = UUID.randomUUID().toString().substring(0, 8);
+        // 2. 관리자 정보 가져오기 (adminId 포함)
+        Long adminNo = null;
+        String adminId = "UNKNOWN";
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        // 타입 확인과 동시에 'details'라는 변수에 곧바로 담아버리기! - 형변환 생략..
+        if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
+            adminNo = details.getUserNo();
+            adminId = details.getUserId();
+        }
+
+        // 3. 환경 정보 가져오기
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+        String ip = request.getRemoteAddr();
+        String userAgent = request.getHeader("User-Agent");
+        if (userAgent != null && userAgent.length() > 200) userAgent = userAgent.substring(0, 200);
+
+        // 4. ★ logAccess에서 달아둔 명찰(traceId) 확인
+        String traceId = MDC.get("traceId");
+        if (traceId == null) traceId = "SYSTEM"; // 혹시 컨트롤러를 안 거쳤을 경우 방어
+
 
         // 3. 시작 로그
-        log.info("👀 [Admin Action Start] Admin: {}, Action: {}, Target: {}", adminNo, actionType, targetInfo);
+        log.info("👀 [Admin Action Start] Admin: {}({}), Action: {}, Target: {}", adminId, adminNo, actionType, targetInfo);
 
         Object result;
+        String errorYn = "N";
+        String errorMsg = null;
+
         try {
-            // 4. 비즈니스 로직 실행 (엑셀 다운로드 등)
             result = joinPoint.proceed();
-
-            // 5. 성공 로그
-            log.info("✅ [Admin Action Success] Admin: {}, Action: {}, TraceID: {}", adminNo, actionType, traceId);
-            // (나중에 여기에 TB_ADMIN_AUDIT 테이블 저장 로직 추가 가능)
-
+            log.info("✅ [Admin Action Success] Admin: {}, Action: {}, TraceID: {}", adminId, actionType, traceId);
         } catch (Exception e) {
-            // 6. 실패 로그
-            log.error("❌ [Admin Action Fail] Admin: {}, Action: {}, Error: {}", adminNo, actionType, e.getMessage());
+            errorYn = "Y";
+            errorMsg = e.getMessage();
+            if (errorMsg != null && errorMsg.length() > 500) errorMsg = errorMsg.substring(0, 500);
+            log.error("❌ [Admin Action Fail] Admin: {}, Action: {}, Error: {}", adminId, actionType, e.getMessage());
             throw e;
+        } finally {
+            // [핵심] DB에 저장
+            if (adminNo != null) {
+                adminAuditRepository.save(AdminAudit.builder()
+                        .adminNo(adminNo)
+                        .adminId(adminId)
+                        .actionType(actionType)
+                        .targetInfo(targetInfo)
+                        .traceId(traceId)
+                        .errorYn(errorYn)
+                        .errorMsg(errorMsg)
+                        .reqIp(ip)
+                        .userAgent(userAgent)
+                        .build());
+            }
         }
 
         return result;
@@ -157,8 +196,8 @@ public class LogingAspect {
             Object principal = auth.getPrincipal();
 
             // 1. [최적화] CustomUserDetails라면 DB 조회 없이 바로 PK 반환
-            if (principal instanceof CustomUserDetails) {
-                return ((CustomUserDetails) principal).getUserNo();
+            if (principal instanceof CustomUserDetails details) {
+                return details.getUserNo();
             }
 
             // 2. [기본] 만약 다른 방식으로 로그인했다면 DB 조회 (안전장치)
