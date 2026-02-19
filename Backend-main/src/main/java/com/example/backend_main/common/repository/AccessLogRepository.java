@@ -5,6 +5,7 @@ import com.example.backend_main.common.entity.AccessLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+
 /*
 [AccessLogRepository]
 보안 로그 데이터를 DB에 저장하기 위한 레포지토리!

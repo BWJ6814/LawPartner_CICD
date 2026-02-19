@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // 트랜잭션
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -210,5 +212,32 @@ public class AdminService {
         log.info("🔧 회원[{}] 상태 변경 완료: {} -> {}", user.getUserId(), user.getStatusCode(), targetStatusCode);
     }
 
+    // [대시보드용] 일별 접속자 수 통계 조회하기
+    public List<Map<String, Object>> getDailyVisitStats() {
+        // 1. 최근 7일치 로그만 가져오거나, 전체를 가져와서 가공하기
+        List<AccessLog> allLogs = accessLogRepository.findAll();
+
+        // 2. Java Stream을 이용해 날짜별 그룹핑 처리! (YYYY-MM-DD)기준으로
+        Map<String, Long> stats = allLogs.stream()
+                // "2024-02-19"만 추출
+                .map(log -> log.getRegDt().toString().substring(0,10))
+                .collect(Collectors.groupingBy(
+                        date -> date,
+                        // 개수 세기
+                        Collectors.counting()
+                ));
+        // 3. 리액트가 그리기 좋게 리스트 형태로 변환 및 정렬
+        return stats.entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("date", entry.getKey());
+                    map.put("count", entry.getValue());
+                    return map;
+                })
+                // 날짜 오름차순(옛날->최신)으로 정렬하고 싶으면 a.compareTo(b)
+                // 최신순(최신->옛날)으로 정렬하고 싶으면 b.compareTo(a)
+                .sorted((a, b) -> ((String) b.get("date")).compareTo((String) a.get("date")))
+                .collect(Collectors.toList());
+    }
 }
 

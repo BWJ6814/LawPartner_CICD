@@ -118,4 +118,14 @@ public class AdminController {
     public void downloadLogs(HttpServletResponse response) throws IOException {
         adminService.downloadAccessLogExcel(response);
     }
+
+    /*
+    [대시보드 통계] 일별 접속자 수 조회 API
+    - 차트 라이브러리(Recharts 등)에 넣을 데이터 제공
+    */
+    @GetMapping("/status/daily")
+    public ResultVO<List<Map<String, Object>>> getDailyStats(){
+        List<Map<String, Object>> stats = adminService.getDailyVisitStats();
+        return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.",stats);
+    }
 }
