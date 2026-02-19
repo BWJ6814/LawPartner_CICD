@@ -115,37 +115,70 @@ public class LogingAspect {
     @Around("@annotation(com.example.backend_main.common.annotation.ActionLog)")
     public Object logAdminAction(ProceedingJoinPoint joinPoint) throws Throwable {
 
-        // 1. 어노테이션에 적힌 내용 읽어오기 (action="엑셀다운", target="로그테이블")
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         ActionLog actionLog = signature.getMethod().getAnnotation(ActionLog.class);
 
         String actionType = actionLog.action();
         String targetInfo = actionLog.target();
 
-        // 2. 관리자 정보 가져오기 (adminId 포함)
+        // 1. 관리자 정보 가져오기
         Long adminNo = null;
         String adminId = "UNKNOWN";
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        // 타입 확인과 동시에 'details'라는 변수에 곧바로 담아버리기! - 형변환 생략..
         if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
             adminNo = details.getUserNo();
             adminId = details.getUserId();
         }
 
-        // 3. 환경 정보 가져오기
+        // 2. 환경 정보 및 TraceID
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
         String ip = request.getRemoteAddr();
         String userAgent = request.getHeader("User-Agent");
         if (userAgent != null && userAgent.length() > 200) userAgent = userAgent.substring(0, 200);
 
-        // 4. ★ logAccess에서 달아둔 명찰(traceId) 확인
         String traceId = MDC.get("traceId");
-        if (traceId == null) traceId = "SYSTEM"; // 혹시 컨트롤러를 안 거쳤을 경우 방어
+        if (traceId == null) traceId = "SYSTEM";
 
+        // ⭐ 파라미터에서 사유(Reason) 낚아채기!
+        String reason = "사유 미입력"; // 기본값
+        Object[] args = joinPoint.getArgs();
+        String[] parameterNames = signature.getParameterNames();
 
-        // 3. 시작 로그
-        log.info("👀 [Admin Action Start] Admin: {}({}), Action: {}, Target: {}", adminId, adminNo, actionType, targetInfo);
+        for (int i = 0; i < args.length; i++) {
+            Object arg = args[i];
+            if (arg == null) continue;
+
+            /*
+                케이스 A와 B로 나눈 이유
+            - 케이스 A
+            [상태 변경 / 승인] - PUT 또는 POST 방식
+            데이터를 숨겨서 Body(JSON) 담아 보냄 -
+            백엔드 : @RequestBody Map<String, String> 또는 DTO로 받음
+
+            - 케이스 B
+            [엑셀 다운로드 / 삭제] - GET 또는 DELETE 방식
+            Get 요청은 Body(JSON)를 가질 수 없는 것이 웹의 표준 규칙
+            따라서 URL 뒤에 파라미터를 붙여서 보내기 (/api/admin/logs/download?reason=이유)
+            백엔드 : @RequestParam("reason") String reason
+            */
+
+            // 케이스 A: 프론트에서 Map으로 보냈을 때 (예: @RequestBody Map<String, String>)
+            if (arg instanceof java.util.Map<?, ?> mapArg) {
+                if (mapArg.containsKey("reason") && mapArg.get("reason") != null) {
+                    reason = String.valueOf(mapArg.get("reason"));
+                    break;
+                }
+            }
+            // 케이스 B: 파라미터 이름 자체가 "reason"일 때 (예: @RequestParam String reason)
+            else if (parameterNames != null && "reason".equals(parameterNames[i])) {
+                reason = String.valueOf(arg);
+                break;
+            }
+        }
+        // =================================================================
+
+        log.info("👀 [Admin Action Start] Admin: {}({}), Action: {}, Target: {}, Reason: {}",
+                adminId, adminNo, actionType, targetInfo, reason);
 
         Object result;
         String errorYn = "N";
@@ -161,13 +194,14 @@ public class LogingAspect {
             log.error("❌ [Admin Action Fail] Admin: {}, Action: {}, Error: {}", adminId, actionType, e.getMessage());
             throw e;
         } finally {
-            // [핵심] DB에 저장
+            // DB 저장! (reason 포함)
             if (adminNo != null) {
                 adminAuditRepository.save(AdminAudit.builder()
                         .adminNo(adminNo)
                         .adminId(adminId)
                         .actionType(actionType)
                         .targetInfo(targetInfo)
+                        .reason(reason) // ★ 낚아챈 사유를 DB에 저장!
                         .traceId(traceId)
                         .errorYn(errorYn)
                         .errorMsg(errorMsg)

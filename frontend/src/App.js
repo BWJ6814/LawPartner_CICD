@@ -12,7 +12,6 @@ import ConsultationDetail from './BWJ/ConsultationDetail';
 import GeneralMyPage from './pages/GeneralMypage';
 import ChatList from './KImMinSU/chatList';
 import Lawmainpage from './ky/Lawmainpage';
-import Profiles from './ky/profiles';
 import LoginPage from './HSH/LoginPage';
 import SignupPage from './HSH/SignupPage';
 import ExpertsPage from './pages/ExpertsPage';
@@ -68,7 +67,7 @@ function App() {
                         <Route path="/signup" element={<SignupPage />} />
 
                         <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
-                        <Route path="/profiles" element={<Profiles />} />
+
 
                         <Route path="/experts" element={<ExpertsPage />} />
                         <Route path="/experts/:id" element={<ExpertDetailPage />} />

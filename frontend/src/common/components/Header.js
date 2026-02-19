@@ -54,13 +54,26 @@ const Header = ({auth, onLoginUpdate}) => {
                 </svg>
             )
         },
+        ROLE_OPERATOR: {
+          label: "OPS AGENT",
+          nameSuffix: "운영자",
+          bg: "bg-emerald-500",
+          text: "text-white",
+          border: "border-emerald-300/50",
+          shadow: "shadow-[0_0_20px_rgba(16,185,129,0.4)] operator-aura",
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          )
+        },
         ROLE_ADMIN: {
             label: "SYSTEM OPS",
             nameSuffix: "관리자",
             bg: "bg-slate-900",
             text: "text-cyan-400",
             border: "border-cyan-500/50",
-            shadow: "shadow-[0_0_25px_rgba(6,182,212,0.5)]",
+            shadow: "shadow-[0_0_25px_rgba(6,182,212,0.5)] operator-aura",
             icon: (
                 <svg className="w-4 h-4 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -70,11 +83,11 @@ const Header = ({auth, onLoginUpdate}) => {
         },
         ROLE_SUPER_ADMIN: {
             label: "SUPREME ROOT",
-            nameSuffix: "슈퍼관리자",
+            nameSuffix: "슈퍼 관리자",
             bg: "bg-gray-950", 
             text: "text-amber-400", 
             border: "border-amber-500",
-            shadow: "shadow-[0_0_25px_rgba(245,158,11,0.6)]",
+            shadow: "shadow-[0_0_25px_rgba(245,158,11,0.6)] operator-aura",
             icon: (
               <div className="relative flex items-center justify-center">
                 {/* 배경 박동 후광 효과 */}
@@ -222,12 +235,13 @@ const Header = ({auth, onLoginUpdate}) => {
                         `}>
                           {/* 역할 레이블 (작게 상단에 띄움 - 감성 포인트) */}
                           <span className={`
-                                absolute -top-2.5 left-2 px-1.5 py-0.5 rounded text-[8px] font-black tracking-widest leading-none border shadow-sm
-                                ${auth.role === 'ROLE_SUPER_ADMIN' ? 'bg-amber-500 text-black border-amber-600' : // 슈퍼 관리자: 골드
-                                  auth.role === 'ROLE_ADMIN' ? 'bg-slate-800 text-cyan-400 border-slate-700' :    // 일반 관리자: 다크 사이언
-                                  auth.role === 'ROLE_LAWYER' ? 'bg-white text-indigo-700 border-indigo-200' :    // 변호사: 화이트/블루
-                                  'bg-white text-gray-500 border-gray-100'}                                      // 일반 유저
-                              `}>
+                              absolute -top-2.5 left-2 px-1.5 py-0.5 rounded text-[8px] font-black tracking-widest leading-none border shadow-sm
+                              ${auth.role === 'ROLE_SUPER_ADMIN' ? 'bg-amber-500 text-black border-amber-600' : 
+                                auth.role === 'ROLE_ADMIN' ? 'bg-slate-800 text-cyan-400 border-slate-700' : 
+                                auth.role === 'ROLE_OPERATOR' ? 'bg-emerald-600 text-white border-emerald-400' : // 운영자 테마
+                                auth.role === 'ROLE_LAWYER' ? 'bg-white text-indigo-700 border-indigo-200' : 
+                                'bg-white text-gray-500 border-gray-100'} 
+                          `}>
                               {currentAura.label}
                           </span>
 
@@ -244,16 +258,19 @@ const Header = ({auth, onLoginUpdate}) => {
                           </div>
 
                           {/* 관리자일 때만 흐르는 광택 효과 (Shimmer) */}
-                          {(auth.role === 'ROLE_ADMIN' || auth.role === 'ROLE_SUPER_ADMIN') && (
-                            <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
-                              <div className={`
-                                absolute inset-0 translate-x-[-100%] animate-shimmer
-                                ${auth.role === 'ROLE_SUPER_ADMIN' 
-                                  ? 'bg-gradient-to-r from-transparent via-amber-200/40 to-transparent' // 슈퍼 관리자는 금색 광택
-                                  : 'bg-gradient-to-r from-transparent via-white/20 to-transparent'}    // 일반 관리자는 흰색 광택
-                              `} />
-                            </div>
-                          )}
+                          {['ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR'].includes(auth.role) && (
+                        <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
+                          <div className={`
+                            absolute inset-0 translate-x-[-100%] animate-shimmer
+                            ${auth.role === 'ROLE_SUPER_ADMIN' 
+                              ? 'bg-gradient-to-r from-transparent via-amber-200/50 to-transparent' // 슈퍼: 묵직한 골드
+                              : auth.role === 'ROLE_OPERATOR'
+                              ? 'bg-gradient-to-r from-transparent via-emerald-200/40 to-transparent' // 운영: 산뜻한 에메랄드
+                              : 'bg-gradient-to-r from-transparent via-white/30 to-transparent'      // 일반: 깔끔한 화이트
+                            }
+                          `} />
+                        </div>
+                      )}
                       </div>
                   </div>
 
