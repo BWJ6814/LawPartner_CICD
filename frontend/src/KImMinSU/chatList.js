@@ -38,8 +38,8 @@ const ChatList = () => {
     // 2. 웹소켓 연결 및 구독 시작
     const socket = new SockJS('http://localhost:8080/ws-stomp');
     const client = Stomp.over(socket);
-
-    client.connect({}, () => {
+    const token = localStorage.getItem('accessToken');
+    client.connect({Authorization : `Bearer ${token}`}, () => {
       console.log("웹소켓 연결 성공!");
 
       // ★ 초심자를 위한 핵심: 이 방 주소를 구독해서 남이 보내는 메시지를 실시간으로 낚아채는 거야
@@ -47,6 +47,8 @@ const ChatList = () => {
         const newMessage = JSON.parse(response.body);
         setChatLog((prev) => [...prev, newMessage]); // 메시지 오면 리스트에 추가!
       });
+    }, (error) => {
+      console.error("웹소켓 연결 실패 :" ,error)
     });
 
     stompClient.current = client;

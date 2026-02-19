@@ -57,4 +57,17 @@ public class ChatController {
         Long myUserNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
         return ResultVO.ok("내 채팅방 목록 조회 성공", chatService.getMyChatRooms(myUserNo));
     }
+
+    // 과거 채팅 내역 불러오기
+    @GetMapping("/history/{roomId}")
+    public ResultVO<List<ChatMessageDTO>> getChatHistory(
+            @PathVariable("roomId") String roomId,
+            @RequestHeader("Authorization") String token
+    ) {
+        // (선택) 토큰 까서 이 방에 입장할 권한이 있는 유저인지 검증하는 로직 추가하면 완벽함
+        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+
+        List<ChatMessageDTO> history = chatService.getChatHistory(roomId);
+        return ResultVO.ok("과거 채팅 내역 조회 성공", history);
+    }
 }
