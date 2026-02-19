@@ -16,36 +16,64 @@ import java.util.List;
 public class LawyerDashboardController {
 
     private final LawyerDashboardService dashboardService;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider       jwtTokenProvider;
 
-    // ========== 후기 목록 조회 ==========
+    // ── 후기 목록 ──────────────────────────────────────────────
     // GET /api/lawyer/dashboard/reviews
     @GetMapping("/reviews")
     public ResultVO<List<LawyerDashboardDTO.ReviewDTO>> getReviews(
-            @RequestHeader(value = "Authorization") String token
-    ) {
-        Long userNo = extractUserNo(token);
-        List<LawyerDashboardDTO.ReviewDTO> reviews = dashboardService.getReviews(userNo);
-        return ResultVO.ok("후기 목록 조회 성공", reviews);
+            @RequestHeader("Authorization") String token) {
+        return ResultVO.ok("후기 목록 조회 성공", dashboardService.getReviews(extractUserNo(token)));
     }
 
-    // ========== 상담 목록 조회 ==========
+    // ── 상담(채팅방) 목록 ──────────────────────────────────────
     // GET /api/lawyer/dashboard/consultations
     @GetMapping("/consultations")
     public ResultVO<List<LawyerDashboardDTO.ConsultationDTO>> getConsultations(
-            @RequestHeader(value = "Authorization") String token
-    ) {
-        Long userNo = extractUserNo(token);
-        List<LawyerDashboardDTO.ConsultationDTO> consultations = dashboardService.getConsultations(userNo);
-        return ResultVO.ok("상담 목록 조회 성공", consultations);
+            @RequestHeader("Authorization") String token) {
+        return ResultVO.ok("상담 목록 조회 성공", dashboardService.getConsultations(extractUserNo(token)));
     }
 
-    // ========== 토큰에서 userNo 추출 ==========
+    // ── 통계 ───────────────────────────────────────────────────
+    // GET /api/lawyer/dashboard/stats
+    @GetMapping("/stats")
+    public ResultVO<LawyerDashboardDTO.StatsDTO> getStats(
+            @RequestHeader("Authorization") String token) {
+        return ResultVO.ok("통계 조회 성공", dashboardService.getStats(extractUserNo(token)));
+    }
+
+    // ── 일정 조회 ──────────────────────────────────────────────
+    // GET /api/lawyer/dashboard/calendars
+    @GetMapping("/calendars")
+    public ResultVO<List<LawyerDashboardDTO.CalendarDTO>> getCalendars(
+            @RequestHeader("Authorization") String token) {
+        return ResultVO.ok("일정 조회 성공", dashboardService.getCalendars(extractUserNo(token)));
+    }
+
+    // ── 일정 추가 ──────────────────────────────────────────────
+    // POST /api/lawyer/dashboard/calendars
+    @PostMapping("/calendars")
+    public ResultVO<LawyerDashboardDTO.CalendarDTO> addCalendar(
+            @RequestHeader("Authorization") String token,
+            @RequestBody LawyerDashboardDTO.CalendarRequest req) {
+        return ResultVO.ok("일정 추가 성공", dashboardService.addCalendar(extractUserNo(token), req));
+    }
+
+    // ── 일정 삭제 ──────────────────────────────────────────────
+    // DELETE /api/lawyer/dashboard/calendars/{eventNo}
+    @DeleteMapping("/calendars/{eventNo}")
+    public ResultVO<Void> deleteCalendar(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long eventNo) {
+        dashboardService.deleteCalendar(extractUserNo(token), eventNo);
+        return ResultVO.ok("일정 삭제 성공", null);
+    }
+
+    // ── 토큰에서 userNo 추출 ────────────────────────────────────
     private Long extractUserNo(String token) {
-        String actualToken = token;
         if (token != null && token.startsWith("Bearer ")) {
-            actualToken = token.substring(7);
+            token = token.substring(7);
         }
-        return jwtTokenProvider.getUserNoFromToken(actualToken);
+        return jwtTokenProvider.getUserNoFromToken(token);
     }
 }

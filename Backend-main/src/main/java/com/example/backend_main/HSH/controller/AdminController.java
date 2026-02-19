@@ -3,11 +3,12 @@ package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.common.annotation.ActionLog;
-import com.example.backend_main.common.entity.AccessLog;
+
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AccessLogRepository;
 import com.example.backend_main.common.security.CustomUserDetails; // ★ 최적화용
 import com.example.backend_main.common.vo.ResultVO;
+import com.example.backend_main.dto.AccessLogResponseDTO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +17,6 @@ import org.springframework.security.access.prepost.PreAuthorize; // ★ 권한 �
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.util.List;
@@ -38,7 +36,7 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
-    private final AccessLogRepository accessLogRepository;
+
 
     // [전체 화원 목록 조회] [ADM-02]
     // 관리자가 전체 시민 명부를 확인하는 기능
@@ -119,13 +117,13 @@ public class AdminController {
     - 엑셀이 아닌, JSON 데이터로 로그 리스트를 반환합니다.
     */
     @GetMapping("/logs")
-    public ResultVO<Page<AccessLog>> getAccessLogs(
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')") // 관리자 접근 제어 추가
+    public ResultVO<Page<AccessLogResponseDTO>> getAccessLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size) {
 
-        // 최신 로그가 먼저 오도록 내림차순(DESC) 정렬하여 페이지 단위로 자름
-        Pageable pageable = PageRequest.of(page, size, Sort.by("regDt").descending());
-        Page<AccessLog> logPage = accessLogRepository.findAll(pageable);
+        // 비즈니스 로직(Service) 호출 -> DTO로 변환된 Page 객체를 받음
+        Page<AccessLogResponseDTO> logPage = adminService.getAccessLogs(page, size);
 
         return ResultVO.ok("로그 목록을 성공적으로 불러왔습니다.", logPage);
     }
