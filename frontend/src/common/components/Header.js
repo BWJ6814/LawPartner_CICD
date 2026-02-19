@@ -68,6 +68,25 @@ const Header = ({auth, onLoginUpdate}) => {
                 </svg>
             )
         },
+        ROLE_SUPER_ADMIN: {
+            label: "SUPREME ROOT", // 더 강력한 레이블
+            nameSuffix: "슈퍼관리자",
+            bg: "bg-gray-950", // 더 어두운 배경으로 금색을 돋보이게
+            text: "text-amber-400", // 골드 텍스트
+            border: "border-amber-500", // 선명한 금색 테두리
+            shadow: "shadow-[0_0_25px_rgba(245,158,11,0.6)]", // 더 강렬한 황금색 광채
+            icon: (
+                <div className="relative">
+                    {/* 아이콘 뒤에서 은은하게 퍼지는 후광 효과 */}
+                    <div className="absolute inset-0 bg-amber-400 blur-sm opacity-50 animate-pulse"></div>
+                    <svg className="relative w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.5 3c1.257 0 2.412.44 3.313 1.178C11.712 3.44 12.867 3 14.125 3c2.787 0 5.25 2.322 5.25 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
+                        {/* 왕관이나 별 모양 아이콘 추천 */}
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                </div>
+            )
+        },
         ROLE_USER: {
             label: "CLIENT",
             nameSuffix: "님",
@@ -190,19 +209,22 @@ const Header = ({auth, onLoginUpdate}) => {
             {auth.isLoggedIn ? (
               <>
                   <div className="flex items-center gap-3 mr-4">
-                      {/* 아우라 배지 */}
-                      <div className={`
-                                  relative flex items-center gap-2 pl-2 pr-3 py-1 rounded-lg border transition-all duration-500
-                                  ${currentAura.bg} ${currentAura.text} ${currentAura.border} ${currentAura.shadow}
-                                  hover:brightness-110 active:scale-95 group
-                                `}>
+                      {/* 아우라 배지 메인 컨테이너 */}
+                        <div className={`
+                          relative flex items-center gap-2 pl-2 pr-3 py-1 rounded-lg border transition-all duration-500
+                          ${currentAura.bg} ${currentAura.text} ${currentAura.border} ${currentAura.shadow}
+                          /* 슈퍼 관리자일 때만 특별한 링(이중 테두리) 효과 추가 */
+                          ${auth.role === 'ROLE_SUPER_ADMIN' ? 'ring-2 ring-amber-500/40 ring-offset-1 ring-offset-white' : ''}
+                          hover:brightness-110 active:scale-95 group
+                        `}>
                           {/* 역할 레이블 (작게 상단에 띄움 - 감성 포인트) */}
                           <span className={`
-                              absolute -top-2.5 left-2 px-1.5 py-0.5 rounded text-[8px] font-black tracking-widest leading-none border shadow-sm
-                              ${auth.role === 'ROLE_LAWYER'
-                                                          ? 'bg-white text-indigo-700 border-indigo-200'
-                                                          : 'bg-white text-gray-500 border-gray-100'}
-                                         `}>
+                                absolute -top-2.5 left-2 px-1.5 py-0.5 rounded text-[8px] font-black tracking-widest leading-none border shadow-sm
+                                ${auth.role === 'ROLE_SUPER_ADMIN' ? 'bg-amber-500 text-black border-amber-600' : // 슈퍼 관리자: 골드
+                                  auth.role === 'ROLE_ADMIN' ? 'bg-slate-800 text-cyan-400 border-slate-700' :    // 일반 관리자: 다크 사이언
+                                  auth.role === 'ROLE_LAWYER' ? 'bg-white text-indigo-700 border-indigo-200' :    // 변호사: 화이트/블루
+                                  'bg-white text-gray-500 border-gray-100'}                                      // 일반 유저
+                              `}>
                               {currentAura.label}
                           </span>
 
@@ -219,13 +241,19 @@ const Header = ({auth, onLoginUpdate}) => {
                           </div>
 
                           {/* 관리자일 때만 흐르는 광택 효과 (Shimmer) */}
-                          {auth.role === 'ROLE_ADMIN' && (
-                              <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
-                                  <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-                              </div>
+                          {(auth.role === 'ROLE_ADMIN' || auth.role === 'ROLE_SUPER_ADMIN') && (
+                            <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
+                              <div className={`
+                                absolute inset-0 translate-x-[-100%] animate-shimmer
+                                ${auth.role === 'ROLE_SUPER_ADMIN' 
+                                  ? 'bg-gradient-to-r from-transparent via-amber-200/40 to-transparent' // 슈퍼 관리자는 금색 광택
+                                  : 'bg-gradient-to-r from-transparent via-white/20 to-transparent'}    // 일반 관리자는 흰색 광택
+                              `} />
+                            </div>
                           )}
                       </div>
                   </div>
+
                 {/* 알림 아이콘 & 드롭다운 (핵심 구현) */}
                 <div className="relative" ref={notificationRef}>
                   <button 
