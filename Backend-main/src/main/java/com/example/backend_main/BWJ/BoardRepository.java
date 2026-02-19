@@ -20,7 +20,7 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     // 3. [수정됨] 카테고리 완전 삭제 및 REPLY_NO 추가
     @Modifying
     @Transactional
-    @Query(value = "INSERT INTO TB_REVIEW (LAWYER_NO, WRITER_NO, WRITER_NM, STARS, CONTENT, REPLY_NO, REG_DT) " +
+    @Query(value = "INSERT INTO TB_REVIEW (LAWYER_NO, WRITER_NO, WRITER_NM, RATING, CONTENT, REPLY_NO, REG_DT) " +
             "VALUES (:lawyerNo, :writerNo, :writerNm, :stars, :content, :replyNo, SYSDATE)", nativeQuery = true)
     void insertReviewNative(
             @Param("lawyerNo") Long lawyerNo,

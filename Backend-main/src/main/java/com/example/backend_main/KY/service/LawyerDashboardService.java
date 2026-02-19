@@ -32,7 +32,7 @@ public class LawyerDashboardService {
             dto.setWriterNm(r.getWriterNm());
             dto.setStars(r.getStars());
             dto.setContent(r.getContent());
-            dto.setCategory(r.getCategory());
+            //dto.setCategory(r.getCategory());
             if (r.getRegDt() != null) {
                 dto.setRegDate(r.getRegDt().format(DATE_FMT));
             }

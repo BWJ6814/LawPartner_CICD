@@ -32,7 +32,7 @@ public class Review {
     @Column(name = "WRITER_NM", nullable = false, length = 50)
     private String writerNm; // 작성자 이름
 
-    @Column(name = "STARS", nullable = false)
+    @Column(name = "RATING", nullable = false)
     private Integer stars; // 별점 (1~5)
 
     @Column(name = "CONTENT", nullable = false, length = 2000)

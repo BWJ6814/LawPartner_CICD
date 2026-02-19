@@ -144,10 +144,6 @@ delete from tb_board where BOARD_NO in (26,27);
 
 select * from TB_USER;
 select * from TB_LAWYER_INFO;
-select * from tb_access_log;
-delete from TB_ACCESS_LOG;
-select * from TB_ACCESS_LOG;
-
 commit;
 
 delete from tb_user;
@@ -177,4 +173,12 @@ ALTER TABLE TB_BOARD DROP COLUMN IS_NICKNAME_VISIBLE;
 ALTER TABLE TB_BOARD ADD REPLY_CNT NUMBER DEFAULT 0;
 ALTER TABLE TB_BOARD ADD MATCH_YN CHAR(1) DEFAULT 'N';
 ALTER TABLE TB_REVIEW ADD REPLY_NO NUMBER;
+ALTER TABLE TB_REVIEW ADD WRITER_NM VARCHAR2(50);
+
+select * from TB_BOARD_REPLY;
+select * from TB_LAWYER_INFO;
+select * from TB_REVIEW;
+select * from TB_AI_CHAT_LOG;
+select * from TB_BOARD;
+select * from tb_user;
 COMMIT;

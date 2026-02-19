@@ -50,7 +50,6 @@ const FilterSection = ({ selectedCategory, setSelectedCategory, selectedSort, se
                     </button>
                 </div>
 
-                {/* 카테고리 탭이 열려있을 때 */}
                 {activeTab === 'category' && (
                     <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-3 animate-fadeIn">
                         <button onClick={() => setSelectedCategory('ALL')} className={`flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-100 transition-colors gap-2 ${selectedCategory === 'ALL' ? 'bg-blue-50 border border-blue-200' : 'border border-transparent'}`}>
@@ -66,15 +65,14 @@ const FilterSection = ({ selectedCategory, setSelectedCategory, selectedSort, se
                     </div>
                 )}
 
-                {/* [추가됨] 정렬 탭이 열려있을 때 보이는 버튼들 */}
                 {activeTab === 'sort' && (
                     <div className="flex flex-wrap gap-3 animate-fadeIn p-4 bg-gray-50 rounded-lg border border-gray-100">
                         {['최신순', '오래된 순', '댓글 많은 순', '댓글 적은 순'].map(sort => (
                             <button
                                 key={sort}
                                 onClick={() => {
-                                    setSelectedSort(sort); // 선택한 정렬방식으로 상태 업데이트
-                                    setActiveTab(null); // 버튼 클릭 시 탭 닫기
+                                    setSelectedSort(sort);
+                                    setActiveTab(null);
                                 }}
                                 className={`px-5 py-2.5 rounded-full text-sm font-bold transition-colors shadow-sm ${selectedSort === sort ? 'bg-[#1a2b4b] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
                             >
@@ -98,10 +96,11 @@ const WriteQuestionCard = ({ onClick }) => (
     </div>
 );
 
+// [핵심 변경 1] PostCard (게시글 카드 UI) 수정
 const PostCard = ({ post, onClick }) => (
     <div onClick={onClick} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col h-full min-h-[220px]">
         <div className="mb-3">
-            <h3 className="font-bold text-lg text-gray-900 truncate pr-2">{post.title}</h3>
+            <h3 className="font-bold text-lg text-gray-900 truncate">{post.title}</h3>
         </div>
         <div className="flex-grow mb-4">
             <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">{post.content}</p>
@@ -110,16 +109,41 @@ const PostCard = ({ post, onClick }) => (
             <div className="flex items-center justify-between text-xs text-gray-400">
                 <span>{post.date}</span>
                 <span className="flex items-center gap-2">
-                    {/* [추가됨] 카드 하단에 댓글 수 표시 아이콘 추가 */}
                     <span className="flex items-center gap-1 text-gray-500"><MessageSquare size={12} /> {post.replyCnt}</span>
                     <span className="flex items-center gap-1"><User size={12} /> {post.author}</span>
                 </span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-                {post.categories && post.categories.map((tag, idx) => (
-                    <span key={idx} className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded font-medium">#{tag}</span>
-                ))}
+
+            {/* ========================================================= */}
+            {/* [핵심 변경] flex-col과 items-start를 사용해서 세로로 차곡차곡 왼쪽 정렬합니다. */}
+            {/* 리액트 & 테일윈드 개념:
+                - flex-col: 안의 요소들을 위아래(세로)로 배치합니다.
+                - items-start: 요소들을 왼쪽 끝으로 딱 붙입니다.
+                - gap-2: 위(해시태그)와 아래(매칭완료 뱃지) 사이의 간격을 살짝 띄워줍니다.
+            */}
+            <div className="flex flex-col items-start gap-2 mt-1">
+
+                {/* 1. 카테고리 해시태그 줄 */}
+                <div className="flex flex-wrap gap-1.5">
+                    {post.categories && post.categories.map((tag, idx) => (
+                        <span key={idx} className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded font-medium">#{tag}</span>
+                    ))}
+                </div>
+
+                {/* 2. 매칭완료 뱃지 (해시태그 바로 아랫줄에 렌더링 됨) */}
+                {/* 디자인 변경: 글씨 크기(text-[11px])를 살짝 줄이고, 둥글기(rounded)를 태그와 비슷하게 맞췄습니다. */}
+                {post.matchYn === 'Y' && (
+                    <span className="bg-[#1c2438] text-white text-[11px] font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1 opacity-90">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        매칭완료
+                    </span>
+                )}
+
             </div>
+            {/* ========================================================= */}
+
         </div>
     </div>
 );
@@ -131,7 +155,6 @@ const ConsultationBoard = () => {
     const [userRole, setUserRole] = useState((localStorage.getItem('userRole') || 'GENERAL').toUpperCase());
     const [currentPage, setCurrentPage] = useState(1);
 
-    // 이 상태들이 바뀌면 화면(리스트)이 다시 렌더링 됩니다.
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [selectedSort, setSelectedSort] = useState('최신순');
     const [searchKeyword, setSearchKeyword] = useState('');
@@ -148,17 +171,17 @@ const ConsultationBoard = () => {
         try {
             const response = await axios.get('http://localhost:8080/api/boards');
 
+            // [핵심 변경 2] 백엔드에서 온 데이터 중 matchYn을 자바스크립트 객체(사본)에 담습니다.
             const mappedData = response.data.map(board => ({
                 id: board.boardNo,
                 title: board.title,
                 content: board.content,
                 author: board.nicknameVisibleYn === 'Y' ? (board.nickNm || '익명') : '익명',
                 date: board.regDt ? board.regDt.substring(0, 10) : '',
-                // [추가됨] 정렬을 위해 밀리초 단위까지 있는 원본 시간도 가져옵니다.
                 fullDate: board.regDt ? board.regDt : '',
-                // [추가됨] 댓글 수를 가져옵니다.
                 replyCnt: board.replyCnt || 0,
-                categories: board.categoryCode ? board.categoryCode.split(',') : []
+                categories: board.categoryCode ? board.categoryCode.split(',') : [],
+                matchYn: board.matchYn || 'N' // 백엔드 값이 없으면 기본으로 'N' 처리
             }));
             setPosts(mappedData);
         } catch (error) {
@@ -166,31 +189,26 @@ const ConsultationBoard = () => {
         }
     };
 
-    // [핵심 변경] 검색과 정렬을 처리하는 함수
-    // 리액트의 배열 다루기 개념: 원본 배열(posts)은 건드리지 않고, 사본을 만들어 가공한 뒤 화면에 뿌려줍니다.
     const getFilteredPosts = () => {
-        let filtered = [...posts]; // 배열 복사
+        let filtered = [...posts];
 
-        // 1. 검색어 필터링
         if (searchKeyword.trim() !== '') {
             filtered = filtered.filter(post => post.title.toLowerCase().includes(searchKeyword.toLowerCase()));
         }
 
-        // 2. 카테고리 필터링
         if (selectedCategory !== 'ALL') {
             filtered = filtered.filter(post => post.categories.includes(selectedCategory));
         }
 
-        // 3. 정렬 처리 (.sort() 함수 사용)
         filtered.sort((a, b) => {
             if (selectedSort === '최신순') {
-                return new Date(b.fullDate) - new Date(a.fullDate); // 날짜 내림차순
+                return new Date(b.fullDate) - new Date(a.fullDate);
             } else if (selectedSort === '오래된 순') {
-                return new Date(a.fullDate) - new Date(b.fullDate); // 날짜 오름차순
+                return new Date(a.fullDate) - new Date(b.fullDate);
             } else if (selectedSort === '댓글 많은 순') {
-                return b.replyCnt - a.replyCnt; // 숫자 내림차순
+                return b.replyCnt - a.replyCnt;
             } else if (selectedSort === '댓글 적은 순') {
-                return a.replyCnt - b.replyCnt; // 숫자 오름차순
+                return a.replyCnt - b.replyCnt;
             }
             return 0;
         });
@@ -260,7 +278,6 @@ const ConsultationBoard = () => {
                 </div>
 
                 <div className="flex flex-col items-center gap-8 mt-12">
-                    {/* [기존] 페이지네이션 버튼 영역 */}
                     {totalPages > 0 && (
                         <div className="flex items-center gap-2">
                             <button onClick={() => handlePageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-30">
@@ -277,14 +294,11 @@ const ConsultationBoard = () => {
                         </div>
                     )}
 
-                    {/* [추가됨] 검색창 디자인 (페이지 번호 바로 아래 배치) */}
                     <div className="relative w-full max-w-lg mt-4 shadow-sm">
                         <input
                             type="text"
                             placeholder="찾고 싶은 고민의 제목을 검색해 보세요"
                             value={searchKeyword}
-                            // 사용자가 키보드를 칠 때마다 searchKeyword 변수 값을 바꿔줍니다.
-                            // 리액트는 이 값이 바뀔 때마다 자동으로 화면을 새로 그려 필터링을 실시간으로 적용합니다.
                             onChange={(e) => setSearchKeyword(e.target.value)}
                             className="w-full pl-12 pr-6 py-4 rounded-full border border-gray-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm"
                         />
