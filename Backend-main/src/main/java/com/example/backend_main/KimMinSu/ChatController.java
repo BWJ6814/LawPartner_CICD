@@ -67,7 +67,7 @@ public class ChatController {
         // (선택) 토큰 까서 이 방에 입장할 권한이 있는 유저인지 검증하는 로직 추가하면 완벽함
         Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
 
-        List<ChatMessageDTO> history = chatService.getChatHistory(roomId);
+        List<ChatMessageDTO> history = chatService.getChatHistory(roomId, userNo);
         return ResultVO.ok("과거 채팅 내역 조회 성공", history);
     }
 }

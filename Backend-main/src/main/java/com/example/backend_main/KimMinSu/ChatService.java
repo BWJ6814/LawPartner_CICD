@@ -49,7 +49,16 @@ public class ChatService {
     }
 
     // 이전 채팅 내역 조회
-    public List<ChatMessageDTO> getChatHistory(String roomId){
+    public List<ChatMessageDTO> getChatHistory(String roomId, Long reqUserNo){
+        // 1. 방이 진짜 있는지, 그리고 이 유저가 이 방에 속한 사람이 맞는지 팩트 체크
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 채팅방입니다."));
+
+        if (!room.getUserNo().equals(reqUserNo) && !room.getLawyerNo().equals(reqUserNo)) {
+            throw new RuntimeException("이 방의 채팅 내역을 볼 권한이 없습니다.");
+        }
+
+
         return chatMessageRepository.findByRoomIdOrderBySendDtAsc(roomId).stream()
                 .map(msg -> ChatMessageDTO.builder()
                         .roomId(msg.getRoomId())
