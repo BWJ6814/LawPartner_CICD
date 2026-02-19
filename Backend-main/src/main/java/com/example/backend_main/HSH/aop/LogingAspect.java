@@ -1,6 +1,6 @@
 package com.example.backend_main.HSH.aop;
 
-imimport com.example.backend_main.common.annotation.ActionLog;
+import com.example.backend_main.common.annotation.ActionLog;
 import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AccessLogRepository;
