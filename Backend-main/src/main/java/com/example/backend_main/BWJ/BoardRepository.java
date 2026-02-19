@@ -20,13 +20,14 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     // 3. 실제 TB_REVIEW 테이블 컬럼에 맞춘 Native Query (후기 등록용)
     @Modifying
     @Transactional
-    @Query(value = "INSERT INTO TB_REVIEW (LAWYER_NO, WRITER_NO, WRITER_NM, STARS, CONTENT, CATEGORY, REG_DT) " +
-            "VALUES (:lawyerNo, :writerNo, :writerNm, :stars, :content, :category, SYSDATE)", nativeQuery = true)
+    @Query(value = "INSERT INTO TB_REVIEW (LAWYER_NO, WRITER_NO, WRITER_NM, STARS, CONTENT, CATEGORY, REPLY_NO, REG_DT) " +
+            "VALUES (:lawyerNo, :writerNo, :writerNm, :stars, :content, :category, :replyNo, SYSDATE)", nativeQuery = true)
     void insertReviewNative(
             @Param("lawyerNo") Long lawyerNo,
             @Param("writerNo") Long writerNo,
             @Param("writerNm") String writerNm,
             @Param("stars") Integer stars,
             @Param("content") String content,
-            @Param("category") String category);
+            @Param("category") String category,
+            @Param("replyNo") Long replyNo);
 }

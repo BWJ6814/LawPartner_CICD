@@ -124,11 +124,11 @@ public class BoardController {
         Integer stars = Integer.parseInt(data.get("stars").toString());
         String content = (String) data.get("content");
         String category = (String) data.get("category");
+        Long replyNo = Long.parseLong(data.get("replyNo").toString());
 
-        boardRepository.insertReviewNative(lawyerNo, writerNo, writerNm, stars, content, category);
+        boardRepository.insertReviewNative(lawyerNo, writerNo, writerNm, stars, content, category, replyNo);
         return "SUCCESS";
     }
-
     @PutMapping("/{id}/match")
     public String completeMatch(@PathVariable("id") Long id) {
         Board board = boardRepository.findById(id).orElseThrow();

@@ -44,6 +44,9 @@ public class Review {
     @Column(name = "REG_DT", updatable = false)
     private LocalDateTime regDt; // 등록 일시
 
+    @Column(name = "REPLY_NO", updatable = false)
+    private Long replyNo; // 등록 일시
+
     @PrePersist
     public void prePersist() {
         this.regDt = LocalDateTime.now();

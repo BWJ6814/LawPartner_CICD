@@ -103,7 +103,8 @@ const ConsultationDetail = () => {
                 writerNm: currentUser.name || "익명",
                 stars: rating,
                 content: reviewContent,
-                category: post.categoryCode
+                category: post.categoryCode,
+                replyNo: selectedLawyer.replyNo // [추가됨] 어떤 답변에 대한 후기인지 번호 전송!
             });
             alert("후기가 등록되었습니다.");
             setIsReviewModalOpen(false);
