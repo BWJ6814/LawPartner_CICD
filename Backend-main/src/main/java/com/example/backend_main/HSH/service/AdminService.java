@@ -165,8 +165,8 @@ public class AdminService {
         String encPhone = aes256Util.encrypt(joinDto.getPhone());
 
         // 4. 검색용 해시값 생성하기
-        String emailHash = hashUtil.sha256(joinDto.getEmail());
-        String phoneHash = hashUtil.sha256(joinDto.getPhone());
+        String emailHash = hashUtil.generateHash(joinDto.getEmail());
+        String phoneHash = hashUtil.generateHash(joinDto.getPhone());
 
         // 5. 하위 관리자(Operator) 엔티티 생성하기
         User subAdmin = User.builder()
