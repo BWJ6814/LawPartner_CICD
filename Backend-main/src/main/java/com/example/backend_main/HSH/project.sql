@@ -150,8 +150,8 @@ commit;
 
 select * from TB_USER;
 UPDATE TB_USER
-    SET ROLE_CODE = 'ROLE_SUPER_ADMIN'
-WHERE USER_NO = 42;
+    SET ROLE_CODE = 'ROLE_ADMIN'
+WHERE USER_NO = 8;
 COMMIT;
 /* 3. 변호사 상세 정보 (슈퍼타입/서브타입) (구독 만료일 포함)
 슈퍼 타입이란?

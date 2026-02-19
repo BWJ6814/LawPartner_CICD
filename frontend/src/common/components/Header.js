@@ -69,24 +69,28 @@ const Header = ({auth, onLoginUpdate}) => {
             )
         },
         ROLE_SUPER_ADMIN: {
-            label: "SUPREME ROOT", // 더 강력한 레이블
+            label: "SUPREME ROOT",
             nameSuffix: "슈퍼관리자",
-            bg: "bg-gray-950", // 더 어두운 배경으로 금색을 돋보이게
-            text: "text-amber-400", // 골드 텍스트
-            border: "border-amber-500", // 선명한 금색 테두리
-            shadow: "shadow-[0_0_25px_rgba(245,158,11,0.6)]", // 더 강렬한 황금색 광채
+            bg: "bg-gray-950", 
+            text: "text-amber-400", 
+            border: "border-amber-500",
+            shadow: "shadow-[0_0_25px_rgba(245,158,11,0.6)]",
             icon: (
-                <div className="relative">
-                    {/* 아이콘 뒤에서 은은하게 퍼지는 후광 효과 */}
-                    <div className="absolute inset-0 bg-amber-400 blur-sm opacity-50 animate-pulse"></div>
-                    <svg className="relative w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.5 3c1.257 0 2.412.44 3.313 1.178C11.712 3.44 12.867 3 14.125 3c2.787 0 5.25 2.322 5.25 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
-                        {/* 왕관이나 별 모양 아이콘 추천 */}
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                    </svg>
-                </div>
+              <div className="relative flex items-center justify-center">
+                {/* 배경 박동 후광 효과 */}
+                <div className="absolute inset-0 bg-amber-400 blur-[4px] opacity-40 animate-pulse rounded-full"></div>
+                
+                {/* 메인 아이콘: 왕관이 씌워진 방패 (권위와 보호의 상징) */}
+                <svg className="relative w-4 h-4 text-amber-400 drop-shadow-[0_0_2px_rgba(0,0,0,0.5)]" 
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" 
+                        d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  {/* 왕관 포인트 (상단에 작게 추가) */}
+                  <path d="M12 2L13 4H11L12 2Z" fill="currentColor" stroke="none" />
+                </svg>
+              </div>
             )
-        },
+          },
         ROLE_USER: {
             label: "CLIENT",
             nameSuffix: "님",
