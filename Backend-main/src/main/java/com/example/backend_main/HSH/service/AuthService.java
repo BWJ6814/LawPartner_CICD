@@ -160,7 +160,7 @@ public class AuthService {
         );
 
         // 5. 토큰 발급 후 추가 정보를 주머니에 담기!
-        TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm());
+        TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm(),user.getNickNm());
         tokenDTO.setUserNm(user.getUserNm()); // 이제 리액트에서 undefined가 안 뜹니다!
         tokenDTO.setRole(user.getRoleCode()); // RBAC 설계도에 따른 권한 전송
         tokenDTO.setEmail(decryptedEmail);  // 복호화된 진짜 이메일
@@ -191,6 +191,25 @@ public class AuthService {
             }
             return dto.getNickNm();
         }
+    }
+    
+    // 아이디 중복 확인 로직
+    public boolean isUserIdAvailable(String userId){
+        // 나중에 "탈퇴한 회원 아이디는 30일간 재사용 금지" 같은 규칙이 생겨도 여기만 고치면 됨!
+        return !userRepository.existsByUserId(userId);
+    }
+
+    // 이메일 중복 확인 로직 (해싱 포함)
+    public boolean isEmailAvailable(String email){
+        // 해싱 로직(요리법)은 셰프(Service)의 몫!
+        String emailHash = hashUtil.generateHash(email);
+        return !userRepository.existsByEmailHash(emailHash);
+    }
+
+    // 휴대폰 번호 중복 확인 로직 (해싱 포함)
+    public boolean isPhoneAvailable(String phone){
+        String phoneHash = hashUtil.generateHash(phone);
+        return !userRepository.existsByPhoneHash(phoneHash);
     }
 
 }

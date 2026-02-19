@@ -18,6 +18,10 @@ import LoginPage from './HSH/LoginPage';
 import SignupPage from './HSH/SignupPage'; // ★ [추가 1] 회원가입 페이지 가져오기
 import ExpertsPage from './pages/ExpertsPage'; // ★ [추가 3] 전문가 찾기 페이지
 import ExpertDetailPage from './pages/ExpertDetailPage'; // 디테일
+import CustomerHomePage from "./pages/CustomerHomePage"; //고객센터페이지
+import CustomerWritePage from "./pages/CustomerWritePage";
+import CustomerListPage from "./pages/CustomerListPage";
+import CustomerDetailPage from "./pages/CustomerDetailPage";
 
 // 2. 로그인 페이지가 아직 없다면 일단 임시 컴포넌트로 대체
 //const LoginPage = () => <div className="p-20 text-center">로그인 페이지 준비중</div>;
@@ -73,6 +77,11 @@ function App() {
                     <Route path="/experts" element={<ExpertsPage />} />
 
                     <Route path="/experts/:id" element={<ExpertDetailPage />} />
+                    // 고객센터페이지
+                    <Route path="/customer" element={<CustomerHomePage />} />
+                    <Route path="/customer/write" element={<CustomerWritePage />} />
+                    <Route path="/customer/list" element={<CustomerListPage />} />
+                    <Route path="/customer/:id" element={<CustomerDetailPage />} />
 
 
 

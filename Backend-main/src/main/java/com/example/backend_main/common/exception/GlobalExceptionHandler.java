@@ -2,6 +2,7 @@ package com.example.backend_main.common.exception;
 
 
 import com.example.backend_main.common.vo.ResultVO;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 // 예외처리는 각 컨트롤러에서 하는 것이 디폴트이지만, 해당 어노테이션을 붙이면 모든 컨트롤러에서
 // 발생하는 에러를 이곳 한 곳에서 가로채 처리할 수 있다!
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     // @ExceptionHandler(Exception.class):  모든 알 수 없는 에러를 잡아서 "서버 오류"로 포장하기
@@ -24,8 +26,8 @@ public class GlobalExceptionHandler {
     // Exception e : 발생한 에러의 정보를 e라는 이름의 바구니에 담아 가져오기
     public ResponseEntity<ResultVO<Void>> handleAllException(Exception e) {
         // 개발자 전용 로그 출력
-        // e.printStackTrace() : 개발자가 볼 수 있게 서버 콘솔에 에러 남기기
-        e.printStackTrace();
+        // 두 번째 인자로 e를 넘기면 Stack Trace까지 로그 파일에 예쁘게 기록됩니다.
+        log.error("🚨 [System Error] 원인 미상의 에러 발생: ", e);
         // internalServerError() : HTTP 상태 코드 500(Internal Server Error)를 상자에 붙이기
         // .body(ResultVO.fail("...")) : 상자 안에 실패(false)라고 적힌 ResultVO 객체와 메시지를 담아
         //                               사용자에게 보내기
@@ -34,10 +36,15 @@ public class GlobalExceptionHandler {
                 .body(ResultVO.fail("SYSTEM_ERROR","죄송합니다. 서버에 문제가 발생했습니다."));
     }
 
+
+
     // IllegalArgumentException.class : 누군자잘못된 값(인자)을 보냈을 때(IllegalArgumentException)
     //                                  에만 이 메서드가 실행되는 특정 어노테이션
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ResultVO<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
+        // 비즈니스 예외는 보통 WARN 레벨로 기록합니다.
+        log.warn("⚠️ [Invalid Input] 사용자 입력 오류: {}", e.getMessage());
+
         // badRequest() : HTTP 상태 코드 400(Bad Request)을 상자에 붙입니다. - 손님이 요청일 잘못보냈다.
         // e.getMessage() : 에러 바구니(e)에 들어있는 구체적인 이유를 꺼내서 사용자에게 바로 보여주기
         // ex) AES 열쇠는 반드지 32자여야 합니다!

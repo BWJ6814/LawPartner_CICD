@@ -1,14 +1,11 @@
 package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AuthService;
-import com.example.backend_main.common.repository.UserRepository;
-import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.TokenDTO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -28,8 +25,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-    private final UserRepository userRepository;
-    private final HashUtil hashUtil;
 
     /*
         [회원 가입 API] - USR-01
@@ -71,7 +66,8 @@ public class AuthController {
     @GetMapping("/check-id")
     public ResultVO<Boolean> checkId(@RequestParam("userId") String userId){
         // DB에 해당 아이디가 없어야 (exists == false) 사용 가능
-        boolean isAvailable = !userRepository.existsByUserId(userId);
+        boolean isAvailable = authService.isUserIdAvailable(userId);
+
         // ★  ResponseEntity 대신 표준 식판 ResultVO로 통일!
         if (isAvailable) {
             return ResultVO.ok("ID-AVAILABLE", "사용 가능한 아이디입니다.", true);
@@ -83,8 +79,9 @@ public class AuthController {
     @GetMapping("/check-email")
     public ResultVO<Boolean> checkEmail(@RequestParam("email") String email) {
         // HashUtil을 사용해 해시값으로 변환 후 DB 조회 (AuthService의 로직 활용 추천)
-        String emailHash = hashUtil.generateHash(email);
-        boolean isAvailable = !userRepository.existsByEmailHash(emailHash);
+        // 컨트롤러는 "검사해줘"라고 서비스에게 시키기만 합니다.
+        // 암호화를 해서 찾든, 그냥 찾든 컨트롤러는 몰라도 됩니다. (캡슐화)
+        boolean isAvailable = authService.isEmailAvailable(email);
 
         if (isAvailable) {
             return ResultVO.ok("EMAIL-AVAILABLE", "사용 가능한 이메일입니다.", true);
@@ -96,8 +93,8 @@ public class AuthController {
     @GetMapping("/check-phone")
     public ResultVO<Boolean> checkPhone(@RequestParam("phone") String phone) {
         // 1. 입력받은 전화번호(010-XXXX-XXXX)를 해시로 변환
-        String phoneHash = hashUtil.generateHash(phone);
-        boolean isAvailable = !userRepository.existsByPhoneHash(phoneHash);
+
+        boolean isAvailable = authService.isPhoneAvailable(phone);
 
         if (isAvailable) {
             return ResultVO.ok("PHONE-AVAILABLE", "사용 가능한 번호입니다.", true);
