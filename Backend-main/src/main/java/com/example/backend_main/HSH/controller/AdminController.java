@@ -129,7 +129,12 @@ public class AdminController {
     @GetMapping("/logs/download")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')") // 관리자급 이상 접근 가능
     @ActionLog(action = "DOWNLOAD_EXCEL", target = "TB_ACCESS_LOG")
-    public void downloadLogs(HttpServletResponse response) throws IOException {
+    public void downloadLogs(HttpServletResponse response,
+                             // 프론트에서 ?reason=감사제출용 이라고 보내면 이리로 쏙 들어옵니다.
+                             // reason을 파라미터에 적어둔 이유 : AOP를 위한 바구니 역할
+                             //
+                             @RequestParam(value = "reason", required = false) String reason)
+            throws IOException {
         adminService.downloadAccessLogExcel(response);
     }
 
