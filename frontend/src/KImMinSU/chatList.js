@@ -176,25 +176,35 @@ const ChatList = () => {
                 <div className="flex justify-center">
                 </div>
 
-                {chatLog.map((msg) => (
-                <div key={msg.id} className={`flex items-start space-x-3 ${msg.sender === 'LAWYER' ? 'justify-end' : ''}`}>
-                    {msg.sender === 'CLIENT' && (
-                    <div className="w-9 h-9 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-black shadow-inner flex-shrink-0">홍</div>
-                    )}
-                    <div className={`space-y-1 ${msg.sender === 'LAWYER' ? 'flex flex-col items-end' : ''}`}>
-                    <p className="text-[10px] font-black text-slate-400 ml-1 ">
-                        {msg.sender === 'CLIENT' ? `의뢰인 ${msg.name}` : `PRO ${msg.name} 변호사`} 
-                        <span className="text-slate-300 ml-1 font-normal">{msg.time}</span>
-                    </p>
-                    <div className={`p-4 rounded-2xl text-sm font-medium max-w-md shadow-sm border leading-relaxed ${msg.sender === 'LAWYER' ? 'bg-navy-main text-white rounded-tr-none border-navy-main' : 'bg-white text-slate-800 rounded-tl-none border-slate-100'}`}>
-                        {msg.message}
+              {chatLog.map((msg, index) => {
+                // ★ 팩트: msg.senderNo(보낸사람)랑 userNo(내번호)가 같으면 '내가 보낸 거(오른쪽)', 다르면 '남이 보낸 거(왼쪽)'
+                const isMyMessage = Number(msg.senderNo) === Number(userNo);
+
+                return (
+                    <div key={index} className={`flex items-start space-x-3 ${isMyMessage ? 'justify-end' : ''}`}>
+
+                      {/* 남이 보낸 메시지일 때 프사 표시 (왼쪽) */}
+                      {!isMyMessage && (
+                          <div className="w-9 h-9 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-black shadow-inner flex-shrink-0">상대</div>
+                      )}
+
+                      <div className={`space-y-1 ${isMyMessage ? 'flex flex-col items-end' : ''}`}>
+                        <p className="text-[10px] font-black text-slate-400 ml-1 ">
+                          {isMyMessage ? '나' : `상대방 (${msg.senderNo})`}
+                          {/* 시간은 지금 백엔드에서 안 주니까 일단 뺐다 */}
+                        </p>
+                        <div className={`p-4 rounded-2xl text-sm font-medium max-w-md shadow-sm border leading-relaxed ${isMyMessage ? 'bg-navy-main text-white rounded-tr-none border-navy-main' : 'bg-white text-slate-800 rounded-tl-none border-slate-100'}`}>
+                          {msg.message}
+                        </div>
+                      </div>
+
+                      {/* 내가 보낸 메시지일 때 프사 표시 (오른쪽) */}
+                      {isMyMessage && (
+                          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xs font-black shadow-lg flex-shrink-0">나</div>
+                      )}
                     </div>
-                    </div>
-                    {msg.sender === 'LAWYER' && (
-                    <div className="w-9 h-9 rounded-xl bg-navy-main flex items-center justify-center text-white text-xs font-black shadow-lg flex-shrink-0">김</div>
-                    )}
-                </div>
-                ))}
+                );
+              })}
             </div>
 
             {/* 입력창 */}
