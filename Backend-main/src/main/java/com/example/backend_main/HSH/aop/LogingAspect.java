@@ -63,7 +63,7 @@ public class LogingAspect {
         // 일단 저장 (ID 확보를 위해) - *필요 시 생략하고 마지막에만 저장해도 됨
         // accessLogRepository.save(accessLog);
 
-        Object result = null;
+        Object result;
         String errorMsg = null;
         int status = 200; // 기본 성공
 
@@ -124,7 +124,7 @@ public class LogingAspect {
         // 3. 시작 로그
         log.info("👀 [Admin Action Start] Admin: {}, Action: {}, Target: {}", adminNo, actionType, targetInfo);
 
-        Object result = null;
+        Object result;
         try {
             // 4. 비즈니스 로직 실행 (엑셀 다운로드 등)
             result = joinPoint.proceed();
