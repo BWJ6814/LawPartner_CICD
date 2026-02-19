@@ -171,7 +171,6 @@ const Header = ({auth, onLoginUpdate}) => {
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userNo');
     localStorage.removeItem('nickNm');
-    localStorage.removeItem('savedUserId');
     onLoginUpdate();
     alert("로그아웃 되었습니다.");
     navigate('/');

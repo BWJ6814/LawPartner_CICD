@@ -5,9 +5,8 @@ import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AccessLogRepository;
 import com.example.backend_main.common.repository.UserRepository;
-// ★ [최적화] CustomUserDetails를 사용하기 위해 import 추가
 import com.example.backend_main.common.security.CustomUserDetails;
-
+import org.slf4j.MDC;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
