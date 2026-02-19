@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 
 /*
  [Review Entity]
- TB_REVIEW 테이블과 1:1로 매핑
- 의뢰인이 변호사에게 남기는 후기
+ TB_REVIEW 테이블 매핑
+ WRITER_NM 은 DB에 없음 → Service에서 UserRepository로 JOIN
 */
 @Entity
 @Table(name = "TB_REVIEW")
@@ -21,31 +21,25 @@ public class Review {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "REVIEW_NO")
-    private Long reviewNo; // 후기 번호 (PK)
+    private Long reviewNo;
 
     @Column(name = "LAWYER_NO", nullable = false)
-    private Long lawyerNo; // 변호사 유저 번호 (FK)
+    private Long lawyerNo;
 
     @Column(name = "WRITER_NO", nullable = false)
-    private Long writerNo; // 작성자(의뢰인) 유저 번호 (FK)
+    private Long writerNo;       // TB_USER 에서 이름 조회용
 
-    @Column(name = "WRITER_NM", nullable = false, length = 50)
-    private String writerNm; // 작성자 이름
+    @Column(name = "RATING")
+    private Double stars;        // TB_REVIEW.RATING NUMBER(2,1) → 소수점 지원
 
-    @Column(name = "RATING", nullable = false)
-    private Integer stars; // 별점 (1~5)
-
-    @Column(name = "CONTENT", nullable = false, length = 2000)
-    private String content; // 후기 내용
+    @Column(name = "CONTENT", length = 1000)
+    private String content;
 
     @Column(name = "REG_DT", updatable = false)
-    private LocalDateTime regDt; // 등록 일시
-
-    @Column(name = "REPLY_NO", updatable = false)
-    private Long replyNo; // 등록 일시
+    private LocalDateTime regDt;
 
     @PrePersist
     public void prePersist() {
-        this.regDt = LocalDateTime.now();
+        if (this.regDt == null) this.regDt = LocalDateTime.now();
     }
 }

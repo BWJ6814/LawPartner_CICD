@@ -67,6 +67,7 @@ function App() {
                         <Route path="/signup" element={<SignupPage />} />
 
                         <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
+                        <Route path="/ai-chat" element={<div className="text-center p-20 text-xl text-gray-500">AI 상담 준비 중입니다.</div>} />
 
 
                         <Route path="/experts" element={<ExpertsPage />} />
