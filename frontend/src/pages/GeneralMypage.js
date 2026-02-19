@@ -143,7 +143,8 @@ const GeneralMyPage = () => {
               // 어떤 일정을 수정할 지 서버가 알아야 하므로 URL 끝에 해당 일정의 고유 ID를 붙여서 보냅니다.
               await axios.put(`http://localhost:8080/api/mypage/calendar/${eventInput.id}`, {
                   title: eventInput.title,
-                  backgroundColor: eventInput.backgroundColor
+                  backgroundColor: eventInput.backgroundColor,
+                  start: eventInput.start
               },{
                   headers : {
                       Authorization : `Bearer ${token}`

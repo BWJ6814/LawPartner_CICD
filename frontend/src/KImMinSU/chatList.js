@@ -1,19 +1,77 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import DashboardSidebar from '../common/components/DashboardSidebar'; // ★ 공용 사이드바 import
+import { Link, useParams } from 'react-router-dom';
+import DashboardSidebar from '../common/components/DashboardSidebar';
+import api from '../common/api/axiosConfig'; // ★ 형님이 만든 axios 인스턴스
+import SockJS from 'sockjs-client'; // ★ 웹소켓 연결용
+import {Stomp} from '@stomp/stompjs'; // ★ 메시징 프로토콜용
 
 const ChatList = () => {
+  const { roomId } = useParams(); // ★ URL에서 방 번호 따오기
+  const [rooms, setRooms] = useState([]) // 진짜 채팅방 목록
   const [message, setMessage] = useState('');
-  
-  // 1. 사이드바 열림/닫힘 상태 (우측 패널 너비 조절용)
+  const [chatLog, setChatLog] = useState([]); // ★ 초기 데이터는 빈 배열로!
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
-  const [chatLog, setChatLog] = useState([
-    { id: 1, sender: 'CLIENT', name: '홍길동', time: '14:15', text: '변호사님, 안녕하세요. 지난주 계약이 끝났는데 임대인이 연락을 피하고 보증금을 안 주네요. 제가 미리 보낸 계약서 사진 보시고 승소 가능성이 있는지 궁금합니다.' },
-    { id: 2, sender: 'LAWYER', name: '김신드', time: '14:18', text: '안녕하세요. 보내주신 계약서 확인했습니다. 특약 사항에 "보증금 즉시 반환" 문구가 있어 유리한 상황입니다. 우선 내용증명을 보내는 것이 좋겠습니다. AI 분석 결과도 함께 보여드릴게요.' }
-  ]);
 
+  const stompClient = useRef(null); // ★ 웹소켓 클라이언트를 담아둘 상자
   const chatContainerRef = useRef(null);
+  const userNo = Number(localStorage.getItem('userNo')); // ★ 내 번호 (로그인 시 저장했어야 함)
+
+  // 페이지 접속 시 내 채팅방 목록 가져오기
+  useEffect(() => {
+    api.get('/api/chat/rooms')
+        .then(res => {
+          setRooms(res.data.data);
+        })
+        .catch(err => console.error("방 목록이 로딩 되지 않았습니다.", err))
+  }, []);
+
+
+  // 1. 초기 데이터 가져오기 (이전 대화 내역)
+  useEffect(() => {
+    if (!roomId) return;
+
+    // ★ 초심자를 위한 핵심: 방에 들어오자마자 예전 대화 싹 긁어오는 로직이야
+    api.get(`/api/chat/history/${roomId}`)
+        .then(res => setChatLog(res.data.data))
+        .catch(err => console.error("과거 내역이 로딩 되지 않아씃ㅂ니다.", err));
+
+    // 2. 웹소켓 연결 및 구독 시작
+    const socket = new SockJS('http://localhost:8080/ws-stomp');
+    const client = Stomp.over(socket);
+
+    client.connect({}, () => {
+      console.log("웹소켓 연결 성공!");
+
+      // ★ 초심자를 위한 핵심: 이 방 주소를 구독해서 남이 보내는 메시지를 실시간으로 낚아채는 거야
+      client.subscribe(`/sub/chat/room/${roomId}`, (response) => {
+        const newMessage = JSON.parse(response.body);
+        setChatLog((prev) => [...prev, newMessage]); // 메시지 오면 리스트에 추가!
+      });
+    });
+
+    stompClient.current = client;
+
+    // 연결 해제 (청소)
+    return () => {
+      if (stompClient.current) stompClient.current.disconnect();
+    };
+  }, [roomId]);
+
+  // 3. 메시지 전송 (서버로 발행)
+  const handleSendMessage = () => {
+    if (!message.trim() || !stompClient.current) return;
+
+    const chatDTO = {
+      roomId: roomId,
+      senderNo: userNo,
+      message: message,
+      msgType: 'TEXT'
+    };
+
+    // ★ 초심자를 위한 핵심: HTTP API가 아니라 웹소켓 통로(/pub)로 메시지를 쏘는 거야!
+    stompClient.current.send("/pub/chat/message", {}, JSON.stringify(chatDTO));
+    setMessage('');
+  };
 
   // 스크롤 함수
   const scrollToBottom = () => {
@@ -30,18 +88,6 @@ const ChatList = () => {
     scrollToBottom();
   }, [chatLog]);
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
-    const newMessage = {
-      id: chatLog.length + 1,
-      sender: 'LAWYER',
-      name: '김신드',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      text: message
-    };
-    setChatLog([...chatLog, newMessage]);
-    setMessage('');
-  };
 
   return (
     <div className="flex h-screen bg-[#f1f5f9] overflow-hidden font-sans text-slate-900">
@@ -88,26 +134,33 @@ const ChatList = () => {
             </div>
 
             {/* 목록 영역 */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar bg-white">
-              <div className="p-5 border-b border-slate-50 list-item-active cursor-pointer transition relative">
-                <div className="flex justify-between items-start mb-1">
-                  <span className="font-black text-slate-900 text-sm tracking-tight flex items-center">
-                    홍길동 <span className="ml-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                  </span>
-                  <span className="text-[10px] text-red-500 font-black">방금 전</span>
-                </div>
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded font-black border border-blue-100">부동산</span>
-                </div>
-                <p className="text-xs text-slate-600 truncate font-medium">"계약서 사진 보냈습니다. 확인 부탁..."</p>
-              </div>
-
-              <div className="p-5 border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition">
-                <div className="flex justify-between items-start mb-1">
-                  <span className="font-black text-slate-900 text-sm tracking-tight">최박사</span>
-                </div>
-                <p className="text-xs text-slate-400 truncate font-medium ">"방금 고소장이 접수되었다는 연락..."</p>
-              </div>
+            <div className="flex-1 overflow-y-auto bg-white">
+              {rooms.length > 0 ? (
+                  rooms.map((room) => (
+                      <Link
+                          to={`/chat/${room.roomId}`}
+                          key={room.roomId}
+                          className={`p-5 border-b border-slate-50 cursor-pointer transition block ${roomId === room.roomId ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                      <span className="font-black text-slate-900 text-sm">
+                        {/* ★ 상대방 이름은 나중에 API 보완해서 넣고, 일단 방 ID 뒷자리만 보여주자 */}
+                        상담방 {room.roomId.substring(0, 8)}...
+                      </span>
+                          <span className="text-[10px] text-slate-400">
+                        {room.progressCode === 'ST01' ? '대기' : '진행중'}
+                      </span>
+                        </div>
+                        <p className="text-xs text-slate-400 truncate font-medium">
+                          클릭해서 대화를 시작하세요
+                        </p>
+                      </Link>
+                  ))
+              ) : (
+                  <div className="p-10 text-center text-xs text-slate-400 font-bold">
+                    참여 중인 상담이 없습니다.
+                  </div>
+              )}
             </div>
           </section>
 
@@ -132,7 +185,7 @@ const ChatList = () => {
                         <span className="text-slate-300 ml-1 font-normal">{msg.time}</span>
                     </p>
                     <div className={`p-4 rounded-2xl text-sm font-medium max-w-md shadow-sm border leading-relaxed ${msg.sender === 'LAWYER' ? 'bg-navy-main text-white rounded-tr-none border-navy-main' : 'bg-white text-slate-800 rounded-tl-none border-slate-100'}`}>
-                        {msg.text}
+                        {msg.message}
                     </div>
                     </div>
                     {msg.sender === 'LAWYER' && (
@@ -145,8 +198,6 @@ const ChatList = () => {
             {/* 입력창 */}
             <div className="p-6 border-t border-slate-100 bg-white z-10">
               <div className="flex space-x-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
-                <button className="px-3 py-1 bg-blue-50 text-blue-700 text-[10px] font-black rounded-lg border border-blue-100 hover:bg-blue-100 transition whitespace-nowrap"># 법적고지 전송</button>
-                <button className="px-3 py-1 bg-slate-50 text-slate-500 text-[10px] font-black rounded-lg border border-slate-200 hover:bg-slate-200 transition whitespace-nowrap"># 수임절차 가이드</button>
               </div>
               <div className="relative bg-slate-50 rounded-2xl p-4 border border-slate-200">
                 <textarea 
