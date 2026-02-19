@@ -60,6 +60,8 @@ const LoginPage = () => {
                 localStorage.setItem('userNo', tokenData.userNo);
                 // ★ 이 부분이 있어야 Header.js에서 '마이페이지' vs '워크스페이스'를 구분함
                 localStorage.setItem('userRole', tokenData.role || 'ROLE_USER');
+                // 유저 닉네임 추가
+                localStorage.setItem('nickNm', tokenData.nickNm)
 
                 if (isRemember) {
                     // 체크되어 있다면 아이디 저장

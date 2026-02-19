@@ -145,6 +145,9 @@ const Header = ({auth, onLoginUpdate}) => {
     localStorage.removeItem('refreshToken'); // 리프레시 토큰도 같이 삭제
     localStorage.removeItem('userRole');
     localStorage.removeItem('userNm');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userNo');
+    localStorage.removeItem('nickNm');
     onLoginUpdate();
     alert("로그아웃 되었습니다.");
     navigate('/');
