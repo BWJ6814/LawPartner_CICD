@@ -6,7 +6,6 @@ import com.example.backend_main.common.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-// [추가됨] 삭제 시 DB 에러 방지를 위한 트랜잭션 처리
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
@@ -116,6 +115,7 @@ public class BoardController {
         return "SUCCESS";
     }
 
+    // [수정됨] 카테고리 제거 및 REPLY_NO 처리
     @PostMapping("/{id}/reviews")
     public String createReview(@PathVariable("id") Long boardId, @RequestBody Map<String, Object> data) {
         Long lawyerNo = Long.parseLong(data.get("lawyerNo").toString());
@@ -123,12 +123,13 @@ public class BoardController {
         String writerNm = (String) data.get("writerNm");
         Integer stars = Integer.parseInt(data.get("stars").toString());
         String content = (String) data.get("content");
-        String category = (String) data.get("category");
-        Long replyNo = Long.parseLong(data.get("replyNo").toString());
+        Long replyNo = Long.parseLong(data.get("replyNo").toString()); // 프론트에서 넘어온 답변 번호
 
-        boardRepository.insertReviewNative(lawyerNo, writerNo, writerNm, stars, content, category, replyNo);
+        // DB에 저장!
+        boardRepository.insertReviewNative(lawyerNo, writerNo, writerNm, stars, content, replyNo);
         return "SUCCESS";
     }
+
     @PutMapping("/{id}/match")
     public String completeMatch(@PathVariable("id") Long id) {
         Board board = boardRepository.findById(id).orElseThrow();
@@ -137,34 +138,22 @@ public class BoardController {
         return "SUCCESS";
     }
 
-    // ==========================================
-    // [추가됨] 1. 게시글 수정 API
-    // ==========================================
     @PutMapping("/{id}")
     public String updateBoard(@PathVariable("id") Long id, @RequestBody Map<String, Object> data) {
         Board board = boardRepository.findById(id).orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
-
-        // 프론트에서 넘겨준 제목과 내용으로 업데이트합니다.
         board.setTitle((String) data.get("title"));
         board.setContent((String) data.get("content"));
-
         boardRepository.save(board);
         return "SUCCESS";
     }
 
-    // ==========================================
-    // [추가됨] 2. 게시글 삭제 API
-    // ==========================================
     @DeleteMapping("/{id}")
-    @Transactional // 삭제 중 하나라도 실패하면 원상복구(롤백) 하기 위해 필수!
+    @Transactional
     public String deleteBoard(@PathVariable("id") Long id) {
-        // 1. 게시글을 지우기 전에 달린 답변들을 먼저 지워줍니다 (외래키 제약조건 위배 방지)
         List<BoardReply> replies = boardReplyRepository.findByBoardNo(id);
         if (!replies.isEmpty()) {
             boardReplyRepository.deleteAll(replies);
         }
-
-        // 2. 답변을 다 지웠으니 이제 안전하게 게시글을 삭제합니다.
         boardRepository.deleteById(id);
         return "SUCCESS";
     }

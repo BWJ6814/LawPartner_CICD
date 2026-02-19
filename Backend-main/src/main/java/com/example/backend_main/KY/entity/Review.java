@@ -38,9 +38,6 @@ public class Review {
     @Column(name = "CONTENT", nullable = false, length = 2000)
     private String content; // 후기 내용
 
-    @Column(name = "CATEGORY", length = 50)
-    private String category; // 상담 카테고리 (교통사고, 이혼/가사, 형사 등)
-
     @Column(name = "REG_DT", updatable = false)
     private LocalDateTime regDt; // 등록 일시
 

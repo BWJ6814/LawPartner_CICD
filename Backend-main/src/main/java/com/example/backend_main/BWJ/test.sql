@@ -160,6 +160,7 @@ WHERE b.table_name = 'TB_USER'
 
 select * from TB_BOARD_REPLY;
 select * from TB_LAWYER_INFO;
+select * from TB_REVIEW;
 select * from TB_AI_CHAT_LOG;
 select * from TB_BOARD;
 select * from tb_user;

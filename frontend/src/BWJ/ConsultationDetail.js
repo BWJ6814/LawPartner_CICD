@@ -11,7 +11,6 @@ const ConsultationDetail = () => {
     const [loading, setLoading] = useState(true);
     const [replyContent, setReplyContent] = useState('');
 
-    // [추가됨] 수정 모드 상태 관리
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const [editContent, setEditContent] = useState('');
@@ -42,9 +41,6 @@ const ConsultationDetail = () => {
         fetchPost();
     }, [id, navigate]);
 
-    // ==========================================
-    // [추가됨] 게시글 수정 함수
-    // ==========================================
     const handleUpdate = async () => {
         if (!editTitle.trim()) return alert("제목을 입력해주세요.");
         if (!editContent.trim()) return alert("내용을 입력해주세요.");
@@ -56,7 +52,6 @@ const ConsultationDetail = () => {
             });
             alert("게시글이 성공적으로 수정되었습니다.");
             setIsEditing(false);
-            // 새로고침 없이 화면의 데이터를 바로 바꿔줍니다.
             setPost({ ...post, title: editTitle, content: editContent });
         } catch (err) {
             console.error("수정 실패", err);
@@ -64,15 +59,12 @@ const ConsultationDetail = () => {
         }
     };
 
-    // ==========================================
-    // [추가됨] 게시글 삭제 함수
-    // ==========================================
     const handleDelete = async () => {
         if (window.confirm("정말 이 게시글을 삭제하시겠습니까? (달린 답변도 모두 삭제됩니다)")) {
             try {
                 await axios.delete(`http://localhost:8080/api/boards/${id}`);
                 alert("삭제되었습니다.");
-                navigate('/consultation'); // 삭제 후 목록 페이지로 이동
+                navigate('/consultation');
             } catch (err) {
                 console.error("삭제 실패", err);
                 alert("게시글 삭제 중 오류가 발생했습니다.");
@@ -92,6 +84,9 @@ const ConsultationDetail = () => {
         }
     };
 
+    // ==========================================
+    // [핵심 변경] 카테고리 제거 & 답변 번호 추가
+    // ==========================================
     const handleReviewSubmit = async () => {
         if (rating === 0) return alert("별점을 선택해주세요.");
         if (!reviewContent.trim()) return alert("후기 내용을 입력해주세요.");
@@ -103,8 +98,8 @@ const ConsultationDetail = () => {
                 writerNm: currentUser.name || "익명",
                 stars: rating,
                 content: reviewContent,
-                category: post.categoryCode,
-                replyNo: selectedLawyer.replyNo // [추가됨] 어떤 답변에 대한 후기인지 번호 전송!
+                // category: post.categoryCode <-- 이 부분 삭제!
+                replyNo: selectedLawyer.replyNo // 운조님 요청대로 답변 번호를 같이 보냅니다.
             });
             alert("후기가 등록되었습니다.");
             setIsReviewModalOpen(false);
@@ -149,14 +144,13 @@ const ConsultationDetail = () => {
                                 {post.categoryCode}
                             </span>
 
-                            {/* 작성자이고, 아직 수정 모드가 아닐 때 버튼 표시 */}
                             {isMyPost && !isEditing && (
                                 <div className="flex items-center gap-3 text-sm text-gray-500">
                                     <button
                                         onClick={() => {
                                             setEditTitle(post.title);
                                             setEditContent(post.content);
-                                            setIsEditing(true); // 버튼 클릭 시 수정 모드로 전환!
+                                            setIsEditing(true);
                                         }}
                                         className="hover:text-blue-600 flex items-center gap-1 transition-colors"
                                     >
@@ -169,7 +163,6 @@ const ConsultationDetail = () => {
                             )}
                         </div>
 
-                        {/* [수정됨] 화면 전환 (수정 모드 vs 일반 모드) */}
                         {isEditing ? (
                             <input
                                 type="text"
@@ -190,7 +183,6 @@ const ConsultationDetail = () => {
                     </div>
 
                     <div className="p-8 min-h-[150px]">
-                        {/* [수정됨] 화면 전환 (수정 모드 vs 일반 모드) */}
                         {isEditing ? (
                             <div>
                                 <textarea
@@ -216,7 +208,7 @@ const ConsultationDetail = () => {
                     </div>
                 </div>
 
-                {/* --- 아래는 기존 전문가 답변 및 모달창 코드 그대로 --- */}
+                {/* 전문가 답변 리스트 */}
                 <div className="space-y-6">
                     <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2 border-b-2 border-gray-900 pb-3">
                         전문가 답변 <span className="text-blue-600">{post.replies ? post.replies.length : 0}</span>
@@ -293,6 +285,7 @@ const ConsultationDetail = () => {
                 )}
             </div>
 
+            {/* 후기 작성 모달창 */}
             {isReviewModalOpen && selectedLawyer && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fadeIn">

@@ -14,20 +14,19 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     // 1. 전체 목록 최신순
     List<Board> findAllByOrderByRegDtDesc();
 
-    // 2. [복구됨] 특정 작성자의 최신글 5개
+    // 2. 특정 작성자의 최신글 5개 (김민수님 마이페이지 기능)
     List<Board> findTop5ByWriterNoOrderByRegDtDesc(Long writerNo);
 
-    // 3. 실제 TB_REVIEW 테이블 컬럼에 맞춘 Native Query (후기 등록용)
+    // 3. [수정됨] 카테고리 완전 삭제 및 REPLY_NO 추가
     @Modifying
     @Transactional
-    @Query(value = "INSERT INTO TB_REVIEW (LAWYER_NO, WRITER_NO, WRITER_NM, STARS, CONTENT, CATEGORY, REPLY_NO, REG_DT) " +
-            "VALUES (:lawyerNo, :writerNo, :writerNm, :stars, :content, :category, :replyNo, SYSDATE)", nativeQuery = true)
+    @Query(value = "INSERT INTO TB_REVIEW (LAWYER_NO, WRITER_NO, WRITER_NM, STARS, CONTENT, REPLY_NO, REG_DT) " +
+            "VALUES (:lawyerNo, :writerNo, :writerNm, :stars, :content, :replyNo, SYSDATE)", nativeQuery = true)
     void insertReviewNative(
             @Param("lawyerNo") Long lawyerNo,
             @Param("writerNo") Long writerNo,
             @Param("writerNm") String writerNm,
             @Param("stars") Integer stars,
             @Param("content") String content,
-            @Param("category") String category,
             @Param("replyNo") Long replyNo);
 }
