@@ -77,8 +77,6 @@ public class GeneralMyPageService {
             GeneralMyPageDTO.CalendarEventDTO calDTO = new GeneralMyPageDTO.CalendarEventDTO();
 
             // 1. 방금 DTO에 추가한 ID 꽂아주기 (필수)
-            calDTO.setId(event.getEventNo());
-
             calDTO.setId(event.getEventNo()); // ★ ID 꽂아주기
             calDTO.setTitle(event.getTitle()); // ★ "[개인]" 떼고 깔끔하게 제목만
             calDTO.setStart(event.getStartDate());
