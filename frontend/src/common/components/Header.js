@@ -55,7 +55,7 @@ const Header = ({auth, onLoginUpdate}) => {
             )
         },
         ROLE_OPERATOR: {
-          label: "OPS AGENT",
+          label: "Operator",
           nameSuffix: "운영자",
           bg: "bg-emerald-500",
           text: "text-white",
@@ -68,7 +68,7 @@ const Header = ({auth, onLoginUpdate}) => {
           )
         },
         ROLE_ADMIN: {
-            label: "SYSTEM OPS",
+            label: "Admin",
             nameSuffix: "관리자",
             bg: "bg-slate-900",
             text: "text-cyan-400",
@@ -82,7 +82,7 @@ const Header = ({auth, onLoginUpdate}) => {
             )
         },
         ROLE_SUPER_ADMIN: {
-            label: "SUPREME ROOT",
+            label: "Super Admin",
             nameSuffix: "슈퍼 관리자",
             bg: "bg-gray-950", 
             text: "text-amber-400", 
