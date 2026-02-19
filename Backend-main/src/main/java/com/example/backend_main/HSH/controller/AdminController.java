@@ -3,7 +3,9 @@ package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.common.annotation.ActionLog;
+import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.repository.AccessLogRepository;
 import com.example.backend_main.common.security.CustomUserDetails; // ★ 최적화용
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
@@ -32,6 +34,7 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private final AccessLogRepository accessLogRepository;
 
     // [전체 화원 목록 조회] [ADM-02]
     // 관리자가 전체 시민 명부를 확인하는 기능
@@ -105,6 +108,17 @@ public class AdminController {
             log.error("관리자 생성 중 시스템 오류", e);
             return ResultVO.fail("SYS-ERROR", "시스템 오류가 발생했습니다.");
         }
+    }
+
+    /*
+    보안 감사 로그 목록 조회 (화면 Grid용) - 5주차 계획
+    - 엑셀이 아닌, JSON 데이터로 로그 리스트를 반환합니다.
+    */
+    @GetMapping("/logs")
+    public ResultVO<List<AccessLog>> getAccessLogs() {
+        // 원래는 페이징(Pageable) 처리를 해야 하지만, 일단 전체 리스트로 MVP 구현
+        List<AccessLog> logs = accessLogRepository.findAll();
+        return ResultVO.ok("로그 목록을 성공적으로 불러왔습니다.", logs);
     }
 
     /*
