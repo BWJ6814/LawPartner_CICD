@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // 페이지 이동을 위해 필요해요!
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
     Search, Menu, User, Scale, Gavel, Car, Home, Key,
@@ -9,7 +9,6 @@ import {
     ChevronLeft, ChevronRight
 } from 'lucide-react';
 
-// 1. 카테고리 데이터 (기존 유지)
 const CATEGORIES = [
     { id: 1, name: '형사범죄', icon: <Gavel size={24} /> },
     { id: 2, name: '교통사고', icon: <Car size={24} /> },
@@ -28,8 +27,6 @@ const CATEGORIES = [
     { id: 15, name: '계약서 검토', icon: <FileText size={24} /> },
     { id: 16, name: '기타', icon: <MoreHorizontal size={24} /> },
 ];
-
-// --- 서브 컴포넌트들 ---
 
 const FilterSection = ({ selectedCategory, setSelectedCategory, selectedSort, setSelectedSort }) => {
     const [activeTab, setActiveTab] = useState('category');
@@ -80,10 +77,9 @@ const WriteQuestionCard = ({ onClick }) => (
     </div>
 );
 
-// ★ PostCard 컴포넌트 수정: 클릭 이벤트(onClick)를 받아서 실행합니다.
 const PostCard = ({ post, onClick }) => (
     <div
-        onClick={onClick} // 클릭하면 부모에서 전달한 함수 실행
+        onClick={onClick}
         className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col h-full min-h-[220px]"
     >
         <div className="mb-3">
@@ -106,10 +102,8 @@ const PostCard = ({ post, onClick }) => (
     </div>
 );
 
-// --- 메인 컴포넌트 ---
-
 const ConsultationBoard = () => {
-    const navigate = useNavigate(); // 페이지 이동을 위한 도구 소환
+    const navigate = useNavigate();
 
     const [posts, setPosts] = useState([]);
     const [userRole, setUserRole] = useState(
@@ -133,11 +127,14 @@ const ConsultationBoard = () => {
     const fetchPosts = async () => {
         try {
             const response = await axios.get('http://localhost:8080/api/boards');
+
+            // [핵심 수정] 백엔드에서 받은 데이터 가공
+            // board.nicknameVisibleYn 이 'Y'일 경우에만 작성자의 userNickname을 표시합니다.
             const mappedData = response.data.map(board => ({
-                id: board.boardNo, // DB의 BOARD_NO
+                id: board.boardNo,
                 title: board.title,
                 content: board.content,
-                author: '익명',
+                author: board.nicknameVisibleYn === 'Y' ? board.userNickname : '익명',
                 date: board.regDt ? board.regDt.substring(0, 10) : '',
                 categories: board.categoryCode ? board.categoryCode.split(',') : []
             }));
@@ -179,8 +176,6 @@ const ConsultationBoard = () => {
         window.scrollTo(0, 0);
     };
 
-    const handleSearch = () => setCurrentPage(1);
-
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
             <div className="bg-[#1a2b4b] text-white py-12 px-4 lg:px-12">
@@ -204,17 +199,14 @@ const ConsultationBoard = () => {
             <main className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
 
-                    {/* 질문 등록 카드 */}
                     {isGeneral && currentPage === 1 && (
                         <WriteQuestionCard onClick={() => navigate('/write')} />
                     )}
 
-                    {/* 게시글 리스트 렌더링 */}
                     {currentPosts.map((post) => (
                         <PostCard
                             key={post.id}
                             post={post}
-                            // ★ 카드를 클릭했을 때 실행될 함수!
                             onClick={() => navigate(`/consultation/${post.id}`)}
                         />
                     ))}
@@ -226,7 +218,6 @@ const ConsultationBoard = () => {
                     )}
                 </div>
 
-                {/* 페이지네이션 (기존 유지) */}
                 <div className="flex flex-col items-center gap-8 mt-12">
                     <div className="flex items-center gap-2">
                         <button onClick={() => handlePageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-30">
@@ -248,4 +239,3 @@ const ConsultationBoard = () => {
 };
 
 export default ConsultationBoard;
-// 깃허브 테스트용
