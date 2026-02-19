@@ -79,6 +79,7 @@ public class JwtTokenProvider {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .userNm(userNm)
+                .nickNm(nickNm)
                 .role(authentication.getAuthorities().toString())
                 .build();
     }
