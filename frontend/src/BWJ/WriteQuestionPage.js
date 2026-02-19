@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { LayoutGrid, CheckCircle, CloudUpload, FileText, X } from 'lucide-react';
+import { LayoutGrid, CheckCircle, CloudUpload } from 'lucide-react';
 
 const CATEGORIES = [
     { id: 1, name: '형사범죄' }, { id: 2, name: '교통사고' },
@@ -17,23 +17,23 @@ const CATEGORIES = [
 const WriteQuestionPage = () => {
     const navigate = useNavigate();
 
-    // [수정] 다중 선택을 위해 배열로 초기화
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
+
+    // [추가됨] 닉네임 공개 여부 상태 관리 (기본값: false = 비공개/익명)
+    // 리액트에서 useState를 사용하여 체크박스의 상태를 추적합니다.
+    const [isNicknameVisible, setIsNicknameVisible] = useState(false);
 
     // 파일 관련 (UI만 유지)
     const [files, setFiles] = useState([]);
     const handleFileChange = (e) => { if (e.target.files) setFiles([...files, ...Array.from(e.target.files)]); };
     const removeFile = (index) => { setFiles(files.filter((_, i) => i !== index)); };
 
-    // [로직] 카테고리 클릭 핸들러 (최대 3개)
     const handleCategoryClick = (catName) => {
         if (selectedCategories.includes(catName)) {
-            // 이미 선택했으면 제거
             setSelectedCategories(selectedCategories.filter(c => c !== catName));
         } else {
-            // 선택 안 했으면 추가 (3개 미만일 때만)
             if (selectedCategories.length < 3) {
                 setSelectedCategories([...selectedCategories, catName]);
             } else {
@@ -42,12 +42,13 @@ const WriteQuestionPage = () => {
         }
     };
 
-    // [로직] 등록 버튼 클릭
     const handleSubmit = async () => {
         if (selectedCategories.length === 0) return alert("카테고리를 최소 1개 선택해주세요.");
         if (!title.trim()) return alert("제목을 입력해주세요.");
         if (!content.trim()) return alert("내용을 입력해주세요.");
+
         const userNo = localStorage.getItem('userNo');
+        const nickNm = localStorage.getItem('nickNm'); // [추가됨] 로컬스토리지에서 닉네임 가져오기
 
         if(!userNo){
             alert("로그인 정보가 없습니다. 다시 로그인 해주세요.")
@@ -59,10 +60,12 @@ const WriteQuestionPage = () => {
                 title: title,
                 content: content,
                 categories: selectedCategories,
-                userNo: userNo
+                userNo: userNo,
+                nickNm: nickNm, // [추가됨] 닉네임 데이터
+                isNicknameVisible: isNicknameVisible // [추가됨] 체크박스 상태 데이터
             });
             alert("질문이 등록되었습니다.");
-            navigate('/consultation'); // 메인으로 이동
+            navigate('/consultation');
         } catch (error) {
             console.error("등록 에러:", error);
             alert("등록 중 오류가 발생했습니다.");
@@ -79,7 +82,6 @@ const WriteQuestionPage = () => {
             <main className="max-w-4xl mx-auto px-4 mt-10">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
 
-                    {/* 카테고리 선택 영역 */}
                     <div className="mb-10 text-left">
                         <label className="block text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                             <LayoutGrid className="text-blue-600" size={24} />
@@ -108,7 +110,6 @@ const WriteQuestionPage = () => {
 
                     <hr className="border-gray-100 my-8" />
 
-                    {/* 입력 폼 (왼쪽 정렬 적용) */}
                     <div className="space-y-8 text-left">
                         <div>
                             <label className="block text-lg font-bold text-gray-800 mb-3">
@@ -127,7 +128,6 @@ const WriteQuestionPage = () => {
                                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500 resize-none" />
                         </div>
 
-                        {/* 파일 첨부 UI (기능은 추후 구현) */}
                         <div>
                             <label className="block text-lg font-bold text-gray-800 mb-3">파일 첨부</label>
                             <div className="relative">
@@ -140,9 +140,25 @@ const WriteQuestionPage = () => {
                     </div>
                 </div>
 
-                <div className="flex justify-center gap-4 mt-10 mb-20">
-                    <button onClick={() => navigate('/')} className="px-10 py-3.5 rounded-lg border border-gray-300 bg-white font-bold">취소</button>
-                    <button onClick={handleSubmit} className="px-10 py-3.5 rounded-lg bg-blue-600 text-white font-bold shadow-lg">질문 등록</button>
+                {/* [수정됨] 하단 버튼 영역에 닉네임 공개 여부 체크박스 추가 */}
+                <div className="flex items-center justify-between mt-10 mb-20">
+                    <div className="flex items-center gap-2 pl-2">
+                        <input
+                            type="checkbox"
+                            id="nicknameVisible"
+                            checked={isNicknameVisible}
+                            onChange={(e) => setIsNicknameVisible(e.target.checked)}
+                            className="w-5 h-5 text-blue-600 border-gray-300 rounded cursor-pointer"
+                        />
+                        <label htmlFor="nicknameVisible" className="text-gray-700 font-bold cursor-pointer">
+                            닉네임 공개
+                        </label>
+                    </div>
+
+                    <div className="flex gap-4">
+                        <button onClick={() => navigate('/')} className="px-10 py-3.5 rounded-lg border border-gray-300 bg-white font-bold">취소</button>
+                        <button onClick={handleSubmit} className="px-10 py-3.5 rounded-lg bg-blue-600 text-white font-bold shadow-lg">질문 등록</button>
+                    </div>
                 </div>
             </main>
         </div>

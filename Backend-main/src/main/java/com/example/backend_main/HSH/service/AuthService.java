@@ -160,7 +160,7 @@ public class AuthService {
         );
 
         // 5. 토큰 발급 후 추가 정보를 주머니에 담기!
-        TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm());
+        TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm(),user.getNickNm());
         tokenDTO.setUserNm(user.getUserNm()); // 이제 리액트에서 undefined가 안 뜹니다!
         tokenDTO.setRole(user.getRoleCode()); // RBAC 설계도에 따른 권한 전송
         tokenDTO.setEmail(decryptedEmail);  // 복호화된 진짜 이메일

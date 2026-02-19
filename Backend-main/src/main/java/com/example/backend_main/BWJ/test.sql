@@ -144,8 +144,6 @@ delete from tb_board where BOARD_NO in (26,27);
 
 select * from TB_USER;
 select * from TB_LAWYER_INFO;
-select * from tb_access_log;
-delete from TB_ACCESS_LOG;
 commit;
 
 delete from tb_user;
@@ -156,11 +154,31 @@ FROM all_constraints a
 WHERE b.table_name = 'TB_USER'
   AND a.constraint_type = 'R';
 
-
+select * from TB_BOARD_REPLY;
 select * from TB_LAWYER_INFO;
+select * from TB_REVIEW;
 select * from TB_AI_CHAT_LOG;
 select * from TB_BOARD;
 select * from tb_user;
-delete  from tb_user;
 -- ALTER TABLE TB_USER MODIFY (USER_NO RESTART START WITH 1);
 commit ;
+
+-- TB_BOARD 테이블에 닉네임 공개 여부 컬럼 추가 (0: 비공개/익명, 1: 공개)
+
+ALTER TABLE TB_BOARD ADD IS_NICKNAME_VISIBLE NUMBER(1) DEFAULT 0;
+
+ALTER TABLE TB_BOARD ADD NICKNAME_VISIBLE_YN CHAR(1) DEFAULT 'N';
+
+ALTER TABLE TB_BOARD DROP COLUMN IS_NICKNAME_VISIBLE;
+ALTER TABLE TB_BOARD ADD REPLY_CNT NUMBER DEFAULT 0;
+ALTER TABLE TB_BOARD ADD MATCH_YN CHAR(1) DEFAULT 'N';
+ALTER TABLE TB_REVIEW ADD REPLY_NO NUMBER;
+ALTER TABLE TB_REVIEW ADD WRITER_NM VARCHAR2(50);
+
+select * from TB_BOARD_REPLY;
+select * from TB_LAWYER_INFO;
+select * from TB_REVIEW;
+select * from TB_AI_CHAT_LOG;
+select * from TB_BOARD;
+select * from tb_user;
+COMMIT;

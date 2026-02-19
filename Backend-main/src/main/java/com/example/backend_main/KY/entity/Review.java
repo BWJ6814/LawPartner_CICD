@@ -32,17 +32,17 @@ public class Review {
     @Column(name = "WRITER_NM", nullable = false, length = 50)
     private String writerNm; // 작성자 이름
 
-    @Column(name = "STARS", nullable = false)
+    @Column(name = "RATING", nullable = false)
     private Integer stars; // 별점 (1~5)
 
     @Column(name = "CONTENT", nullable = false, length = 2000)
     private String content; // 후기 내용
 
-    @Column(name = "CATEGORY", length = 50)
-    private String category; // 상담 카테고리 (교통사고, 이혼/가사, 형사 등)
-
     @Column(name = "REG_DT", updatable = false)
     private LocalDateTime regDt; // 등록 일시
+
+    @Column(name = "REPLY_NO", updatable = false)
+    private Long replyNo; // 등록 일시
 
     @PrePersist
     public void prePersist() {

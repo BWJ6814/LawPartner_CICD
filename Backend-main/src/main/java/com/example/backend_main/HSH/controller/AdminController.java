@@ -3,9 +3,12 @@ package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.common.annotation.ActionLog;
+
 import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.repository.AccessLogRepository;
 import com.example.backend_main.common.security.CustomUserDetails; // ★ 최적화용
 import com.example.backend_main.common.vo.ResultVO;
+import com.example.backend_main.dto.AccessLogResponseDTO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize; // ★ 권한 체크
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 
 import java.io.IOException;
 import java.util.List;
@@ -32,6 +36,7 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+
 
     // [전체 화원 목록 조회] [ADM-02]
     // 관리자가 전체 시민 명부를 확인하는 기능
@@ -108,6 +113,22 @@ public class AdminController {
     }
 
     /*
+    보안 감사 로그 목록 조회 (화면 Grid용) - 5주차 계획
+    - 엑셀이 아닌, JSON 데이터로 로그 리스트를 반환합니다.
+    */
+    @GetMapping("/logs")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')") // 관리자 접근 제어 추가
+    public ResultVO<Page<AccessLogResponseDTO>> getAccessLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
+
+        // 비즈니스 로직(Service) 호출 -> DTO로 변환된 Page 객체를 받음
+        Page<AccessLogResponseDTO> logPage = adminService.getAccessLogs(page, size);
+
+        return ResultVO.ok("로그 목록을 성공적으로 불러왔습니다.", logPage);
+    }
+
+    /*
      [보안 감사 로그 엑셀 다운로드] (SXSSF 방식)
      - @ActionLog: 다운로드 이력 자동 저장
      - 대용량 데이터도 메모리 오류 없이 다운로드 가능
@@ -115,7 +136,12 @@ public class AdminController {
     @GetMapping("/logs/download")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')") // 관리자급 이상 접근 가능
     @ActionLog(action = "DOWNLOAD_EXCEL", target = "TB_ACCESS_LOG")
-    public void downloadLogs(HttpServletResponse response) throws IOException {
+    public void downloadLogs(HttpServletResponse response,
+                             // 프론트에서 ?reason=감사제출용 이라고 보내면 이리로 쏙 들어옵니다.
+                             // reason을 파라미터에 적어둔 이유 : AOP를 위한 바구니 역할
+                             //
+                             @RequestParam(value = "reason", required = false) String reason)
+            throws IOException {
         adminService.downloadAccessLogExcel(response);
     }
 

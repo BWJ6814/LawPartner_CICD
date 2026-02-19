@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const STORAGE_KEY = "customer_inquiries";
 const TOKEN_KEY = "accessToken";
@@ -20,51 +20,76 @@ function saveInquiries(list) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
-export default function CustomerWritePage() {
+export default function CustomerEditPage() {
     const navigate = useNavigate();
-    const location = useLocation();
-
-    const [type, setType] = useState(
-        location.state?.type || "서비스 이용 문의"
-    );
-
-    const [title, setTitle] = useState("");
-    const [content, setContent] = useState("");
+    const { id } = useParams();
 
     const blocked = useMemo(() => !isLoggedIn(), []);
+
+    const original = useMemo(() => {
+        const list = loadInquiries();
+        return list.find((x) => String(x.id) === String(id));
+    }, [id]);
+
+    const [type, setType] = useState(original?.type || "서비스 이용 문의");
+    const [title, setTitle] = useState(original?.title || "");
+    const [content, setContent] = useState(original?.content || "");
 
     const onSubmit = (e) => {
         e.preventDefault();
 
+        if (!original) return alert("존재하지 않는 문의입니다.");
         if (!title.trim()) return alert("문의 제목을 입력하세요.");
         if (!content.trim()) return alert("문의 내용을 입력하세요.");
 
-        const now = new Date();
-
-        const newItem = {
-            id: String(now.getTime()),
-            type,
-            title: title.trim(),
-            content: content.trim(),
-            status: "대기",
-            createdAt: now.toISOString(),
-        };
-
         const list = loadInquiries();
-        saveInquiries([newItem, ...list]);
 
-        alert("문의가 등록되었습니다.");
-        navigate("/customer/list");
+        const updated = list.map(item => {
+            if (String(item.id) !== String(id)) return item;
+            return {
+                ...item,
+                type,
+                title: title.trim(),
+                content: content.trim(),
+                // createdAt 유지
+                // status 유지
+            };
+        });
+
+        saveInquiries(updated);
+
+        alert("수정이 완료되었습니다.");
+        navigate(`/customer/detail/${id}`);
     };
+
+    if (!original) {
+        return (
+            <main style={main}>
+                <div style={container}>
+                    <div style={card}>
+                        <p style={{ marginBottom: 20 }}>
+                            해당 문의를 찾을 수 없습니다.
+                        </p>
+                        <button
+                            style={btnPrimary}
+                            onClick={() => navigate("/customer/list")}
+                        >
+                            목록으로 이동
+                        </button>
+                    </div>
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main style={main}>
             <div style={container}>
                 <div style={topBar}>
                     <div>
-                        <h2 style={h2}>1:1 문의 작성</h2>
+                        <h2 style={h2}>1:1 문의 수정</h2>
                         <p style={subText}>
-                            문의 유형을 선택하고 내용을 작성해주세요.
+                            기존 내용을 수정하세요.
                         </p>
                     </div>
 
@@ -79,7 +104,7 @@ export default function CustomerWritePage() {
                 {blocked ? (
                     <div style={card}>
                         <p style={{ marginBottom: 20 }}>
-                            로그인한 사용자만 작성 가능합니다.
+                            로그인한 사용자만 수정 가능합니다.
                         </p>
                         <button
                             style={btnPrimary}
@@ -115,7 +140,6 @@ export default function CustomerWritePage() {
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 style={control}
-                                placeholder="제목을 입력하세요"
                             />
                         </div>
 
@@ -125,18 +149,17 @@ export default function CustomerWritePage() {
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 style={{ ...control, minHeight: 240 }}
-                                placeholder="내용을 입력하세요"
                             />
                         </div>
 
                         <div style={btnRow}>
                             <button type="submit" style={btnPrimary}>
-                                문의 등록
+                                수정 완료
                             </button>
                             <button
                                 type="button"
                                 style={btnGhost}
-                                onClick={() => navigate("/customer")}
+                                onClick={() => navigate(`/customer/detail/${id}`)}
                             >
                                 취소
                             </button>
@@ -144,7 +167,7 @@ export default function CustomerWritePage() {
 
                         <div style={hintBox}>
                             <strong>안내</strong><br />
-                            등록 후 상태는 기본 “대기”로 표시됩니다.
+                            작성일과 상태는 유지됩니다.
                         </div>
 
                     </form>
@@ -154,7 +177,7 @@ export default function CustomerWritePage() {
     );
 }
 
-/* ================= 스타일 정의 ================= */
+/* ===== 스타일 그대로 유지 ===== */
 
 const main = {
     background: "#0f172a",

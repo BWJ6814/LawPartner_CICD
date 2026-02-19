@@ -42,7 +42,7 @@ public class JwtTokenProvider {
     // 1. 토큰 생성
     // Authentication : 로그인한 살마의 정보가 담긴 객체
     // Long userNo : DB조회 성능을 위해 추가한 회원의 고유 번호
-    public TokenDTO createToken(Authentication authentication, Long userNo, String userNm) {
+    public TokenDTO createToken(Authentication authentication, Long userNo, String userNm, String nickNm) {
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
@@ -54,7 +54,8 @@ public class JwtTokenProvider {
                 .subject(authentication.getName())                        // 이메일 (누구인가?)         - 주인
                 .claim("role", authorities)                             // 권한 (무엇을 할 수 있는가?) - 추가
                 .claim("userNo", userNo)                                // 회원 번호(DB 식별자)       - 추가
-                .claim("userNm", userNm)                                 // 회원 닉네임               - 추가
+                .claim("userNm", userNm)                                 // 회원 이름               - 추가
+                .claim("nickNm", nickNm)                                 // 회원 닉네임
                 .expiration(new Date(now + tokenValidityInMilliseconds))     // 유효기간 설정
                 .signWith(key)                                                // 우리 열쇠로 서명(위조 방지)
                 .compact();                                                // 한 줄의 문자열로 압축하기.
@@ -78,6 +79,7 @@ public class JwtTokenProvider {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .userNm(userNm)
+                .nickNm(nickNm)
                 .role(authentication.getAuthorities().toString())
                 .build();
     }

@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // 페이지 이동을 위해 필요해요!
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
     Search, Menu, User, Scale, Gavel, Car, Home, Key,
     HandCoins, CircleDollarSign, Calculator, HeartCrack,
     GitFork, Briefcase, Building2, Copyright,
     TrendingDown, FileText, MoreHorizontal, Plus, ChevronDown, ChevronUp, Filter,
-    ChevronLeft, ChevronRight
+    ChevronLeft, ChevronRight, MessageSquare
 } from 'lucide-react';
 
-// 1. 카테고리 데이터 (기존 유지)
 const CATEGORIES = [
     { id: 1, name: '형사범죄', icon: <Gavel size={24} /> },
     { id: 2, name: '교통사고', icon: <Car size={24} /> },
@@ -29,9 +28,8 @@ const CATEGORIES = [
     { id: 16, name: '기타', icon: <MoreHorizontal size={24} /> },
 ];
 
-// --- 서브 컴포넌트들 ---
-
 const FilterSection = ({ selectedCategory, setSelectedCategory, selectedSort, setSelectedSort }) => {
+    // 리액트의 useState 개념: 화면의 특정 영역(탭)이 열려있는지 닫혀있는지 상태를 기억하는 변수입니다.
     const [activeTab, setActiveTab] = useState('category');
     const toggleTab = (tab) => setActiveTab(activeTab === tab ? null : tab);
 
@@ -51,6 +49,7 @@ const FilterSection = ({ selectedCategory, setSelectedCategory, selectedSort, se
                         <span className="text-sm font-normal text-gray-500 whitespace-nowrap">{selectedSort}</span>
                     </button>
                 </div>
+
                 {activeTab === 'category' && (
                     <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-3 animate-fadeIn">
                         <button onClick={() => setSelectedCategory('ALL')} className={`flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-100 transition-colors gap-2 ${selectedCategory === 'ALL' ? 'bg-blue-50 border border-blue-200' : 'border border-transparent'}`}>
@@ -61,6 +60,23 @@ const FilterSection = ({ selectedCategory, setSelectedCategory, selectedSort, se
                             <button key={cat.id} onClick={() => setSelectedCategory(cat.name)} className={`flex flex-col items-center justify-center p-3 rounded-lg hover:bg-gray-100 transition-colors gap-2 group ${selectedCategory === cat.name ? 'bg-blue-50 border border-blue-200' : 'border border-transparent'}`}>
                                 <div className={`transition-transform duration-200 p-2 rounded-full ${selectedCategory === cat.name ? 'bg-blue-100 text-blue-600' : 'bg-teal-50 text-teal-600'}`}>{cat.icon}</div>
                                 <span className={`text-sm font-medium whitespace-nowrap ${selectedCategory === cat.name ? 'text-blue-700' : 'text-gray-700'}`}>{cat.name}</span>
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {activeTab === 'sort' && (
+                    <div className="flex flex-wrap gap-3 animate-fadeIn p-4 bg-gray-50 rounded-lg border border-gray-100">
+                        {['최신순', '오래된 순', '댓글 많은 순', '댓글 적은 순'].map(sort => (
+                            <button
+                                key={sort}
+                                onClick={() => {
+                                    setSelectedSort(sort);
+                                    setActiveTab(null);
+                                }}
+                                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-colors shadow-sm ${selectedSort === sort ? 'bg-[#1a2b4b] text-white' : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+                            >
+                                {sort}
                             </button>
                         ))}
                     </div>
@@ -80,14 +96,11 @@ const WriteQuestionCard = ({ onClick }) => (
     </div>
 );
 
-// ★ PostCard 컴포넌트 수정: 클릭 이벤트(onClick)를 받아서 실행합니다.
+// [핵심 변경 1] PostCard (게시글 카드 UI) 수정
 const PostCard = ({ post, onClick }) => (
-    <div
-        onClick={onClick} // 클릭하면 부모에서 전달한 함수 실행
-        className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col h-full min-h-[220px]"
-    >
+    <div onClick={onClick} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col h-full min-h-[220px]">
         <div className="mb-3">
-            <h3 className="font-bold text-lg text-gray-900 truncate pr-2">{post.title}</h3>
+            <h3 className="font-bold text-lg text-gray-900 truncate">{post.title}</h3>
         </div>
         <div className="flex-grow mb-4">
             <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">{post.content}</p>
@@ -95,32 +108,56 @@ const PostCard = ({ post, onClick }) => (
         <div className="mt-auto border-t border-gray-100 pt-4 flex flex-col gap-3">
             <div className="flex items-center justify-between text-xs text-gray-400">
                 <span>{post.date}</span>
-                <span className="flex items-center gap-1"><User size={12} /> {post.author}</span>
+                <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-1 text-gray-500"><MessageSquare size={12} /> {post.replyCnt}</span>
+                    <span className="flex items-center gap-1"><User size={12} /> {post.author}</span>
+                </span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-                {post.categories && post.categories.map((tag, idx) => (
-                    <span key={idx} className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded font-medium">#{tag}</span>
-                ))}
+
+            {/* ========================================================= */}
+            {/* [핵심 변경] flex-col과 items-start를 사용해서 세로로 차곡차곡 왼쪽 정렬합니다. */}
+            {/* 리액트 & 테일윈드 개념:
+                - flex-col: 안의 요소들을 위아래(세로)로 배치합니다.
+                - items-start: 요소들을 왼쪽 끝으로 딱 붙입니다.
+                - gap-2: 위(해시태그)와 아래(매칭완료 뱃지) 사이의 간격을 살짝 띄워줍니다.
+            */}
+            <div className="flex flex-col items-start gap-2 mt-1">
+
+                {/* 1. 카테고리 해시태그 줄 */}
+                <div className="flex flex-wrap gap-1.5">
+                    {post.categories && post.categories.map((tag, idx) => (
+                        <span key={idx} className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded font-medium">#{tag}</span>
+                    ))}
+                </div>
+
+                {/* 2. 매칭완료 뱃지 (해시태그 바로 아랫줄에 렌더링 됨) */}
+                {/* 디자인 변경: 글씨 크기(text-[11px])를 살짝 줄이고, 둥글기(rounded)를 태그와 비슷하게 맞췄습니다. */}
+                {post.matchYn === 'Y' && (
+                    <span className="bg-[#1c2438] text-white text-[11px] font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1 opacity-90">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        매칭완료
+                    </span>
+                )}
+
             </div>
+            {/* ========================================================= */}
+
         </div>
     </div>
 );
 
-// --- 메인 컴포넌트 ---
-
 const ConsultationBoard = () => {
-    const navigate = useNavigate(); // 페이지 이동을 위한 도구 소환
+    const navigate = useNavigate();
 
     const [posts, setPosts] = useState([]);
-    const [userRole, setUserRole] = useState(
-        (localStorage.getItem('userRole') || 'GENERAL').toUpperCase()
-    );
-
+    const [userRole, setUserRole] = useState((localStorage.getItem('userRole') || 'GENERAL').toUpperCase());
     const [currentPage, setCurrentPage] = useState(1);
+
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [selectedSort, setSelectedSort] = useState('최신순');
     const [searchKeyword, setSearchKeyword] = useState('');
-    const [searchType, setSearchType] = useState('title');
 
     useEffect(() => {
         const currentRole = localStorage.getItem('userRole');
@@ -133,13 +170,18 @@ const ConsultationBoard = () => {
     const fetchPosts = async () => {
         try {
             const response = await axios.get('http://localhost:8080/api/boards');
+
+            // [핵심 변경 2] 백엔드에서 온 데이터 중 matchYn을 자바스크립트 객체(사본)에 담습니다.
             const mappedData = response.data.map(board => ({
-                id: board.boardNo, // DB의 BOARD_NO
+                id: board.boardNo,
                 title: board.title,
                 content: board.content,
-                author: '익명',
+                author: board.nicknameVisibleYn === 'Y' ? (board.nickNm || '익명') : '익명',
                 date: board.regDt ? board.regDt.substring(0, 10) : '',
-                categories: board.categoryCode ? board.categoryCode.split(',') : []
+                fullDate: board.regDt ? board.regDt : '',
+                replyCnt: board.replyCnt || 0,
+                categories: board.categoryCode ? board.categoryCode.split(',') : [],
+                matchYn: board.matchYn || 'N' // 백엔드 값이 없으면 기본으로 'N' 처리
             }));
             setPosts(mappedData);
         } catch (error) {
@@ -148,17 +190,29 @@ const ConsultationBoard = () => {
     };
 
     const getFilteredPosts = () => {
-        let filtered = posts;
+        let filtered = [...posts];
+
+        if (searchKeyword.trim() !== '') {
+            filtered = filtered.filter(post => post.title.toLowerCase().includes(searchKeyword.toLowerCase()));
+        }
+
         if (selectedCategory !== 'ALL') {
             filtered = filtered.filter(post => post.categories.includes(selectedCategory));
         }
-        if (searchKeyword) {
-            filtered = filtered.filter(post => {
-                if (searchType === 'title') return post.title.includes(searchKeyword);
-                if (searchType === 'author') return post.author.includes(searchKeyword);
-                return false;
-            });
-        }
+
+        filtered.sort((a, b) => {
+            if (selectedSort === '최신순') {
+                return new Date(b.fullDate) - new Date(a.fullDate);
+            } else if (selectedSort === '오래된 순') {
+                return new Date(a.fullDate) - new Date(b.fullDate);
+            } else if (selectedSort === '댓글 많은 순') {
+                return b.replyCnt - a.replyCnt;
+            } else if (selectedSort === '댓글 적은 순') {
+                return a.replyCnt - b.replyCnt;
+            }
+            return 0;
+        });
+
         return filtered;
     };
 
@@ -179,10 +233,8 @@ const ConsultationBoard = () => {
         window.scrollTo(0, 0);
     };
 
-    const handleSearch = () => setCurrentPage(1);
-
     return (
-        <div className="min-h-screen bg-gray-50 font-sans">
+        <div className="min-h-screen bg-gray-50 font-sans pb-20">
             <div className="bg-[#1a2b4b] text-white py-12 px-4 lg:px-12">
                 <div className="max-w-7xl mx-auto">
                     <h1 className="text-3xl font-bold mb-3">상담 게시판</h1>
@@ -204,42 +256,53 @@ const ConsultationBoard = () => {
             <main className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
 
-                    {/* 질문 등록 카드 */}
                     {isGeneral && currentPage === 1 && (
                         <WriteQuestionCard onClick={() => navigate('/write')} />
                     )}
 
-                    {/* 게시글 리스트 렌더링 */}
                     {currentPosts.map((post) => (
                         <PostCard
                             key={post.id}
                             post={post}
-                            // ★ 카드를 클릭했을 때 실행될 함수!
                             onClick={() => navigate(`/consultation/${post.id}`)}
                         />
                     ))}
 
-                    {posts.length === 0 && (
-                        <div className="col-span-full text-center text-gray-500 py-20">
-                            등록된 게시글이 없습니다.
+                    {filteredPosts.length === 0 && (
+                        <div className="col-span-full text-center text-gray-500 py-20 flex flex-col items-center">
+                            <Search size={48} className="text-gray-300 mb-4" />
+                            <p className="text-lg font-bold">검색 결과가 없습니다.</p>
+                            <p className="text-sm">다른 검색어나 카테고리를 선택해 보세요.</p>
                         </div>
                     )}
                 </div>
 
-                {/* 페이지네이션 (기존 유지) */}
                 <div className="flex flex-col items-center gap-8 mt-12">
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => handlePageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-30">
-                            <ChevronLeft size={20} />
-                        </button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
-                            <button key={num} onClick={() => handlePageChange(num)} className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${currentPage === num ? 'bg-[#1a2b4b] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
-                                {num}
+                    {totalPages > 0 && (
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => handlePageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-30">
+                                <ChevronLeft size={20} />
                             </button>
-                        ))}
-                        <button onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-30">
-                            <ChevronRight size={20} />
-                        </button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                                <button key={num} onClick={() => handlePageChange(num)} className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${currentPage === num ? 'bg-[#1a2b4b] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
+                                    {num}
+                                </button>
+                            ))}
+                            <button onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-30">
+                                <ChevronRight size={20} />
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="relative w-full max-w-lg mt-4 shadow-sm">
+                        <input
+                            type="text"
+                            placeholder="찾고 싶은 고민의 제목을 검색해 보세요"
+                            value={searchKeyword}
+                            onChange={(e) => setSearchKeyword(e.target.value)}
+                            className="w-full pl-12 pr-6 py-4 rounded-full border border-gray-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm"
+                        />
+                        <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     </div>
                 </div>
             </main>
@@ -248,4 +311,3 @@ const ConsultationBoard = () => {
 };
 
 export default ConsultationBoard;
-// 깃허브 테스트용

@@ -8,6 +8,7 @@ import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil; // 해시 유틸
 import com.example.backend_main.dto.UserJoinRequestDTO;
+import com.example.backend_main.dto.AccessLogResponseDTO;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,10 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook; // 대용량 Excel
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // 트랜잭션
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -239,5 +244,19 @@ public class AdminService {
                 .sorted((a, b) -> ((String) b.get("date")).compareTo((String) a.get("date")))
                 .collect(Collectors.toList());
     }
+
+    // [보안 감사 로그 조회 - 페이징 & DTO 변환 적용]
+    @Transactional(readOnly = true)
+    public Page<AccessLogResponseDTO> getAccessLogs(int page, int size) {
+        // 1. 최신순으로 정렬하여 페이지 단위로 가져올 준비
+        Pageable pageable = PageRequest.of(page, size, Sort.by("regDT").descending());
+
+        // 2. DB에서 Entity 형태로 페이징 조회
+        Page<AccessLog> logPage = accessLogRepository.findAll(pageable);
+
+        // 3. Page 객체의 map()을 사용하여 내부의 Entity들을 모두 DTO로 포장하기
+        return logPage.map(AccessLogResponseDTO :: fromEntity);
+    }
+
 }
 

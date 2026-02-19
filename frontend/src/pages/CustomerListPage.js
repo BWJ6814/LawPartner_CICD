@@ -106,7 +106,8 @@ export default function CustomerListPage() {
                                     <tr
                                         key={it.id}
                                         style={row}
-                                        onClick={() => navigate(`/customer/${it.id}`)}
+                                        onClick={() => navigate(`/customer/detail/${it.id}`)
+                                        }
                                         onMouseEnter={(e) =>
                                             (e.currentTarget.style.background = "rgba(255,255,255,0.04)")
                                         }
