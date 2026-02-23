@@ -52,6 +52,15 @@ const Badge = ({ variant = "blue", children }) => {
   return <span className={`px-2 py-1 rounded-md text-xs font-semibold ${styles[variant]}`}>{children}</span>;
 };
 
+const getRoleDisplayName = (roleCode) => {
+  switch (roleCode) {
+    case 'ROLE_SUPER_ADMIN': return '슈퍼 관리자';
+    case 'ROLE_ADMIN': return '일반 관리자';
+    case 'ROLE_OPERATOR': return '운영자';
+    default: return '관리자';
+  }
+};
+
 // =================================================================
 // 🚀 메인 애플리케이션 컴포넌트
 // =================================================================
@@ -66,6 +75,9 @@ export default function AdminPage() {
   const [logs, setLogs] = useState([]);
   const [dailyStats, setDailyStats] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // ★ 현재 접속자의 권한 꺼내기
+  const currentRole = localStorage.getItem('userRole'); 
 
   // [초기 데이터 로드]
   useEffect(() => {
@@ -420,9 +432,13 @@ export default function AdminPage() {
           
           <MenuSection title="User Management" isOpen={isSidebarOpen} />
           <MenuItem icon={<Users size={20} />} label="회원 정보 통합 관리" active={activeMenu==='user-manage'} onClick={()=>setActiveMenu('user-manage')} isOpen={isSidebarOpen} />
-          <MenuItem icon={<UserCheck size={20} />} label="변호사 자격 승인" active={activeMenu==='lawyer-approve'} onClick={()=>setActiveMenu('lawyer-approve')} isOpen={isSidebarOpen} />
-          <MenuItem icon={<Ban size={20} />} label="블랙리스트 관리" active={activeMenu==='blacklist'} onClick={()=>setActiveMenu('blacklist')} isOpen={isSidebarOpen} />
-
+          {/* ★ [수정] 오퍼레이터(OPERATOR)에게는 아래 두 메뉴가 아예 보이지 않게 숨김 처리! */}
+          {['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'].includes(currentRole) && (
+            <>
+              <MenuItem icon={<UserCheck size={20} />} label="변호사 자격 승인" active={activeMenu==='lawyer-approve'} onClick={()=>setActiveMenu('lawyer-approve')} isOpen={isSidebarOpen} />
+              <MenuItem icon={<Ban size={20} />} label="블랙리스트 관리" active={activeMenu==='blacklist'} onClick={()=>setActiveMenu('blacklist')} isOpen={isSidebarOpen} />
+            </>
+          )}
           <MenuSection title="Security Center" isOpen={isSidebarOpen} highlight />
           <MenuItem icon={<Terminal size={20} />} label="시스템 감사 로그" active={activeMenu==='audit-log'} onClick={()=>setActiveMenu('audit-log')} isOpen={isSidebarOpen} />
           <MenuItem icon={<ShieldCheck size={20} />} label="보안 정책 설정" active={activeMenu==='security-policy'} onClick={()=>setActiveMenu('security-policy')} isOpen={isSidebarOpen} />
@@ -445,9 +461,27 @@ export default function AdminPage() {
             </button>
             <h2 className="font-black text-xl text-slate-800 uppercase tracking-tight">{activeMenu.replace('-', ' ')}</h2>
           </div>
+          
+          {/* ★ [수정된 부분] 로컬 스토리지에서 이름과 권한을 꺼내서 보여줌 */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600"><ShieldAlert size={16} /></div>
-            <div className="text-sm"><span className="font-bold text-slate-800">System Admin</span><span className="text-emerald-500 ml-2 font-bold text-xs">● 접속됨</span></div>
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+              <ShieldAlert size={16} />
+            </div>
+            <div className="text-sm flex items-center">
+              <span className="font-bold text-slate-800">
+                {localStorage.getItem('userNm') || '알 수 없음'}
+              </span>
+              <span className="ml-1 text-xs font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                {getRoleDisplayName(localStorage.getItem('userRole'))}
+              </span>
+              <span className="text-emerald-500 ml-3 font-bold text-xs flex items-center gap-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                접속됨
+              </span>
+            </div>
           </div>
         </header>
 
@@ -456,6 +490,7 @@ export default function AdminPage() {
         </div>
       </main>
 
+      {/* User Detail Modal */}
       {/* User Detail Modal */}
       {showModal && selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
@@ -475,9 +510,29 @@ export default function AdminPage() {
               <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
                 <p className="text-sm font-bold text-amber-900 flex items-center gap-2"><Lock size={16} /> 개인정보 조회는 AOP 로그에 기록됩니다.</p>
               </div>
+              
+              {/* ========================================================= */}
+              {/* ★ [권한별 버튼 분기 처리] 수정된 부분 */}
+              {/* ========================================================= */}
               <div className="flex gap-2">
-                <button onClick={() => handleUserStatusChange(selectedItem.userId, 'S03')} className="flex-grow py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">계정 정지 처리</button>
+                
+                {/* 1. 슈퍼관리자 & 일반관리자: 계정 정지 권한 있음 (빨간 버튼) */}
+                {['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'].includes(currentRole) && (
+                  <button onClick={() => handleUserStatusChange(selectedItem.userId, 'S03')} className="flex-grow py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
+                    계정 정지 처리
+                  </button>
+                )}
+
+                {/* 2. 오퍼레이터(운영자): 정지 권한 없음 (단순 닫기 버튼만 제공) */}
+                {currentRole === 'ROLE_OPERATOR' && (
+                  <button onClick={() => setShowModal(false)} className="flex-grow py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300">
+                    닫기
+                  </button>
+                )}
+
               </div>
+              {/* ========================================================= */}
+
             </div>
           </div>
         </div>
