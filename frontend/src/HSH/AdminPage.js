@@ -76,7 +76,8 @@ export default function AdminPage() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  
+  const [summary, setSummary] = useState({});
+
   // 백엔드 연동 State
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -97,8 +98,12 @@ export default function AdminPage() {
       // 1. 회원 목록 조회
       const userRes = await api.get('/api/admin/users');
       if (userRes.data.success) setUsers(userRes.data.data);
+      
+      // 2. 요약 데이터 호출하기..
+      const summaryRes = await api.get('/api/admin/summary');
+      if (summaryRes.data.success) setSummary(summaryRes.data.data);
 
-      // 2. 보안 감사 로그 조회 (페이징 적용됨)
+      // 3. 보안 감사 로그 조회 (페이징 적용됨)
       const logRes = await api.get('/api/admin/logs?page=0&size=50');
       // 수정: logRes.data.data 자체가 Page 객체이므로, 그 안의 content 배열을 꺼내야 합니다!
       if (logRes.data.success && logRes.data.data.content) {
@@ -117,7 +122,7 @@ export default function AdminPage() {
       console.error("데이터 연동 실패:", error);
       if (error.response?.status === 401 || error.response?.status === 403) {
         alert("권한이 없습니다. 다시 로그인해주세요.");
-        // window.location.href = '/login';
+        window.location.href = '/login';
       }
     } finally {
       setLoading(false);
@@ -202,13 +207,47 @@ function DashboardView() {
       <div className="space-y-6 animate-in fade-in duration-500">
         
         {/* 1. 상단 4개 요약 위젯 (StatCard) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="총 회원 수" value={users.length} growth="+12%" icon={<Users className="text-blue-600" />} />
-          <StatCard title="승인 대기 (변호사)" value={pendingLawyers} growth="확인 필요" icon={<UserCheck className="text-emerald-600" />} color="emerald" />
-          <StatCard title="오늘 접속자 수" value={todayVisitors} growth="실시간" icon={<Eye className="text-purple-600" />} color="purple" />
-          <StatCard title="보안 위협 감지" value={errorThreats} growth="+15%" icon={<ShieldAlert className="text-red-600" />} color="red" />
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {/* 1. 총 회원 수 */}
+          <StatCard 
+            title="총 회원 수" 
+            value={summary.totalUsers} 
+            growth={`${summary.totalUsersGrowth} 전일 대비`} 
+            icon={<Users className="text-blue-600" />} 
+          />
+          {/* 2. 오늘 신규 가입 */}
+          <StatCard 
+            title="오늘 신규 가입" 
+            value={summary.newUsersToday} 
+            growth={`${summary.newUsersGrowth} 전일 대비`} 
+            icon={<UserCheck className="text-emerald-600" />} 
+            color="emerald" 
+          />
+          {/* 3. 승인 대기 */}
+          <StatCard 
+            title="승인 대기 (변호사)" 
+            value={summary.pendingLawyers} 
+            growth="확인 필요" 
+            icon={<ShieldCheck className="text-amber-600" />} 
+            color="amber" 
+          />
+          {/* 4. 오늘 접속자 수 */}
+          <StatCard 
+            title="오늘 접속자 수" 
+            value={summary.todayVisitors} 
+            growth={`${summary.visitorsGrowth} 전일 대비`} 
+            icon={<Eye className="text-purple-600" />} 
+            color="purple"
+          />
+          {/* 5. 보안 위협 감지 */}
+          <StatCard 
+            title="보안 위협 감지" 
+            value={summary.securityThreats} 
+            growth={`${summary.threatsGrowth} 전일 대비`} 
+            icon={<ShieldAlert className="text-red-600" />} 
+            color="red" 
+          />
         </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* 2. 왼쪽: 가입자 및 방문자 통합 추이 (AreaChart) */}

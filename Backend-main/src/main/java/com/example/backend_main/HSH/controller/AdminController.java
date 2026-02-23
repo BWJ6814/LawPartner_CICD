@@ -134,7 +134,15 @@ public class AdminController {
 
         return ResultVO.ok("로그 목록을 성공적으로 불러왔습니다.", logPage);
     }
-
+    
+    // 그래프(차트)용 데이터를 만드는 전용 창구
+    @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN','ROLE_OPERATOR')")
+    public ResultVO<Map<String, Object>> getAdminSummary() {
+        Map<String, Object> summary = adminService.getAdminSummary();
+        return ResultVO.ok("요약 데이터를 성공적으로 불러왔습니다.", summary);
+    }
+    
     /*
      [보안 감사 로그 엑셀 다운로드] (SXSSF 방식)
      - @ActionLog: 다운로드 이력 자동 저장

@@ -23,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -284,5 +285,71 @@ public class AdminService {
         return logPage.map(AccessLogResponseDTO :: fromEntity);
     }
 
+
+    public Map<String, Object> getAdminSummary() {
+        Map<String, Object> summary = new HashMap<>();
+
+        // 1. 기준 날짜 (오늘/어제) 설정
+        LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
+
+        // 2. 전체 회원 데이터 로드 (User)
+        List<User> allUsers = userRepository.findAll();
+        long totalUsersToday = allUsers.size();
+
+        // 어제까지의 총 회원 수 계산을 위해 '오늘 가입자' 필터링
+        long newUsersToday = allUsers.stream()
+                .filter(u -> u.getJoinDt() != null && u.getJoinDt().toLocalDate().isEqual(today))
+                .count();
+        long newUsersYesterday = allUsers.stream()
+                .filter(u -> u.getJoinDt() != null && u.getJoinDt().toLocalDate().isEqual(yesterday))
+                .count();
+
+        // 총 회원 수 증감률 (전체 인원 대비 오늘 가입 비중)
+        long totalUsersYesterday = totalUsersToday - newUsersToday;
+        summary.put("totalUsers", totalUsersToday);
+        summary.put("totalUsersGrowth", calculateGrowth(totalUsersToday, totalUsersYesterday));
+
+        // 신규 가입자 증감률 (오늘 가입 vs 어제 가입)
+        summary.put("newUsersToday", newUsersToday);
+        summary.put("newUsersGrowth", calculateGrowth(newUsersToday, newUsersYesterday));
+
+        // 3. 로그 데이터 로드 (AccessLog)
+        List<AccessLog> allLogs = accessLogRepository.findAll();
+
+        // 접속자 수 (오늘 vs 어제)
+        long visitorsToday = allLogs.stream()
+                .filter(l -> l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(today))
+                .count();
+        long visitorsYesterday = allLogs.stream()
+                .filter(l -> l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(yesterday))
+                .count();
+        summary.put("todayVisitors", visitorsToday);
+        summary.put("visitorsGrowth", calculateGrowth(visitorsToday, visitorsYesterday));
+
+        // 보안 위협 (오늘 4xx/5xx 에러 vs 어제)
+        long threatsToday = allLogs.stream()
+                .filter(l -> l.getStatusCode() != null && l.getStatusCode() >= 400
+                        && l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(today))
+                .count();
+        long threatsYesterday = allLogs.stream()
+                .filter(l -> l.getStatusCode() != null && l.getStatusCode() >= 400
+                        && l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(yesterday))
+                .count();
+        summary.put("securityThreats", threatsToday);
+        summary.put("threatsGrowth", calculateGrowth(threatsToday, threatsYesterday));
+
+        // 승인 대기 (이건 단순 숫자만)
+        summary.put("pendingLawyers", allUsers.stream().filter(u -> "S02".equals(u.getStatusCode())).count());
+
+        return summary;
+    }
+
+    // 증감률 계산 보조 메서드
+    private String calculateGrowth(long current, long previous) {
+        if (previous == 0) return current > 0 ? "+100%" : "0%";
+        double growth = ((double) (current - previous) / previous) * 100;
+        return String.format("%s%.1f%%", growth >= 0 ? "+" : "", growth);
+    }
 }
 
