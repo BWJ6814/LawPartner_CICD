@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { LayoutGrid, CheckCircle, CloudUpload } from 'lucide-react';
+import { LayoutGrid, CheckCircle, CloudUpload, X, FileText } from 'lucide-react';
 
 const CATEGORIES = [
     { id: 1, name: '형사범죄' }, { id: 2, name: '교통사고' },
@@ -17,18 +17,58 @@ const CATEGORIES = [
 const WriteQuestionPage = () => {
     const navigate = useNavigate();
 
+    // [리액트] useRef는 DOM 요소에 직접 접근할 때 사용해요.
+    // 여기서는 숨겨진 <input type="file">을 클릭하기 위해 사용합니다.
+    const fileInputRef = useRef(null);
+
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-
-    // [추가됨] 닉네임 공개 여부 상태 관리 (기본값: false = 비공개/익명)
-    // 리액트에서 useState를 사용하여 체크박스의 상태를 추적합니다.
     const [isNicknameVisible, setIsNicknameVisible] = useState(false);
 
-    // 파일 관련 (UI만 유지)
+    // [상태] 첨부된 파일들을 담는 리스트입니다.
     const [files, setFiles] = useState([]);
-    const handleFileChange = (e) => { if (e.target.files) setFiles([...files, ...Array.from(e.target.files)]); };
-    const removeFile = (index) => { setFiles(files.filter((_, i) => i !== index)); };
+    // [상태] 드래그 중인지 여부를 판단하여 UI를 변경할 때 사용합니다.
+    const [isDragging, setIsDragging] = useState(false);
+
+    // [함수] 파일을 리스트에 추가하는 공통 로직
+    const addFiles = (newFiles) => {
+        const fileArray = Array.from(newFiles);
+        setFiles((prevFiles) => [...prevFiles, ...fileArray]);
+    };
+
+    // [이벤트] 파일 선택창(input)을 통해 파일이 선택되었을 때
+    const handleFileChange = (e) => {
+        if (e.target.files) {
+            addFiles(e.target.files);
+        }
+    };
+
+    // [이벤트] 드래그 영역 위로 파일이 올라왔을 때
+    const handleDragOver = (e) => {
+        e.preventDefault(); // 브라우저가 파일을 직접 여는 것을 막습니다.
+        setIsDragging(true);
+    };
+
+    // [이벤트] 드래그 영역에서 마우스가 나갔을 때
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    // [이벤트] 파일을 영역에 떨어뜨렸을 때
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files) {
+            addFiles(e.dataTransfer.files);
+        }
+    };
+
+    // [함수] 특정 파일을 목록에서 제거
+    const removeFile = (index) => {
+        setFiles(files.filter((_, i) => i !== index));
+    };
 
     const handleCategoryClick = (catName) => {
         if (selectedCategories.includes(catName)) {
@@ -48,21 +88,33 @@ const WriteQuestionPage = () => {
         if (!content.trim()) return alert("내용을 입력해주세요.");
 
         const userNo = localStorage.getItem('userNo');
-        const nickNm = localStorage.getItem('nickNm'); // [추가됨] 로컬스토리지에서 닉네임 가져오기
+        const nickNm = localStorage.getItem('nickNm');
 
         if(!userNo){
             alert("로그인 정보가 없습니다. 다시 로그인 해주세요.")
             return navigate("/login");
         }
 
+        // [중요] 파일을 서버로 보낼 때는 JSON 형식이 아니라 FormData 객체를 사용해야 합니다.
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('content', content);
+        formData.append('categories', selectedCategories.join(',')); // 리스트를 콤마로 연결된 문자열로 전송
+        formData.append('userNo', userNo);
+        formData.append('nickNm', nickNm);
+        formData.append('isNicknameVisible', isNicknameVisible);
+
+        // 파일을 하나씩 FormData에 추가합니다. Key값인 'files'는 백엔드와 맞춰야 합니다.
+        files.forEach((file) => {
+            formData.append('files', file);
+        });
+
         try {
-            await axios.post('http://localhost:8080/api/boards', {
-                title: title,
-                content: content,
-                categories: selectedCategories,
-                userNo: userNo,
-                nickNm: nickNm, // [추가됨] 닉네임 데이터
-                isNicknameVisible: isNicknameVisible // [추가됨] 체크박스 상태 데이터
+            // [중요] axios 전송 시 헤더에 multipart/form-data를 설정합니다.
+            await axios.post('http://localhost:8080/api/boards', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
             });
             alert("질문이 등록되었습니다.");
             navigate('/consultation');
@@ -130,17 +182,58 @@ const WriteQuestionPage = () => {
 
                         <div>
                             <label className="block text-lg font-bold text-gray-800 mb-3">파일 첨부</label>
-                            <div className="relative">
-                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg bg-gray-50">
-                                    <CloudUpload className="text-gray-400 mb-2" size={32} />
-                                    <span className="text-sm text-gray-500">파일 첨부 기능 준비중</span>
-                                </label>
+
+                            {/* 실제 파일 선택창은 숨겨둡니다 */}
+                            <input
+                                type="file"
+                                multiple
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                            />
+
+                            {/* 드래그 앤 드롭 영역 겸 클릭 영역 */}
+                            <div
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onClick={() => fileInputRef.current.click()} // 클릭 시 숨겨진 input을 대신 클릭해줌
+                                className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200
+                                ${isDragging
+                                    ? 'border-blue-500 bg-blue-50 scale-[1.01]'
+                                    : 'border-gray-300 bg-gray-50 hover:bg-gray-100'}`}
+                            >
+                                <CloudUpload className={`${isDragging ? 'text-blue-500' : 'text-gray-400'} mb-2`} size={40} />
+                                <p className="text-gray-600 font-medium">파일을 드래그해서 놓거나 클릭하여 선택하세요</p>
+                                <p className="text-gray-400 text-xs mt-1">이미지, 문서 파일 등을 여러 개 올릴 수 있습니다.</p>
                             </div>
+
+                            {/* 첨부된 파일 목록 표시 */}
+                            {files.length > 0 && (
+                                <div className="mt-4 grid grid-cols-2 gap-2">
+                                    {files.map((file, index) => (
+                                        <div key={index} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <FileText className="text-blue-500 shrink-0" size={18} />
+                                                <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // 영역 클릭 이벤트가 실행되지 않도록 막음
+                                                    removeFile(index);
+                                                }}
+                                                className="p-1 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* [수정됨] 하단 버튼 영역에 닉네임 공개 여부 체크박스 추가 */}
                 <div className="flex items-center justify-between mt-10 mb-20">
                     <div className="flex items-center gap-2 pl-2">
                         <input

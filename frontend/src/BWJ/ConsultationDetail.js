@@ -1,36 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { CaretLeft, ChatCircleDots, Star, PencilSimple, Trash, CheckCircle, User, PaperPlaneRight, Siren, X } from '@phosphor-icons/react';
+import { CaretLeft, ChatCircleDots, Star, PencilSimple, Trash, CheckCircle, User, PaperPlaneRight, Siren, X, FileText, DownloadSimple } from '@phosphor-icons/react';
 
 const ConsultationDetail = () => {
+    // [개념] useParams: URL에 정의된 :id 값을 가져옵니다. (어떤 글을 보여줄지 결정)
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const [post, setPost] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [replyContent, setReplyContent] = useState('');
+    // [상태관리] 화면에 표시될 모든 데이터와 UI 상태들을 useState 바구니에 담습니다.
+    const [post, setPost] = useState(null); // 게시글 정보 (제목, 내용, 파일, 댓글 등)
+    const [loading, setLoading] = useState(true); // 로딩 중 여부
+    const [replyContent, setReplyContent] = useState(''); // 전문가가 새로 다는 답변 내용
 
-    const [isEditing, setIsEditing] = useState(false);
-    const [editTitle, setEditTitle] = useState('');
-    const [editContent, setEditContent] = useState('');
+    // 수정 모드 관련 상태
+    const [isEditing, setIsEditing] = useState(false); // 수정 중인지 여부
+    const [editTitle, setEditTitle] = useState(''); // 수정할 제목
+    const [editContent, setEditContent] = useState(''); // 수정할 내용
 
+    // 후기(리뷰) 모달 관련 상태
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-    const [selectedLawyer, setSelectedLawyer] = useState(null);
-    const [rating, setRating] = useState(0);
-    const [reviewContent, setReviewContent] = useState('');
+    const [selectedLawyer, setSelectedLawyer] = useState(null); // 리뷰 대상 변호사
+    const [rating, setRating] = useState(0); // 별점
+    const [reviewContent, setReviewContent] = useState(''); // 리뷰 내용
 
+    // 로컬스토리지에서 로그인 유저 정보 가져오기
     const currentUser = {
         userNo: localStorage.getItem('userNo'),
         role: localStorage.getItem('userRole'),
         name: localStorage.getItem('userNm') || localStorage.getItem('nickNm')
     };
 
+    // [개념] useEffect: 상세 페이지에 들어오자마자 실행되어 백엔드에서 데이터를 가져옵니다.
     useEffect(() => {
         const fetchPost = async () => {
             try {
+                // 백엔드 컨트롤러의 @GetMapping("/{id}") 호출
                 const res = await axios.get(`http://localhost:8080/api/boards/${id}`);
-                setPost(res.data);
+                setPost(res.data); // 백엔드에서 받은 풀데이터를 post에 저장
                 setLoading(false);
             } catch (err) {
                 console.error("게시글 로딩 실패", err);
@@ -41,6 +48,12 @@ const ConsultationDetail = () => {
         fetchPost();
     }, [id, navigate]);
 
+    // [함수] 파일 다운로드 처리 (나중에 실제 서버 경로 연결 시 수정 가능)
+    const handleFileDownload = (fileNo, fileName) => {
+        alert(`${fileName} 파일을 다운로드합니다. (서버 다운로드 로직 연결 필요)`);
+    };
+
+    // [함수] 게시글 수정 처리
     const handleUpdate = async () => {
         if (!editTitle.trim()) return alert("제목을 입력해주세요.");
         if (!editContent.trim()) return alert("내용을 입력해주세요.");
@@ -52,6 +65,7 @@ const ConsultationDetail = () => {
             });
             alert("게시글이 성공적으로 수정되었습니다.");
             setIsEditing(false);
+            // 수정한 내용으로 화면 갱신
             setPost({ ...post, title: editTitle, content: editContent });
         } catch (err) {
             console.error("수정 실패", err);
@@ -59,6 +73,7 @@ const ConsultationDetail = () => {
         }
     };
 
+    // [함수] 게시글 삭제 처리
     const handleDelete = async () => {
         if (window.confirm("정말 이 게시글을 삭제하시겠습니까? (달린 답변도 모두 삭제됩니다)")) {
             try {
@@ -72,21 +87,20 @@ const ConsultationDetail = () => {
         }
     };
 
+    // [함수] 매칭 완료 처리
     const handleMatchComplete = async () => {
         if (window.confirm("매칭을 완료하시겠습니까? 완료 후에는 더 이상 변호사가 답변을 달 수 없습니다.")) {
             try {
                 await axios.put(`http://localhost:8080/api/boards/${id}/match`);
                 alert("매칭이 완료되었습니다.");
-                window.location.reload();
+                window.location.reload(); // 상태 업데이트를 위해 새로고침
             } catch (err) {
-                alert("오류가 발생했습니다.");
+                alert("매칭 완료 처리 중 오류가 발생했습니다.");
             }
         }
     };
 
-    // ==========================================
-    // [핵심 변경] 카테고리 제거 & 답변 번호 추가
-    // ==========================================
+    // [함수] 후기 등록 처리
     const handleReviewSubmit = async () => {
         if (rating === 0) return alert("별점을 선택해주세요.");
         if (!reviewContent.trim()) return alert("후기 내용을 입력해주세요.");
@@ -98,8 +112,7 @@ const ConsultationDetail = () => {
                 writerNm: currentUser.name || "익명",
                 stars: rating,
                 content: reviewContent,
-                // category: post.categoryCode <-- 이 부분 삭제!
-                replyNo: selectedLawyer.replyNo // 운조님 요청대로 답변 번호를 같이 보냅니다.
+                replyNo: selectedLawyer.replyNo
             });
             alert("후기가 등록되었습니다.");
             setIsReviewModalOpen(false);
@@ -110,6 +123,7 @@ const ConsultationDetail = () => {
         }
     };
 
+    // [함수] 변호사의 답변 등록 처리
     const handleReplySubmit = async () => {
         if (!replyContent.trim()) return alert("답변 내용을 입력해주세요.");
         try {
@@ -124,20 +138,24 @@ const ConsultationDetail = () => {
         }
     };
 
+    // 데이터 로딩 중 화면
     if (loading) return <div className="text-center py-20 font-bold text-gray-500">데이터를 불러오는 중입니다...</div>;
 
+    // 본인 글 여부 및 변호사 여부 확인
     const isMyPost = currentUser.role === 'ROLE_USER' && String(post.writerNo) === String(currentUser.userNo);
     const isLawyer = currentUser.role === 'ROLE_LAWYER';
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-8 pb-20 px-4 font-sans">
+        <div className="min-h-screen bg-gray-50 pt-8 pb-20 px-4 font-sans text-left">
             <div className="max-w-4xl mx-auto">
+                {/* 상단 버튼 */}
                 <button onClick={() => navigate('/consultation')} className="flex items-center text-gray-500 hover:text-blue-600 mb-6 font-medium transition-colors">
                     <CaretLeft size={20} /> 목록으로 돌아가기
                 </button>
 
-                {/* 질문글 본문 */}
+                {/* 메인 질문 카드 영역 */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+                    {/* 상단 섹션: 카테고리, 제목, 작성정보 */}
                     <div className="p-8 border-b border-gray-100">
                         <div className="flex items-center justify-between mb-5">
                             <span className="bg-blue-600 text-white text-sm font-bold px-4 py-1.5 rounded-full">
@@ -182,7 +200,8 @@ const ConsultationDetail = () => {
                         </div>
                     </div>
 
-                    <div className="p-8 min-h-[150px]">
+                    {/* 중단 섹션: 본문 내용 및 첨부파일 */}
+                    <div className="p-8">
                         {isEditing ? (
                             <div>
                                 <textarea
@@ -201,14 +220,42 @@ const ConsultationDetail = () => {
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-gray-700 whitespace-pre-wrap text-lg leading-relaxed">
-                                {post.content}
-                            </div>
+                            <>
+                                <div className="text-gray-700 whitespace-pre-wrap text-lg leading-relaxed mb-10">
+                                    {post.content}
+                                </div>
+
+                                {/* 첨부파일 표시 영역 (가로 2열 배치) */}
+                                {post.files && post.files.length > 0 && (
+                                    <div className="mt-10 pt-6 border-t border-gray-100">
+                                        <h4 className="text-sm font-bold text-gray-500 mb-4 flex items-center gap-2">
+                                            <FileText size={20} /> 첨부파일 ({post.files.length})
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {post.files.map((file, index) => (
+                                                <div
+                                                    key={index}
+                                                    onClick={() => handleFileDownload(file.fileNo, file.originName)}
+                                                    className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-blue-50 cursor-pointer transition-all group"
+                                                >
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <div className="bg-white p-2 rounded-lg shadow-sm">
+                                                            <FileText size={20} className="text-blue-500" />
+                                                        </div>
+                                                        <span className="text-sm text-gray-700 font-medium truncate">{file.originName}</span>
+                                                    </div>
+                                                    <DownloadSimple size={20} className="text-gray-400 group-hover:text-blue-500" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
 
-                {/* 전문가 답변 리스트 */}
+                {/* 전문가 답변 섹션 */}
                 <div className="space-y-6">
                     <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2 border-b-2 border-gray-900 pb-3">
                         전문가 답변 <span className="text-blue-600">{post.replies ? post.replies.length : 0}</span>
@@ -216,9 +263,9 @@ const ConsultationDetail = () => {
 
                     {post.replies && post.replies.length > 0 ? (
                         post.replies.map((reply) => (
-                            <div key={reply.replyNo} className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
+                            <div key={reply.replyNo} className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm transition-all hover:shadow-md">
                                 <div className="flex items-center gap-3 mb-4 border-b border-gray-100 pb-4">
-                                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold">
+                                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-lg">
                                         {reply.lawyerNm ? reply.lawyerNm[0] : '변'}
                                     </div>
                                     <div>
@@ -233,12 +280,12 @@ const ConsultationDetail = () => {
 
                                 {isMyPost && (
                                     <div className="flex flex-col gap-2">
-                                        <button className="w-full py-3.5 rounded-lg border border-blue-500 text-blue-600 font-bold flex justify-center items-center gap-2 hover:bg-blue-50 transition-colors">
+                                        <button className="w-full py-3.5 rounded-lg border border-blue-500 text-blue-600 font-bold flex justify-center items-center gap-2 hover:bg-blue-50 transition-all">
                                             <ChatCircleDots size={20} /> 1:1 대화 요청하기
                                         </button>
                                         <button
                                             onClick={() => { setSelectedLawyer(reply); setIsReviewModalOpen(true); }}
-                                            className="w-full py-3.5 rounded-lg border border-gray-300 text-gray-700 font-bold flex justify-center items-center gap-2 hover:bg-gray-50 transition-colors"
+                                            className="w-full py-3.5 rounded-lg border border-gray-300 text-gray-700 font-bold flex justify-center items-center gap-2 hover:bg-gray-50 transition-all"
                                         >
                                             <Star size={20} /> 평점 및 후기 입력
                                         </button>
@@ -254,6 +301,7 @@ const ConsultationDetail = () => {
                     )}
                 </div>
 
+                {/* 하단 매칭 완료 버튼 (의뢰인용) */}
                 {isMyPost && post.matchYn !== 'Y' && (
                     <div className="mt-12 flex justify-center">
                         <button onClick={handleMatchComplete} className="bg-[#1c2438] text-white px-12 py-4 rounded-lg font-bold text-lg shadow-md hover:bg-black transition-colors">
@@ -262,6 +310,7 @@ const ConsultationDetail = () => {
                     </div>
                 )}
 
+                {/* 전문가 답변 등록 영역 (변호사용) */}
                 {isLawyer && post.matchYn !== 'Y' && (
                     <div className="mt-10 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                         <textarea
@@ -271,13 +320,14 @@ const ConsultationDetail = () => {
                             placeholder="질문자에게 도움이 되는 법률적인 조언을 남겨주세요."
                         ></textarea>
                         <div className="flex justify-end">
-                            <button onClick={handleReplySubmit} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                            <button onClick={handleReplySubmit} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-md">
                                 <PaperPlaneRight size={18} weight="bold" /> 답변 등록
                             </button>
                         </div>
                     </div>
                 )}
 
+                {/* 매칭 완료 후 안내 (변호사용) */}
                 {isLawyer && post.matchYn === 'Y' && (
                     <div className="mt-10 p-6 bg-gray-100 text-center rounded-xl text-gray-500 font-bold border border-gray-200">
                         의뢰인이 매칭을 완료하여 더 이상 답변을 등록할 수 없습니다.
@@ -285,7 +335,7 @@ const ConsultationDetail = () => {
                 )}
             </div>
 
-            {/* 후기 작성 모달창 */}
+            {/* 후기 작성 모달창 (의뢰인 클릭 시 활성화) */}
             {isReviewModalOpen && selectedLawyer && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fadeIn">
@@ -307,9 +357,10 @@ const ConsultationDetail = () => {
                                 <p className="text-gray-500 text-sm">전문가의 답변이 도움이 되셨나요?</p>
                             </div>
 
+                            {/* 별점 선택 영역 */}
                             <div className="flex justify-center gap-2 mb-2">
                                 {[1, 2, 3, 4, 5].map((star) => (
-                                    <button key={star} onClick={() => setRating(star)} className="focus:outline-none">
+                                    <button key={star} onClick={() => setRating(star)} className="focus:outline-none transition-transform active:scale-90">
                                         <Star
                                             size={40}
                                             weight={star <= rating ? "fill" : "regular"}
@@ -328,10 +379,10 @@ const ConsultationDetail = () => {
                             ></textarea>
 
                             <div className="flex gap-3">
-                                <button onClick={() => setIsReviewModalOpen(false)} className="flex-1 py-3.5 rounded-xl border border-gray-300 text-gray-700 font-bold hover:bg-gray-50">
+                                <button onClick={() => setIsReviewModalOpen(false)} className="flex-1 py-3.5 rounded-xl border border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-all">
                                     취소
                                 </button>
-                                <button onClick={handleReviewSubmit} className="flex-1 py-3.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-md">
+                                <button onClick={handleReviewSubmit} className="flex-1 py-3.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-md transition-all">
                                     등록하기
                                 </button>
                             </div>
