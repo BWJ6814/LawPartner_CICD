@@ -223,7 +223,7 @@ const ChatList = () => {
                 <div className="flex justify-between items-center mt-3 border-t border-slate-200 pt-3">
                   <div className="flex space-x-5 text-slate-400">
                       <button className="hover:text-blue-600 transition"><i className="fas fa-paperclip"></i></button>
-                      <button className="hover:text-blue-600 transition"><i className="fas fa-robot"></i></button>
+                      <button className="hover:text-blue-600 transition"><i className="fa-solid fa-microphone"></i></button>
                   </div>
                   <button onClick={handleSendMessage} className="bg-navy-main text-white px-8 py-2.5 rounded-xl text-xs font-black hover:bg-blue-800 transition shadow-lg">
                     <i className="fas fa-paper-plane mr-2"></i> 전송하기
