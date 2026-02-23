@@ -139,7 +139,7 @@ public class LogingAspect {
         String userAgent = request.getHeader("User-Agent");
         if (userAgent != null && userAgent.length() > 200) userAgent = userAgent.substring(0, 200);
 
-        String traceId = MDC.get("traceId");
+        String traceId = MDC.get("TRACE_ID");
         if (traceId == null) traceId = "SYSTEM";
 
         // ⭐ 파라미터에서 사유(Reason) 낚아채기!

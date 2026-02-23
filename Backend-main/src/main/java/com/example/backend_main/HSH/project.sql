@@ -719,3 +719,15 @@ INSERT INTO TB_ACCESS_LOG (TRACE_ID, REQ_IP, REQ_URI, USER_AGENT, USER_NO, STATU
 VALUES ('TRC-22-005', '211.111.22.37', '/api/main', 'Mozilla/5.0 Windows NT 10.0', 12, 200, 19, NULL, TO_DATE('2026-02-22 21:00:00', 'YYYY-MM-DD HH24:MI:SS'));
 
 COMMIT;
+
+select * from TB_USER;
+
+delete from TB_USER WHERE USER_NO = 8;
+
+
+SELECT 'SELECT ''' || table_name || ''' AS TBL, COUNT(*) AS CNT FROM ' || table_name || ' WHERE USER_NO = 8 HAVING COUNT(*) > 0' AS QUERY
+FROM user_tab_cols
+WHERE column_name = 'USER_NO'
+  AND table_name != 'TB_USER'; -- 원본 테이블 제외
+
+SELECT * FROM TB_USER;

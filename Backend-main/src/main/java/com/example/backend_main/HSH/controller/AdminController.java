@@ -12,6 +12,7 @@ import com.example.backend_main.dto.UserJoinRequestDTO;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.security.access.prepost.PreAuthorize; // ★ 권한 체크
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -55,24 +56,31 @@ public class AdminController {
         나중에 AdminService에 로직 추가하여 완성할 예정
     */
     @PutMapping("/user/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')") // 슈퍼 관리자, 일반 리자
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')") // 슈퍼 관리자, 일반 관리자
     @ActionLog(action = "CHANGE_STATUS", target = "TB_USER") // 감시 로그 기록
     public ResultVO<String> changeUserStatus(@RequestBody Map<String, String> requestBody) {
+
+        // 1. 필수 파라미터 추출 (사유 포함)
         String userId = requestBody.get("userId");
         String statusCode = requestBody.get("statusCode");
+        String reason = requestBody.get("reason"); // 프론트에서 보낸 상세 사유 낚아채기
 
-        if (userId == null || statusCode == null) {
-            // ResultVO.fail(String code, String message) 사용
-            return ResultVO.fail("PARAM-ERROR", "필수 파라미터가 누락되었습니다.");
+        // 2. S급 보안 검증: 사유가 없으면 로직 진행 자체를 차단 (ADM-02 준수)
+        if (userId == null || statusCode == null || reason == null || reason.trim().isEmpty()) {
+            return ResultVO.fail("PARAM-ERROR", "상태 변경 사유는 필수 입력 사항입니다.");
         }
 
         try {
+            // 비즈니스 로직 수행
             adminService.changeUserStatus(userId, statusCode);
-            return ResultVO.ok("회원 상태가 성공적으로 변경되었습니다.",null);
+
+            // 성공 응답 (성공 시 AOP가 'reason'을 포함해 감사 로그 저장)
+            return ResultVO.ok("회원 상태가 성공적으로 변경되었습니다.", null);
+
         } catch (IllegalArgumentException e) {
             return ResultVO.fail("BAD-REQUEST", e.getMessage());
         } catch (Exception e) {
-            log.error("회원 상태 변경 중 오류", e);
+            log.error("회원 상태 변경 중 오류 - TraceID: {}", MDC.get("TRACE_ID"), e);
             return ResultVO.fail("SYS-ERROR", "시스템 오류가 발생했습니다.");
         }
     }
@@ -84,7 +92,7 @@ public class AdminController {
     - CustomUserDetails를 사용해 DB 재조회 없이 PK 추출 (성능 최적화)
     */
     @PostMapping("/create-operator")
-    @PreAuthorize("hasRole('SUPER_ADMIN')") // ★ 2중 보안 (슈퍼 관리자만!)
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')") // ★ 2중 보안 (슈퍼 관리자만!)
     @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER")
     public ResultVO<String> createOperator(@RequestBody UserJoinRequestDTO joinDto,
                                            @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -116,7 +124,7 @@ public class AdminController {
     - 엑셀이 아닌, JSON 데이터로 로그 리스트를 반환합니다.
     */
     @GetMapping("/logs")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')") // 관리자 접근 제어 추가
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')") // 관리자 접근 제어 추가
     public ResultVO<Page<AccessLogResponseDTO>> getAccessLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size) {
@@ -133,13 +141,13 @@ public class AdminController {
      - 대용량 데이터도 메모리 오류 없이 다운로드 가능
      */
     @GetMapping("/logs/download")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')") // 관리자급 이상 접근 가능
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')") // 관리자급 이상 접근 가능
     @ActionLog(action = "DOWNLOAD_EXCEL", target = "TB_ACCESS_LOG")
     public void downloadLogs(HttpServletResponse response,
                              // 프론트에서 ?reason=감사제출용 이라고 보내면 이리로 쏙 들어옵니다.
                              // reason을 파라미터에 적어둔 이유 : AOP를 위한 바구니 역할
                              //
-                             @RequestParam(value = "reason", required = false) String reason)
+                             @RequestParam(value = "reason", required = true) String reason)
             throws IOException {
         adminService.downloadAccessLogExcel(response);
     }
@@ -149,7 +157,7 @@ public class AdminController {
     - 차트 라이브러리(Recharts 등)에 넣을 데이터 제공
     */
     @GetMapping("/status/daily")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN','OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN','ROLE_OPERATOR')")
     public ResultVO<List<Map<String, Object>>> getDailyStats(){
         List<Map<String, Object>> stats = adminService.getDailyVisitStats();
         return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.",stats);
