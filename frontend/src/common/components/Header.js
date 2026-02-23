@@ -198,7 +198,7 @@ const Header = ({auth, onLoginUpdate}) => {
   };
 
   return (
-    <nav className={`sticky top-0 z-999 bg-white w-full transition-all duration-300 ${isScrolled ? 'border-b border-gray-200 shadow-sm' : 'border-b border-gray-100'}`}>
+    <nav className={`sticky top-0 z-[9999] bg-white w-full transition-all duration-300 ${isScrolled ? 'border-b border-gray-200 shadow-sm' : 'border-b border-gray-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           

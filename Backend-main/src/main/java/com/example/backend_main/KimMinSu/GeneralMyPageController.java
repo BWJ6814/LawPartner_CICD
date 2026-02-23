@@ -89,4 +89,6 @@ public class GeneralMyPageController {
         return ResultVO.ok("일정 삭제 성공", null);
     }
 
+
+
 }

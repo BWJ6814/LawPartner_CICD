@@ -9,6 +9,7 @@ import com.example.backend_main.dto.GeneralMyPageDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.temporal.TemporalAdjusters;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -64,7 +65,9 @@ public class GeneralMyPageService {
 
         String startOfMonth = today.withDayOfMonth(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-        String endOfMonth = today.withDayOfMonth(today.getMonth().maxLength()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String endOfMonth = today.with(TemporalAdjusters.lastDayOfMonth())
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
 
         System.out.println("조회 기간 :" + startOfMonth + " ~ " + endOfMonth);
 
@@ -74,8 +77,6 @@ public class GeneralMyPageService {
             GeneralMyPageDTO.CalendarEventDTO calDTO = new GeneralMyPageDTO.CalendarEventDTO();
 
             // 1. 방금 DTO에 추가한 ID 꽂아주기 (필수)
-            calDTO.setId(event.getEventNo());
-
             calDTO.setId(event.getEventNo()); // ★ ID 꽂아주기
             calDTO.setTitle(event.getTitle()); // ★ "[개인]" 떼고 깔끔하게 제목만
             calDTO.setStart(event.getStartDate());
@@ -122,6 +123,7 @@ public class GeneralMyPageService {
         }
         event.setTitle(dto.getTitle());
         event.setColorCode(dto.getBackgroundColor());
+        event.setStartDate(dto.getStart());
         // JPA의 더티 체킹(Dirty Checking) 덕분에 별도로 save()를 안 해도 DB에 반영됨
     }
 

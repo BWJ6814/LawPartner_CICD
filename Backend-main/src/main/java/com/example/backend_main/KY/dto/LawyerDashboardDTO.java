@@ -2,36 +2,55 @@ package com.example.backend_main.KY.dto;
 
 import lombok.Data;
 
-import java.util.List;
-
 /*
  [LawyerDashboardDTO]
- 변호사 대시보드 API 응답용 DTO
+ 변호사 대시보드 API 응답/요청 DTO 모음
 */
 @Data
 public class LawyerDashboardDTO {
 
-    // ========== 후기 관련 ==========
-
+    // ── 후기 응답 ──────────────────────────────
     @Data
     public static class ReviewDTO {
-        private Long reviewNo;
-        private String writerNm;   // 작성자 이름
-        private Integer stars;      // 별점
-        private String content;     // 후기 내용
-        private String category;    // 카테고리
-        private String regDate;     // 등록일 (yyyy-MM-dd)
+        private Long   reviewNo;
+        private String writerNm;  // TB_USER 에서 JOIN
+        private Double  stars;  // NUMBER(2,1) → 소수점 지원
+        private String content;
+        private String regDate;   // yyyy-MM-dd
     }
 
-    // ========== 상담 관련 ==========
-
+    // ── 상담(채팅방) 응답 ──────────────────────
     @Data
     public static class ConsultationDTO {
-        private Long consultNo;
-        private String clientNm;    // 의뢰인 이름
-        private String category;    // 카테고리
-        private String statusCode;  // 상태코드 (C01:대기, C02:상담중, C03:소송진행중, C04:완료)
-        private String statusLabel; // 상태 표시 (대기, 상담중, 소송 진행중, 완료)
-        private String regDate;     // 접수일 (yyyy-MM-dd)
+        private String roomId;      // UUID
+        private String clientNm;   // TB_USER 에서 JOIN
+        private String progressCode; // ST01~ST05
+        private String statusLabel;  // 한글 변환
+        private String regDate;      // yyyy-MM-dd
+    }
+
+    // ── 통계 응답 ──────────────────────────────
+    @Data
+    public static class StatsDTO {
+        private long   solvedCount;   // ST05 (사건 종료) 건수
+        private long   requestCount;  // 전체 상담 건수
+        private double avgRating;     // 평균 별점
+    }
+
+    // ── 일정 응답 ──────────────────────────────
+    @Data
+    public static class CalendarDTO {
+        private Long   eventNo;
+        private String title;
+        private String startDate; // yyyy-MM-dd
+        private String colorCode;
+    }
+
+    // ── 일정 추가 요청 ──────────────────────────
+    @Data
+    public static class CalendarRequest {
+        private String title;
+        private String startDate;
+        private String colorCode;
     }
 }
