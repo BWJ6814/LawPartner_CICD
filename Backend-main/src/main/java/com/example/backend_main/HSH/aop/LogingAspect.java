@@ -230,14 +230,22 @@ public class LogingAspect {
         }
 
         try {
-            Object principal = auth.getPrincipal();
-
-            // 1. [최적화] CustomUserDetails라면 DB 조회 없이 바로 PK 반환
-            if (principal instanceof CustomUserDetails details) {
-                return details.getUserNo();
+            // 🌟 1. [S급 최적화] JwtTokenProvider가 가방 안쪽 주머니(details)에 넣어둔 userNo를 0.001초 만에 꺼내기!
+            Object details = auth.getDetails();
+            if (details instanceof java.util.Map<?, ?> mapDetails) {
+                if (mapDetails.containsKey("userNo") && mapDetails.get("userNo") != null) {
+                    // Integer로 올 수 있는 경우를 대비해 Number로 캐스팅 후 longValue() 호출 (안전한 형변환)
+                    return ((Number) mapDetails.get("userNo")).longValue();
+                }
             }
 
-            // 2. [기본] 만약 다른 방식으로 로그인했다면 DB 조회 (안전장치)
+            // 2. [방어 로직] 폼 로그인 등 다른 방식으로 로그인해서 Principal 자체가 CustomUserDetails인 경우
+            Object principal = auth.getPrincipal();
+            if (principal instanceof CustomUserDetails customDetails) {
+                return customDetails.getUserNo();
+            }
+
+            // 3. [최후의 보루] 위 두 방법이 모두 실패했다면 어쩔 수 없이 DB 조회 (기존 로직 유지)
             String email = auth.getName();
             return userRepository.findByEmail(email)
                     .map(User::getUserNo)
