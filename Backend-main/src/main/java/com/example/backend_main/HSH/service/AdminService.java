@@ -23,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -200,21 +201,45 @@ public class AdminService {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
+        String oldStatus = user.getStatusCode(); // 변경 전 상태 기억
+
+        // ====================================================================
+        // 🛡️ [보안 방어 로직] 최고 관리자는 절대 강제 정지(S03) 불가!
+        // ====================================================================
+        if ("S03".equals(targetStatusCode)) {
+            if ("ROLE_SUPER_ADMIN".equals(user.getRoleCode())) {
+                throw new IllegalArgumentException("슈퍼 관리자 계정은 시스템 보호를 위해 정지할 수 없습니다.");
+            }
+        }
+
+
         // 2. 상태 변경 (Setter 사용)
         user.setStatusCode(targetStatusCode);
 
-        // 3. [비즈니스 로직] 승인(S02) 처리 시 권한 승격
-        // 기존 권한이 ROLE_USER인 경우에만 ROLE_LAWYER로 올려줌..(이미 관리잠녀 건드리지 않음)
-        if ("S02".equals(targetStatusCode) && "ROLE_USER".equals(user.getRoleCode())) {
-            user.setRoleCode("ROLE_LAWYER");
-            log.info("🎉 회원[{}]의 권한이 변호사(ROLE_LAWYER)로 승격되었습니다.", user.getUserId());
+        // 3. [비즈니스 로직 완벽 연동]
+        if ("S01".equals(targetStatusCode)) {
+            // 케이스 A: [변호사 승인] 준회원(ROLE_ASSOCIATE) -> 정상(S01) 변경 시
+            if ("ROLE_ASSOCIATE".equals(user.getRoleCode())) {
+                user.setRoleCode("ROLE_LAWYER");
+                log.info("🎉 [변호사 승인] 회원[{}]의 권한이 ROLE_LAWYER로 완벽하게 승격되었습니다.", user.getUserId());
+            }
+            // 케이스 B: [계정 복구] 기존에 정지(S03)였던 유저를 정상(S01)으로 돌릴 때
+            else if ("S03".equals(oldStatus)) {
+                log.info("🔄 [계정 복구] 블랙리스트/정지 처리되었던 회원[{}]이 정상 활동으로 복구되었습니다.", user.getUserId());
+            }
         }
+        else if ("S03".equals(targetStatusCode)) {
+            // 케이스 C: [블랙리스트 / 강제 정지]
+            log.warn("🚨 [계정 정지] 회원[{}]이 관리자에 의해 강제 정지(블랙리스트) 처리되었습니다.", user.getUserId());
+            // (추후 확장 포인트: 정지되는 순간 이 유저의 RefreshToken을 DB에서 삭제해버리면, 즉시 로그아웃 시킬 수 있습니다!)
+        }
+
 
         // JPA의 Dirty Checking으로 인해 save를 호출하지 않아도 트랜잭션 종료 시 자동 업데이트되지만,
         // 명시적으로 작성하는 것이 가독성에 좋습니다.
         userRepository.save(user);
 
-        log.info("🔧 회원[{}] 상태 변경 완료: {} -> {}", user.getUserId(), user.getStatusCode(), targetStatusCode);
+        log.info("🔧 회원[{}] 상태 변경 완료: {} -> {}", user.getUserId(), oldStatus, targetStatusCode);
     }
 
     // [대시보드용] 일별 접속자 수 통계 조회하기
@@ -224,6 +249,8 @@ public class AdminService {
 
         // 2. Java Stream을 이용해 날짜별 그룹핑 처리! (YYYY-MM-DD)기준으로
         Map<String, Long> stats = allLogs.stream()
+                // regDt가 비어있는(Null) 불량 데이터는 무시하고 패스!
+                .filter(log -> log.getRegDt() != null)
                 // "2024-02-19"만 추출
                 .map(log -> log.getRegDt().toString().substring(0,10))
                 .collect(Collectors.groupingBy(
@@ -247,16 +274,98 @@ public class AdminService {
 
     // [보안 감사 로그 조회 - 페이징 & DTO 변환 적용]
     @Transactional(readOnly = true)
-    public Page<AccessLogResponseDTO> getAccessLogs(int page, int size) {
+    public Page<AccessLogResponseDTO> getAccessLogs(int page, int size,String type) {
         // 1. 최신순으로 정렬하여 페이지 단위로 가져올 준비
-        Pageable pageable = PageRequest.of(page, size, Sort.by("regDT").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("regDt").descending());
 
         // 2. DB에서 Entity 형태로 페이징 조회
-        Page<AccessLog> logPage = accessLogRepository.findAll(pageable);
-
+        Page<AccessLog> logPage;
+        // ★ type이 ERROR이면 400 이상인 로그만 검색
+        if ("ERROR".equals(type)) {
+            logPage = accessLogRepository.findByStatusCodeGreaterThanEqual(400, pageable);
+        } else {
+            logPage = accessLogRepository.findAll(pageable);
+        }
         // 3. Page 객체의 map()을 사용하여 내부의 Entity들을 모두 DTO로 포장하기
         return logPage.map(AccessLogResponseDTO :: fromEntity);
     }
 
+    @Transactional(readOnly = true)
+    public List<AccessLogResponseDTO> getRecentThreats() {
+        // 400번대 이상의 에러 로그 중 최신 5개만 가져오기
+        return accessLogRepository.findTop5ByStatusCodeGreaterThanEqualOrderByRegDtDesc(400)
+                .stream()
+                .map(AccessLogResponseDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+
+    public Map<String, Object> getAdminSummary() {
+        Map<String, Object> summary = new HashMap<>();
+
+        // 1. 기준 날짜 (오늘/어제) 설정
+        LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
+
+        // 2. 전체 회원 데이터 로드 (User)
+        List<User> allUsers = userRepository.findAll();
+        long totalUsersToday = allUsers.size();
+
+        // 어제까지의 총 회원 수 계산을 위해 '오늘 가입자' 필터링
+        long newUsersToday = allUsers.stream()
+                .filter(u -> u.getJoinDt() != null && u.getJoinDt().toLocalDate().isEqual(today))
+                .count();
+        long newUsersYesterday = allUsers.stream()
+                .filter(u -> u.getJoinDt() != null && u.getJoinDt().toLocalDate().isEqual(yesterday))
+                .count();
+
+        // 총 회원 수 증감률 (전체 인원 대비 오늘 가입 비중)
+        long totalUsersYesterday = totalUsersToday - newUsersToday;
+        summary.put("totalUsers", totalUsersToday);
+        summary.put("totalUsersGrowth", calculateGrowth(totalUsersToday, totalUsersYesterday));
+
+        // 신규 가입자 증감률 (오늘 가입 vs 어제 가입)
+        summary.put("newUsersToday", newUsersToday);
+        summary.put("newUsersGrowth", calculateGrowth(newUsersToday, newUsersYesterday));
+
+        // 3. 로그 데이터 로드 (AccessLog)
+        List<AccessLog> allLogs = accessLogRepository.findAll();
+
+        // 접속자 수 (오늘 vs 어제)
+        long visitorsToday = allLogs.stream()
+                .filter(l -> l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(today))
+                .count();
+        long visitorsYesterday = allLogs.stream()
+                .filter(l -> l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(yesterday))
+                .count();
+        summary.put("todayVisitors", visitorsToday);
+        summary.put("visitorsGrowth", calculateGrowth(visitorsToday, visitorsYesterday));
+
+        // 보안 위협 (오늘 4xx/5xx 에러 vs 어제)
+        long threatsToday = allLogs.stream()
+                .filter(l -> l.getStatusCode() != null && l.getStatusCode() >= 400
+                        && l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(today))
+                .count();
+        long threatsYesterday = allLogs.stream()
+                .filter(l -> l.getStatusCode() != null && l.getStatusCode() >= 400
+                        && l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(yesterday))
+                .count();
+        summary.put("securityThreats", threatsToday);
+        summary.put("threatsGrowth", calculateGrowth(threatsToday, threatsYesterday));
+
+        // 승인 대기 (이건 단순 숫자만)
+        summary.put("pendingLawyers", allUsers.stream().filter(u -> "S02".equals(u.getStatusCode())).count());
+
+        return summary;
+    }
+
+
+
+    // 증감률 계산 보조 메서드
+    private String calculateGrowth(long current, long previous) {
+        if (previous == 0) return current > 0 ? "+100%" : "0%";
+        double growth = ((double) (current - previous) / previous) * 100;
+        return String.format("%s%.1f%%", growth >= 0 ? "+" : "", growth);
+    }
 }
 

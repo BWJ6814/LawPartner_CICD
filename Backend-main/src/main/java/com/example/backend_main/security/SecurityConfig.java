@@ -19,6 +19,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.data.web.config.EnableSpringDataWebSupport.PageSerializationMode;
 
 import java.util.List;
 @Configuration
@@ -27,6 +29,8 @@ import java.util.List;
 @EnableWebSecurity
 // ★ [핵심] 이 줄이 있어야 컨트롤러의 권한 체크가 작동합니다!
 @EnableMethodSecurity(securedEnabled = true, prePostEnabled = true)
+// Page 객체를 DTO 방식으로 예쁘게 직렬화 시키는 설정!
+@EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO)
 // JwtTokenProvider를 가져오기 위해 필요합니당~
 @RequiredArgsConstructor
 public class SecurityConfig {
