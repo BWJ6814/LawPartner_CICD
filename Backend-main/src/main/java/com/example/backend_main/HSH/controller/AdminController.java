@@ -127,10 +127,11 @@ public class AdminController {
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')") // 관리자 접근 제어 추가
     public ResultVO<Page<AccessLogResponseDTO>> getAccessLogs(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "15") int size) {
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String type){
 
         // 비즈니스 로직(Service) 호출 -> DTO로 변환된 Page 객체를 받음
-        Page<AccessLogResponseDTO> logPage = adminService.getAccessLogs(page, size);
+        Page<AccessLogResponseDTO> logPage = adminService.getAccessLogs(page, size, type);
 
         return ResultVO.ok("로그 목록을 성공적으로 불러왔습니다.", logPage);
     }
@@ -142,7 +143,15 @@ public class AdminController {
         Map<String, Object> summary = adminService.getAdminSummary();
         return ResultVO.ok("요약 데이터를 성공적으로 불러왔습니다.", summary);
     }
-    
+
+    // 대시보드 최근 보안 위협 로그 전용 창구
+    @GetMapping("/logs/threats")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    public ResultVO<List<AccessLogResponseDTO>> getRecentThreats() {
+        List<AccessLogResponseDTO> threats = adminService.getRecentThreats();
+        return ResultVO.ok("최신 보안 위협 로그를 성공적으로 불러왔습니다.", threats);
+    }
+
     /*
      [보안 감사 로그 엑셀 다운로드] (SXSSF 방식)
      - @ActionLog: 다운로드 이력 자동 저장

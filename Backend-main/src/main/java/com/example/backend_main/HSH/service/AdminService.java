@@ -274,15 +274,29 @@ public class AdminService {
 
     // [보안 감사 로그 조회 - 페이징 & DTO 변환 적용]
     @Transactional(readOnly = true)
-    public Page<AccessLogResponseDTO> getAccessLogs(int page, int size) {
+    public Page<AccessLogResponseDTO> getAccessLogs(int page, int size,String type) {
         // 1. 최신순으로 정렬하여 페이지 단위로 가져올 준비
         Pageable pageable = PageRequest.of(page, size, Sort.by("regDt").descending());
 
         // 2. DB에서 Entity 형태로 페이징 조회
-        Page<AccessLog> logPage = accessLogRepository.findAll(pageable);
-
+        Page<AccessLog> logPage;
+        // ★ type이 ERROR이면 400 이상인 로그만 검색
+        if ("ERROR".equals(type)) {
+            logPage = accessLogRepository.findByStatusCodeGreaterThanEqual(400, pageable);
+        } else {
+            logPage = accessLogRepository.findAll(pageable);
+        }
         // 3. Page 객체의 map()을 사용하여 내부의 Entity들을 모두 DTO로 포장하기
         return logPage.map(AccessLogResponseDTO :: fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AccessLogResponseDTO> getRecentThreats() {
+        // 400번대 이상의 에러 로그 중 최신 5개만 가져오기
+        return accessLogRepository.findTop5ByStatusCodeGreaterThanEqualOrderByRegDtDesc(400)
+                .stream()
+                .map(AccessLogResponseDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 
 
@@ -344,6 +358,8 @@ public class AdminService {
 
         return summary;
     }
+
+
 
     // 증감률 계산 보조 메서드
     private String calculateGrowth(long current, long previous) {

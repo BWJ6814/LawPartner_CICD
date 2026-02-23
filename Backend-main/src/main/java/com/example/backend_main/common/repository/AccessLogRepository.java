@@ -2,8 +2,12 @@ package com.example.backend_main.common.repository;
 
 
 import com.example.backend_main.common.entity.AccessLog;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 
 /*
@@ -44,5 +48,15 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long>{
         1~3번같은 SQL 기능을 모두 만들어주기 때문에!!
 
     */
+    // 상태 코드가 특정 값(예: 400) 이상인 최신 로그 5개만 조회
+    List<AccessLog> findTop5ByStatusCodeGreaterThanEqualOrderByRegDtDesc(Integer statusCode);
 
+    /*
+     [상태 코드 필터링 조회]
+     특정 상태 코드(statusCode) 이상의 로그들만 골라서 페이징 처리해 가져오는 함수입니다.
+     - 예: statusCode에 400을 넣으면, 400번대(Client Error)와 500번대(Server Error) 로그만 추출합니다.
+     - Pageable : 리액트에서 보낸 '몇 번째 페이지', '한 번에 몇 개' 등의 정보를 담고 있습니다.
+     - Page<AccessLog> : 결과 데이터뿐만 아니라 '전체 페이지 수', '마지막 페이지 여부' 등을 상자에 담아 반환합니다.
+    */
+    Page<AccessLog> findByStatusCodeGreaterThanEqual(Integer statusCode, Pageable pageable);
 }
