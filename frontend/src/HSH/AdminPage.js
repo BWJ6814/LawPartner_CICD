@@ -36,15 +36,20 @@ const Card = ({ title, children, className = "" }) => (
   </div>
 );
 
+// =================================================================
+// 🎨 공통 UI 컴포넌트
+// =================================================================
 const Badge = ({ variant = "blue", children }) => {
   const styles = {
-    blue: "bg-blue-100 text-blue-700",
-    red: "bg-red-100 text-red-700",
-    green: "bg-green-100 text-green-700",
-    gray: "bg-slate-100 text-slate-700",
-    amber: "bg-amber-100 text-amber-700"
+    blue: "bg-blue-100 text-blue-700",       // 관리자
+    red: "bg-red-100 text-red-700",         // 정지
+    green: "bg-emerald-100 text-emerald-700", // 운영자, 활동중 (에메랄드톤)
+    gray: "bg-slate-100 text-slate-700",    // 일반 회원
+    amber: "bg-amber-100 text-amber-700",   // 슈퍼 관리자, 승인 대기
+    purple: "bg-indigo-100 text-indigo-700" // 변호사 (인디고톤)
   };
-  return <span className={`px-2 py-1 rounded-md text-xs font-bold ${styles[variant]}`}>{children}</span>;
+  // ★ 파트너님 오리지널 UI 클래스 유지 (높이 안 깨짐)
+  return <span className={`px-2 py-1 rounded-md text-xs font-semibold ${styles[variant]}`}>{children}</span>;
 };
 
 // =================================================================
@@ -234,14 +239,27 @@ export default function AdminPage() {
                   <td className="px-4 py-4 font-bold text-slate-700">{user.userId}</td>
                   <td className="px-4 py-4">{user.userNm} <span className="text-xs text-slate-400">({user.nickNm||'-'})</span></td>
                   <td className="px-4 py-4 text-slate-500">{new Date(user.joinDt).toLocaleDateString()}</td>
+                  
+                  {/* ★ 1. 권한 세분화 & 헤더 테마 색상 동기화 */}
                   <td className="px-4 py-4">
-                    <Badge variant={user.roleCode==='ROLE_ADMIN'?'blue':user.roleCode==='ROLE_LAWYER'?'amber':'gray'}>
-                      {user.roleCode.replace('ROLE_','')}
-                    </Badge>
+                    {user.roleCode === 'ROLE_SUPER_ADMIN' ? <Badge variant="amber">슈퍼 관리자</Badge> :
+                     user.roleCode === 'ROLE_ADMIN' ? <Badge variant="blue">관리자</Badge> :
+                     user.roleCode === 'ROLE_OPERATOR' ? <Badge variant="green">운영자</Badge> :
+                     user.roleCode === 'ROLE_LAWYER' ? <Badge variant="purple">변호사</Badge> :
+                     <Badge variant="gray">일반 회원</Badge>}
                   </td>
+
+                  {/* ★ 2. 상태 처리 (정지, 승인 대기, 활동중) 높이 깨짐 없이 출력 */}
                   <td className="px-4 py-4">
-                    <Badge variant={user.statusCode==='S01'?'green':'red'}>{user.statusCode==='S01'?'정상':'정지/대기'}</Badge>
+                    {user.statusCode === 'S03' ? (
+                      <Badge variant="red">정지</Badge>
+                    ) : user.roleCode === 'ROLE_USER' && user.userNm.includes('변호사') ? (
+                      <Badge variant="amber">승인 대기</Badge>
+                    ) : (
+                      <Badge variant="green">활동중</Badge>
+                    )}
                   </td>
+                  
                   <td className="px-4 py-4 text-right">
                     <button onClick={() => {setSelectedItem(user); setShowModal(true);}} className="text-blue-600 hover:underline font-bold">상세</button>
                   </td>
