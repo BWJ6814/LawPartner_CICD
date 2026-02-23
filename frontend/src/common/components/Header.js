@@ -356,10 +356,18 @@ const Header = ({auth, onLoginUpdate}) => {
           <div className="border-t border-gray-100 my-2 pt-4 space-y-3">
             {auth.isLoggedIn ? (
               <>
-                {auth.role === 'ROLE_LAWYER' ? (
-                   <Link to="/lawyer-dashboard" style={noUnderlineStyle} className="block px-3 py-3 text-center text-sm font-bold bg-navy-dark text-white rounded-xl shadow-md no-underline">변호사 워크스페이스</Link>
+                {['ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR'].includes(auth.role) ? (
+                  <Link to="/admin" style={noUnderlineStyle} className="bg-slate-900 text-cyan-400 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-800 transition shadow-md whitespace-nowrap no-underline border border-cyan-900">
+                    <span className="w-2 h-2 bg-cyan-400 rounded-full inline-block mr-1 animate-pulse"></span> 관리자 관제소
+                  </Link>
+                ) : auth.role === 'ROLE_LAWYER' ? (
+                  <Link to="/lawyer-dashboard" style={noUnderlineStyle} className="bg-blue-900 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition shadow-md whitespace-nowrap no-underline">
+                    <span className="w-2 h-2 bg-green-400 rounded-full inline-block mr-1"></span> 변호사 마이페이지
+                  </Link>
                 ) : (
-                   <Link to="/mypage" style={noUnderlineStyle} className="block px-3 py-3 text-center text-sm font-bold bg-blue-900 text-white rounded-xl shadow-md no-underline">마이페이지</Link>
+                  <Link to="/mypage" style={noUnderlineStyle} className="bg-blue-900 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition shadow-md whitespace-nowrap no-underline">
+                    마이페이지
+                  </Link>
                 )}
                 <button onClick={handleLogout} className="block w-full px-3 py-2 text-center text-sm font-bold text-gray-500 hover:text-red-500">로그아웃</button>
               </>

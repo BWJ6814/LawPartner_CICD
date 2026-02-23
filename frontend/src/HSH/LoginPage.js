@@ -70,9 +70,21 @@ const LoginPage = () => {
                     // 체크 해제되어 있다면 저장된 아이디 삭제
                     localStorage.removeItem('savedUserId');
                 }
-                alert(`${tokenData.userNm}님 환영합니다!`);
-                //  window.location.href를 사용하여 헤더 상태 강제 동기화
-                window.location.href = '/';
+                
+                const role = tokenData.role || 'ROLE_USER';
+                const nickname = tokenData.userNm || tokenData.nickNm || '관리자';
+                
+                alert(`${nickname}님 환영합니다!`);
+
+                // 관리자면 바로 관리자페이지로 이동..
+                if (role === 'ROLE_SUPER_ADMIN' || role === 'ROLE_ADMIN' || role === 'ROLE_OPERATOR') {
+                alert(`환영합니다, ${nickname || '관리자'}님. 관리자 페이지로 이동합니다.`);
+                navigate('/admin'); // (라우터에 설정된 관리자 페이지 경로로 변경하세요)
+                }  //  window.location.href를 사용하여 헤더 상태 강제 동기화
+                else {
+                    window.location.href = '/'; // 일반 유저는 메인 홈페이지로 이동
+                }
+
             } else {
                 throw new Error("토큰 응답 오류");
             }

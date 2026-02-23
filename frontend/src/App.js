@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'; // ★ useEffect 추가
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'; // ★ useLocation 추가
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
@@ -22,9 +22,33 @@ import CustomerWritePage from "./pages/CustomerWritePage";
 import CustomerListPage from "./pages/CustomerListPage";
 import CustomerDetailPage from "./pages/CustomerDetailPage";
 import CustomerEditPage from "./pages/CustomerEditPage";
+import AdminPage from './HSH/AdminPage';
+
+// =====================================================================
+// ★ [S급 디테일] 현재 주소를 확인해서 헤더/푸터를 보여줄지 결정하는 내부 컴포넌트
+// =====================================================================
+const LayoutManager = ({ auth, onLoginUpdate, children }) => {
+    const location = useLocation();
+    
+    // 현재 주소가 '/admin'으로 시작하는지 확인
+    const isAdminRoute = location.pathname.startsWith('/admin');
+
+    return (
+        <div className="flex flex-col min-h-screen bg-gray-50 text-slate-900 font-sans">
+            {/* 관리자 페이지가 아닐 때만 헤더 렌더링 */}
+            {!isAdminRoute && <Header auth={auth} onLoginUpdate={onLoginUpdate} />}
+            
+            <main className="flex-grow">
+                {children}
+            </main>
+
+            {/* 관리자 페이지가 아닐 때만 푸터 렌더링 */}
+            {!isAdminRoute && <Footer />}
+        </div>
+    );
+};
 
 function App() {
-
     const [auth, setAuth] = useState({
         isLoggedIn: !!localStorage.getItem('accessToken'),
         role: localStorage.getItem('userRole')
@@ -37,62 +61,69 @@ function App() {
         });
     };
 
+    // 보안 체크 헬퍼
+    const isAdmin = () => {
+        const currentRole = localStorage.getItem('userRole'); // ★ State 대신 Storage에서 직접 확인 (강제 이동 방지)
+        const currentToken = localStorage.getItem('accessToken');
+        return !!currentToken && ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR'].includes(currentRole);
+    }
+
     return (
         <BrowserRouter>
-            <div className="flex flex-col min-h-screen bg-gray-50 text-slate-900 font-sans">
-                <Header auth={auth} onLoginUpdate={updateAuth} />
+            <LayoutManager auth={auth} onLoginUpdate={updateAuth}>
+                <Routes>
+                    {/* 기본 페이지 */}
+                    <Route path="/" element={<MainPage />} />
 
-                <main className="flex-grow">
-                    <Routes>
+                    <Route
+                        path="/mypage"
+                        element={
+                            auth.isLoggedIn && auth.role === 'ROLE_USER'
+                                ? <GeneralMyPage />
+                                : <Navigate to="/login" replace />
+                        }
+                    />
 
-                        {/* 기본 페이지 */}
-                        <Route path="/" element={<MainPage />} />
+                    {/* ========================================================= */}
+                    {/* ⭐ 관리자 전용 라우팅 */}
+                    {/* ========================================================= */}
+                    <Route 
+                        path="/admin/*" 
+                        element={
+                            isAdmin() 
+                                ? <AdminPage /> 
+                                : <Navigate to="/login" replace />
+                        } 
+                    />
 
-                        <Route
-                            path="/mypage"
-                            element={
-                                auth.isLoggedIn && auth.role === 'ROLE_USER'
-                                    ? <GeneralMyPage />
-                                    : <Navigate to="/login" replace />
-                            }
-                        />
+                    <Route path="/chatList" element={<ChatList />} />
 
-                        <Route path="/chatList" element={<ChatList />} />
+                    <Route path="/consultation" element={<ConsultationBoard />} />
+                    <Route path="/consultation/:id" element={<ConsultationDetail />} />
+                    <Route path="/write" element={<WriteQuestionPage />} />
 
-                        <Route path="/consultation" element={<ConsultationBoard />} />
-                        <Route path="/consultation/:id" element={<ConsultationDetail />} />
-                        <Route path="/write" element={<WriteQuestionPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/signup" element={<SignupPage />} />
 
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/signup" element={<SignupPage />} />
+                    <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
 
-                        <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
+                    <Route path="/experts" element={<ExpertsPage />} />
+                    <Route path="/experts/:id" element={<ExpertDetailPage />} />
 
+                    {/* 고객센터 */}
+                    <Route path="/customer" element={<CustomerHomePage />} />
+                    <Route path="/customer/list" element={<CustomerListPage />} />
+                    <Route path="/customer/write" element={<CustomerWritePage />} />
+                    <Route path="/customer/detail/:id" element={<CustomerDetailPage />} />
+                    <Route path="/customer/edit/:id" element={<CustomerEditPage />} />
 
-                        <Route path="/experts" element={<ExpertsPage />} />
-                        <Route path="/experts/:id" element={<ExpertDetailPage />} />
-
-                        {/* ==================== */}
-                        {/* 고객센터 (충돌 제거) */}
-                        {/* ==================== */}
-
-                        <Route path="/customer" element={<CustomerHomePage />} />
-                        <Route path="/customer/list" element={<CustomerListPage />} />
-                        <Route path="/customer/write" element={<CustomerWritePage />} />
-                        <Route path="/customer/detail/:id" element={<CustomerDetailPage />} />
-                        <Route path="/customer/edit/:id" element={<CustomerEditPage />} />
-
-                        {/* 404 */}
-                        <Route
-                            path="*"
-                            element={<div className="text-center p-20">404 Not Found</div>}
-                        />
-
-                    </Routes>
-                </main>
-
-                <Footer />
-            </div>
+                    {/* 404 */}
+                    <Route
+                        path="*"
+                        element={<div className="text-center p-20 font-bold text-xl text-slate-500">404 Not Found</div>}
+                    />
+                </Routes>
+            </LayoutManager>
         </BrowserRouter>
     );
 }
