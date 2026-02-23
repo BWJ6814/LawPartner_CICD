@@ -76,13 +76,11 @@ const LoginPage = () => {
                 
                 alert(`${nickname}님 환영합니다!`);
 
-                // 관리자면 바로 관리자페이지로 이동..
+                // 관리자 계열이면 무조건 관리자 페이지로, 그 외 나머지는 무조건 메인 홈페이지로!
                 if (role === 'ROLE_SUPER_ADMIN' || role === 'ROLE_ADMIN' || role === 'ROLE_OPERATOR') {
-                alert(`환영합니다, ${nickname || '관리자'}님. 관리자 페이지로 이동합니다.`);
-                navigate('/admin'); // (라우터에 설정된 관리자 페이지 경로로 변경하세요)
-                }  //  window.location.href를 사용하여 헤더 상태 강제 동기화
-                else {
-                    window.location.href = '/'; // 일반 유저는 메인 홈페이지로 이동
+                    window.location.href = '/admin'; 
+                } else {
+                    window.location.href = '/'; 
                 }
 
             } else {

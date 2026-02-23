@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; // ★ useEffect 추가
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'; // ★ useLocation 추가
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
@@ -35,14 +35,14 @@ const LayoutManager = ({ auth, onLoginUpdate, children }) => {
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 text-slate-900 font-sans">
-            {/* 관리자 페이지가 아닐 때만 헤더 렌더링 */}
+            {/* 관리자 페이지가 아닐 때만 기존 헤더 렌더링 */}
             {!isAdminRoute && <Header auth={auth} onLoginUpdate={onLoginUpdate} />}
             
             <main className="flex-grow">
                 {children}
             </main>
 
-            {/* 관리자 페이지가 아닐 때만 푸터 렌더링 */}
+            {/* 관리자 페이지가 아닐 때만 기존 푸터 렌더링 */}
             {!isAdminRoute && <Footer />}
         </div>
     );
@@ -63,7 +63,7 @@ function App() {
 
     // 보안 체크 헬퍼
     const isAdmin = () => {
-        const currentRole = localStorage.getItem('userRole'); // ★ State 대신 Storage에서 직접 확인 (강제 이동 방지)
+        const currentRole = localStorage.getItem('userRole'); // ★ State 대신 Storage에서 직접 확인
         const currentToken = localStorage.getItem('accessToken');
         return !!currentToken && ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR'].includes(currentRole);
     }
@@ -105,9 +105,8 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
 
-                        <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
-                        <Route path="/ai-chat" element={<div className="text-center p-20 text-xl text-gray-500">AI 상담 준비 중입니다.</div>} />
-
+                    <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
+                    <Route path="/ai-chat" element={<div className="text-center p-20 text-xl text-gray-500">AI 상담 준비 중입니다.</div>} />
 
                     <Route path="/experts" element={<ExpertsPage />} />
                     <Route path="/experts/:id" element={<ExpertDetailPage />} />
