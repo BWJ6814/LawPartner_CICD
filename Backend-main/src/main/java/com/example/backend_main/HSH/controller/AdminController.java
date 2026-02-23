@@ -5,7 +5,6 @@ import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.common.annotation.ActionLog;
 
 import com.example.backend_main.common.entity.User;
-import com.example.backend_main.common.repository.AccessLogRepository;
 import com.example.backend_main.common.security.CustomUserDetails; // ★ 최적화용
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.AccessLogResponseDTO;
@@ -150,6 +149,7 @@ public class AdminController {
     - 차트 라이브러리(Recharts 등)에 넣을 데이터 제공
     */
     @GetMapping("/status/daily")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN','OPERATOR')")
     public ResultVO<List<Map<String, Object>>> getDailyStats(){
         List<Map<String, Object>> stats = adminService.getDailyVisitStats();
         return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.",stats);
