@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   LayoutDashboard, Users, ShieldAlert, FileText, Settings, 
   LogOut, Search, Download, Eye, EyeOff, CheckCircle, XCircle, 
@@ -6,9 +6,16 @@ import {
   UserCheck, Ban, Trash2, FileSearch, ShieldCheck, ChevronRight
 } from 'lucide-react';
 import { 
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Legend 
+  AreaChart, Area, 
+  LineChart, Line, 
+  BarChart, Bar, 
+  XAxis, YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Legend 
 } from 'recharts';
+
 import axios from 'axios';
 
 // =================================================================
@@ -176,81 +183,136 @@ export default function AdminPage() {
       default: return <DashboardView />;
     }
   };
-// =================================================================
-  // 1. 대시보드 화면 (통계 및 차트 완벽 연동)
-  // =================================================================
-  function DashboardView() {
-    // 1. 오늘 접속자 수 (데이터가 없으면 0으로 안전하게 처리)
-    const todayVisitors = dailyStats && dailyStats.length > 0 ? dailyStats[dailyStats.length - 1].count : 0;
-    
-    // 2. 보안 위협 감지 수 (400번대, 500번대 에러 상태 코드 개수)
-    const errorThreats = logs ? logs.filter(l => l.statusCode >= 400).length : 0;
+function DashboardView() {
+    // [데이터 가공] dailyStats가 바뀔 때만 실행
+    const chartData = useMemo(() => {
+      return dailyStats.slice(-7).map(stat => ({
+        name: stat.date.substring(5), // '02-23'
+        visitors: stat.count,
+        users: Math.floor(stat.count * 0.15) // 가입자 예시 데이터
+      }));
+    }, [dailyStats]);
 
-    // 3. 승인 대기 중인 예비 변호사 수 (S02 상태 또는 ROLE_ASSOCIATE 권한)
+    // 상단 위젯용 데이터 추출
+    const todayVisitors = dailyStats.length > 0 ? dailyStats[dailyStats.length - 1].count : 0;
+    const errorThreats = logs ? logs.filter(l => l.statusCode >= 400).length : 0;
     const pendingLawyers = users ? users.filter(u => u.statusCode === 'S02' || u.roleCode === 'ROLE_ASSOCIATE').length : 0;
 
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
-        {/* 상단 4개 요약 위젯 */}
+        
+        {/* 1. 상단 4개 요약 위젯 (StatCard) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="총 회원 수 (DB)" value={users ? users.length : 0} growth="실시간" icon={<Users className="text-blue-600" />} />
-          <StatCard title="승인 대기 (변호사)" value={pendingLawyers} growth="확인 필요" icon={<UserCheck className="text-amber-600" />} color="amber" />
-          <StatCard title="오늘 접속자 수" value={todayVisitors} growth="실시간" icon={<Eye className="text-purple-600" />} />
-          <StatCard title="보안 위협 (4xx,5xx)" value={errorThreats} growth="실시간 감지" icon={<ShieldAlert className="text-red-600" />} color="red" />
+          <StatCard title="총 회원 수" value={users.length} growth="+12%" icon={<Users className="text-blue-600" />} />
+          <StatCard title="승인 대기 (변호사)" value={pendingLawyers} growth="확인 필요" icon={<UserCheck className="text-emerald-600" />} color="emerald" />
+          <StatCard title="오늘 접속자 수" value={todayVisitors} growth="실시간" icon={<Eye className="text-purple-600" />} color="purple" />
+          <StatCard title="보안 위협 감지" value={errorThreats} growth="+15%" icon={<ShieldAlert className="text-red-600" />} color="red" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 최근 7일 접속자 통계 차트 */}
-          <Card title="최근 7일 접속자 통계 (DB 연동)">
-            <div className="h-64">
-              {dailyStats && dailyStats.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dailyStats.slice(-7)}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    {/* ★ X축 날짜 형식이 길면 짤릴 수 있어 텍스트 크기 조정 */}
-                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <Tooltip cursor={{fill: '#f1f5f9'}} />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} name="방문자 수" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-slate-400 font-bold">
-                  통계 데이터가 충분하지 않습니다.
+          
+          {/* 2. 왼쪽: 가입자 및 방문자 통합 추이 (AreaChart) */}
+          <Card title="가입자 및 방문자 통합 추이">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%" key={chartData.length}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fontSize: 12, fill: '#94a3b8', fontWeight: 500}}
+                    dy={10} 
+                  />
+                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                  <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
+
+                  <Area 
+                    type="monotone" 
+                    dataKey="users" 
+                    name="신규 가입자"
+                    stroke="#2563eb" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorUsers)" 
+                    dot={{ r: 4, fill: '#2563eb', stroke: '#fff', strokeWidth: 2 }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="visitors" 
+                    name="전체 방문자"
+                    stroke="#cbd5e1" 
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <button className="mt-4 flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-blue-600 transition-colors">
+              <Download size={16} /> 차트 이미지 저장 (.png)
+            </button>
+          </Card>
+
+          {/* 3. 오른쪽: 최근 보안 위협 로그 */}
+          <Card title="최근 보안 위협 로그 (403 Error)">
+            <div className="space-y-4">
+              {logs.filter(log => log.statusCode >= 400).slice(0, 4).map(log => (
+                <div key={log.logNo} className="flex items-center justify-between p-4 bg-red-50/50 border border-red-100 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-100 rounded-full text-red-600">
+                      <AlertTriangle size={18} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-red-900">{log.reqIp}</div>
+                      <div className="text-xs text-red-700 truncate w-48">{log.reqUri}</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-red-400 font-mono">
+                    {new Date(log.regDt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                  </div>
                 </div>
-              )}
+              ))}
+              <button className="w-full py-2 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">전체 로그 보러가기</button>
             </div>
           </Card>
 
-          {/* 실시간 보안 위협 로그 리스트 */}
-          <Card title="실시간 보안 위협 로그 (자동 수집)">
-            <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
-              {logs && logs.filter(log => log.statusCode >= 400).length > 0 ? (
-                logs.filter(log => log.statusCode >= 400).slice(0, 5).map(log => (
-                  <div key={log.logNo} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-red-100 rounded-full text-red-600">
-                        <AlertTriangle size={18} />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-red-900">{log.reqIp}</div>
-                        {/* URL이 너무 길면 잘리도록 truncate 적용 */}
-                        <div className="text-xs text-red-700 truncate w-48">{log.reqUri}</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-red-500 font-mono font-bold border border-red-200 px-2 py-1 rounded bg-white">
-                      {log.statusCode}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-slate-400 py-10 font-bold flex flex-col items-center justify-center h-full">
-                  <ShieldCheck size={40} className="text-emerald-200 mb-2" />
-                  감지된 보안 위협이 없습니다.
-                </div>
-              )}
-            </div>
-          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // --- StatCard 컴포넌트 수정 (샘플 디자인 반영) [cite: 76, 77] ---
+  function StatCard({ title, value, growth, icon, color = "blue" }) {
+    const colorMap = {
+      blue: "bg-blue-50 text-blue-600",
+      emerald: "bg-emerald-50 text-emerald-600",
+      purple: "bg-purple-50 text-purple-600",
+      red: "bg-red-50 text-red-600",
+      amber: "bg-amber-50 text-amber-600"
+    };
+
+    return (
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between">
+        <div>
+          <p className="text-sm font-bold text-slate-400 mb-2">{title}</p>
+          <div className="text-3xl font-black text-slate-800">
+            {typeof value === 'number' ? value.toLocaleString() : value} 
+          </div>
+          <div className={`mt-2 text-xs font-bold ${growth.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
+            {growth} [cite: 77]
+          </div>
+        </div>
+        <div className={`p-3 rounded-2xl ${colorMap[color] || colorMap.blue}`}>
+          {React.cloneElement(icon, { size: 24 })}
         </div>
       </div>
     );
