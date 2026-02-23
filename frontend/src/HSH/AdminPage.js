@@ -81,8 +81,13 @@ export default function AdminPage() {
 
       // 2. 보안 감사 로그 조회 (페이징 적용됨)
       const logRes = await api.get('/api/admin/logs?page=0&size=50');
-      if (logRes.data.success) setLogs(logRes.data.data.content);
-
+      // 수정: logRes.data.data 자체가 Page 객체이므로, 그 안의 content 배열을 꺼내야 합니다!
+      if (logRes.data.success && logRes.data.data.content) {
+        setLogs(logRes.data.data.content);
+      } else if (logRes.data.success && Array.isArray(logRes.data.data)) {
+        // 혹시 몰라서 페이징 없이 리스트로 올 경우의 방어 로직
+        setLogs(logRes.data.data);
+      }
       // 3. 접속자 통계 조회
       const statsRes = await api.get('/api/admin/status/daily');
       if (statsRes.data.success) {
@@ -159,53 +164,79 @@ export default function AdminPage() {
       default: return <DashboardView />;
     }
   };
-
-  // =================================================================
-  // 1. 대시보드 화면
+// =================================================================
+  // 1. 대시보드 화면 (통계 및 차트 완벽 연동)
   // =================================================================
   function DashboardView() {
-    const todayVisitors = dailyStats.length > 0 ? dailyStats[dailyStats.length - 1].count : 0;
-    const errorThreats = logs.filter(l => l.statusCode >= 400).length;
+    // 1. 오늘 접속자 수 (데이터가 없으면 0으로 안전하게 처리)
+    const todayVisitors = dailyStats && dailyStats.length > 0 ? dailyStats[dailyStats.length - 1].count : 0;
+    
+    // 2. 보안 위협 감지 수 (400번대, 500번대 에러 상태 코드 개수)
+    const errorThreats = logs ? logs.filter(l => l.statusCode >= 400).length : 0;
+
+    // 3. 승인 대기 중인 예비 변호사 수 (S02 상태 또는 ROLE_ASSOCIATE 권한)
+    const pendingLawyers = users ? users.filter(u => u.statusCode === 'S02' || u.roleCode === 'ROLE_ASSOCIATE').length : 0;
 
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
+        {/* 상단 4개 요약 위젯 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="총 회원 수 (DB)" value={users.length} growth="실시간" icon={<Users className="text-blue-600" />} />
-          <StatCard title="승인 대기 (변호사)" value={users.filter(u => u.roleCode==='ROLE_USER').length} growth="확인 필요" icon={<UserCheck className="text-amber-600" />} color="amber" />
+          <StatCard title="총 회원 수 (DB)" value={users ? users.length : 0} growth="실시간" icon={<Users className="text-blue-600" />} />
+          <StatCard title="승인 대기 (변호사)" value={pendingLawyers} growth="확인 필요" icon={<UserCheck className="text-amber-600" />} color="amber" />
           <StatCard title="오늘 접속자 수" value={todayVisitors} growth="실시간" icon={<Eye className="text-purple-600" />} />
           <StatCard title="보안 위협 (4xx,5xx)" value={errorThreats} growth="실시간 감지" icon={<ShieldAlert className="text-red-600" />} color="red" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 최근 7일 접속자 통계 차트 */}
           <Card title="최근 7일 접속자 통계 (DB 연동)">
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dailyStats.slice(-7)}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} name="방문자" />
-                </BarChart>
-              </ResponsiveContainer>
+              {dailyStats && dailyStats.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dailyStats.slice(-7)}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    {/* ★ X축 날짜 형식이 길면 짤릴 수 있어 텍스트 크기 조정 */}
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
+                    <YAxis axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{fill: '#f1f5f9'}} />
+                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} name="방문자 수" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-slate-400 font-bold">
+                  통계 데이터가 충분하지 않습니다.
+                </div>
+              )}
             </div>
           </Card>
 
+          {/* 실시간 보안 위협 로그 리스트 */}
           <Card title="실시간 보안 위협 로그 (자동 수집)">
-            <div className="space-y-4 max-h-64 overflow-y-auto">
-              {logs.filter(log => log.statusCode >= 400).slice(0, 5).map(log => (
-                <div key={log.logNo} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-red-100 rounded-full text-red-600"><AlertTriangle size={18} /></div>
-                    <div>
-                      <div className="text-sm font-bold text-red-900">{log.reqIp}</div>
-                      <div className="text-xs text-red-700">{log.reqUri}</div>
+            <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+              {logs && logs.filter(log => log.statusCode >= 400).length > 0 ? (
+                logs.filter(log => log.statusCode >= 400).slice(0, 5).map(log => (
+                  <div key={log.logNo} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-100 rounded-full text-red-600">
+                        <AlertTriangle size={18} />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-red-900">{log.reqIp}</div>
+                        {/* URL이 너무 길면 잘리도록 truncate 적용 */}
+                        <div className="text-xs text-red-700 truncate w-48">{log.reqUri}</div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-red-500 font-mono font-bold border border-red-200 px-2 py-1 rounded bg-white">
+                      {log.statusCode}
                     </div>
                   </div>
-                  <div className="text-xs text-red-500 font-mono font-bold border border-red-200 px-2 py-1 rounded bg-white">{log.statusCode}</div>
+                ))
+              ) : (
+                <div className="text-center text-slate-400 py-10 font-bold flex flex-col items-center justify-center h-full">
+                  <ShieldCheck size={40} className="text-emerald-200 mb-2" />
+                  감지된 보안 위협이 없습니다.
                 </div>
-              ))}
-              {errorThreats === 0 && <div className="text-center text-slate-400 py-10 font-bold">감지된 위협이 없습니다.</div>}
+              )}
             </div>
           </Card>
         </div>
@@ -240,20 +271,21 @@ export default function AdminPage() {
                   <td className="px-4 py-4">{user.userNm} <span className="text-xs text-slate-400">({user.nickNm||'-'})</span></td>
                   <td className="px-4 py-4 text-slate-500">{new Date(user.joinDt).toLocaleDateString()}</td>
                   
-                  {/* ★ 1. 권한 세분화 & 헤더 테마 색상 동기화 */}
+                  {/* ★ 1. 권한 세분화 (ROLE_ASSOCIATE 추가) */}
                   <td className="px-4 py-4">
                     {user.roleCode === 'ROLE_SUPER_ADMIN' ? <Badge variant="amber">슈퍼 관리자</Badge> :
                      user.roleCode === 'ROLE_ADMIN' ? <Badge variant="blue">관리자</Badge> :
                      user.roleCode === 'ROLE_OPERATOR' ? <Badge variant="green">운영자</Badge> :
                      user.roleCode === 'ROLE_LAWYER' ? <Badge variant="purple">변호사</Badge> :
+                     user.roleCode === 'ROLE_ASSOCIATE' ? <Badge variant="amber">준회원 (승인대기)</Badge> :
                      <Badge variant="gray">일반 회원</Badge>}
                   </td>
 
-                  {/* ★ 2. 상태 처리 (정지, 승인 대기, 활동중) 높이 깨짐 없이 출력 */}
+                  {/* ★ 2. 백엔드 상태 코드 완벽 매칭 (S02 = 승인 대기) */}
                   <td className="px-4 py-4">
                     {user.statusCode === 'S03' ? (
                       <Badge variant="red">정지</Badge>
-                    ) : user.roleCode === 'ROLE_USER' && user.userNm.includes('변호사') ? (
+                    ) : user.statusCode === 'S02' ? (
                       <Badge variant="amber">승인 대기</Badge>
                     ) : (
                       <Badge variant="green">활동중</Badge>
@@ -276,7 +308,7 @@ export default function AdminPage() {
   // 3. 변호사 승인 화면
   // =================================================================
   function LawyerApprovalView() {
-    const applicants = users.filter(u => u.roleCode === 'ROLE_USER'); 
+    const applicants = users.filter(u => u.statusCode === 'S02' || u.roleCode === 'ROLE_ASSOCIATE');
     return (
       <Card title="변호사 자격 승인 처리 (워크플로우)">
         <div className="space-y-4 mt-4">
@@ -292,7 +324,7 @@ export default function AdminPage() {
                 </div>
               </div>
               <button 
-                onClick={() => handleUserStatusChange(user.userId, 'S02')}
+                onClick={() => handleUserStatusChange(user.userId, 'S01')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700"
               >
                 자격 검증 및 승인 (S02)

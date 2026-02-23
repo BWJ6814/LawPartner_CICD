@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Aspect
@@ -38,8 +39,9 @@ public class LogingAspect {
     /*
     1. [기본 접속 로그] 모든 컨트롤러 요청 시 작동
     누가 - 언제 - 어디로 - 접속했는가?
+    변경: 프로젝트 내의 모든 Controller 하위 메서드 감시
     */
-    @Around("execution(* com.example.backend_main.HSH.controller..*(..))")
+    @Around("execution(* com.example.backend_main..*Controller.*(..))")
     public Object logAccess(ProceedingJoinPoint joinPoint) throws Throwable {
 
         // 1. [TRACE_ID] 요청 고유 식별자 생성 (UUID 8자리)
@@ -100,6 +102,7 @@ public class LogingAspect {
                     .statusCode(status)   // 상태 코드
                     .execTime(duration)   // 실행 시간
                     .errorMsg(errorMsg)   // 에러 메시지 (성공 시 null)
+                    .regDt(LocalDateTime.now()) // AOP에서 현재 시간을 못박기! (이중 보안)
                     .build());
 
             MDC.clear();                  // 퇴근할 땐 명찰 반납하세요! (메모리 누스 방지)

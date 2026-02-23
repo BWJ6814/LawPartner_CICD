@@ -200,21 +200,45 @@ public class AdminService {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
+        String oldStatus = user.getStatusCode(); // 변경 전 상태 기억
+
+        // ====================================================================
+        // 🛡️ [보안 방어 로직] 최고 관리자는 절대 강제 정지(S03) 불가!
+        // ====================================================================
+        if ("S03".equals(targetStatusCode)) {
+            if ("ROLE_SUPER_ADMIN".equals(user.getRoleCode())) {
+                throw new IllegalArgumentException("슈퍼 관리자 계정은 시스템 보호를 위해 정지할 수 없습니다.");
+            }
+        }
+
+
         // 2. 상태 변경 (Setter 사용)
         user.setStatusCode(targetStatusCode);
 
-        // 3. [비즈니스 로직] 승인(S02) 처리 시 권한 승격
-        // 기존 권한이 ROLE_USER인 경우에만 ROLE_LAWYER로 올려줌..(이미 관리잠녀 건드리지 않음)
-        if ("S02".equals(targetStatusCode) && "ROLE_USER".equals(user.getRoleCode())) {
-            user.setRoleCode("ROLE_LAWYER");
-            log.info("🎉 회원[{}]의 권한이 변호사(ROLE_LAWYER)로 승격되었습니다.", user.getUserId());
+        // 3. [비즈니스 로직 완벽 연동]
+        if ("S01".equals(targetStatusCode)) {
+            // 케이스 A: [변호사 승인] 준회원(ROLE_ASSOCIATE) -> 정상(S01) 변경 시
+            if ("ROLE_ASSOCIATE".equals(user.getRoleCode())) {
+                user.setRoleCode("ROLE_LAWYER");
+                log.info("🎉 [변호사 승인] 회원[{}]의 권한이 ROLE_LAWYER로 완벽하게 승격되었습니다.", user.getUserId());
+            }
+            // 케이스 B: [계정 복구] 기존에 정지(S03)였던 유저를 정상(S01)으로 돌릴 때
+            else if ("S03".equals(oldStatus)) {
+                log.info("🔄 [계정 복구] 블랙리스트/정지 처리되었던 회원[{}]이 정상 활동으로 복구되었습니다.", user.getUserId());
+            }
         }
+        else if ("S03".equals(targetStatusCode)) {
+            // 케이스 C: [블랙리스트 / 강제 정지]
+            log.warn("🚨 [계정 정지] 회원[{}]이 관리자에 의해 강제 정지(블랙리스트) 처리되었습니다.", user.getUserId());
+            // (추후 확장 포인트: 정지되는 순간 이 유저의 RefreshToken을 DB에서 삭제해버리면, 즉시 로그아웃 시킬 수 있습니다!)
+        }
+
 
         // JPA의 Dirty Checking으로 인해 save를 호출하지 않아도 트랜잭션 종료 시 자동 업데이트되지만,
         // 명시적으로 작성하는 것이 가독성에 좋습니다.
         userRepository.save(user);
 
-        log.info("🔧 회원[{}] 상태 변경 완료: {} -> {}", user.getUserId(), user.getStatusCode(), targetStatusCode);
+        log.info("🔧 회원[{}] 상태 변경 완료: {} -> {}", user.getUserId(), oldStatus, targetStatusCode);
     }
 
     // [대시보드용] 일별 접속자 수 통계 조회하기
@@ -224,6 +248,8 @@ public class AdminService {
 
         // 2. Java Stream을 이용해 날짜별 그룹핑 처리! (YYYY-MM-DD)기준으로
         Map<String, Long> stats = allLogs.stream()
+                // regDt가 비어있는(Null) 불량 데이터는 무시하고 패스!
+                .filter(log -> log.getRegDt() != null)
                 // "2024-02-19"만 추출
                 .map(log -> log.getRegDt().toString().substring(0,10))
                 .collect(Collectors.groupingBy(
@@ -249,7 +275,7 @@ public class AdminService {
     @Transactional(readOnly = true)
     public Page<AccessLogResponseDTO> getAccessLogs(int page, int size) {
         // 1. 최신순으로 정렬하여 페이지 단위로 가져올 준비
-        Pageable pageable = PageRequest.of(page, size, Sort.by("regDT").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("regDt").descending());
 
         // 2. DB에서 Entity 형태로 페이징 조회
         Page<AccessLog> logPage = accessLogRepository.findAll(pageable);
