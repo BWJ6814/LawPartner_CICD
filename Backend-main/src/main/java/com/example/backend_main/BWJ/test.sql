@@ -189,5 +189,14 @@ CREATE TABLE board_file (
                             save_name VARCHAR2(255) NOT NULL,   -- 저장된 파일 이름
                             reg_dt DATE DEFAULT SYSDATE         -- 등록일 (Oracle은 SYSDATE 사용)
 );
+ALTER TABLE BOARD_FILE ADD (FILE_PATH VARCHAR2(500));
+
+select * from BOARD_FILE;
+DELETE FROM BOARD_FILE WHERE FILE_PATH IS NULL;
+
+UPDATE TB_USER
+SET USER_NM = '우영우',
+    NICK_NM = '우영우'
+WHERE USER_NM = '우영우';
 
 COMMIT;
