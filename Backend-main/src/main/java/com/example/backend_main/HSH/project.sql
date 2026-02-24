@@ -731,3 +731,12 @@ WHERE column_name = 'USER_NO'
   AND table_name != 'TB_USER'; -- 원본 테이블 제외
 
 SELECT * FROM TB_USER;
+
+update tb_user set ROLE_CODE = 'ROLE_USER' where user_no = 41;
+COMMIT;
+
+
+delete from TB_ACCESS_LOG where reg_dt is null;
+commit;
+
+

@@ -307,11 +307,11 @@ export default function AdminPage() {
   function UserManagementView() {
     return (
       <Card title="일반 회원 관리 (전체 명부)">
-        <div className="overflow-x-auto mt-4">
-          <table className="w-full text-left">
+        <div className="overflow-x-auto mt-4 w-full">
+          <table className="w-full text-left min-w-[1000px] whitespace-nowrap">
             <thead>
               <tr className="border-b border-slate-200 text-slate-400 text-xs font-bold uppercase tracking-wider">
-                <th className="px-4 py-3">No (DB)</th>
+                <th className="px-4 py-3 w-16">No</th>
                 <th className="px-4 py-3">아이디</th>
                 <th className="px-4 py-3">이름 (닉네임)</th>
                 <th className="px-4 py-3">가입일</th>
@@ -397,7 +397,7 @@ export default function AdminPage() {
               <span className="text-xs font-bold text-slate-600">위협 로그(4xx, 5xx)만 보기</span>
             </label>
             
-            {/* ★ S급 디테일: 엑셀 다운로드는 슈퍼관리자/관리자만 가능 */}
+            {/* 엑셀 다운로드는 슈퍼관리자/관리자만 가능 */}
             {hasPermission(['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) && (
               <button onClick={handleExcelDownload} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-sm">
                 <FileText size={16} /> 엑셀 다운로드
@@ -406,37 +406,74 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="w-full text-sm font-mono">
+        {/* ★ w-full 추가로 가로 스크롤 영역 명확화 */}
+        <div className="overflow-x-auto rounded-xl border border-slate-200 w-full">
+          {/* ★ 레이아웃 방어 핵심: table-fixed, min-w-[1000px], whitespace-nowrap 적용 */}
+          <table className="w-full text-sm font-mono table-fixed min-w-[1000px] whitespace-nowrap">
             <thead className="bg-slate-800 text-slate-300 text-left">
               <tr>
-                <th className="px-4 py-4 font-medium">Trace ID</th>
-                <th className="px-4 py-4 font-medium">발생 일시</th>
-                <th className="px-4 py-4 font-medium">요청 IP</th>
-                <th className="px-4 py-4 font-medium">URI</th>
-                <th className="px-4 py-4 font-medium text-right">응답시간</th>
-                <th className="px-4 py-4 font-medium text-center">상태</th>
+                {/* ★ 비율 조정: Trace ID를 10%로 줄이고, 발생 일시를 20%로 늘려서 공간 확보! */}
+                <th className="px-4 py-4 font-medium w-[10%]">Trace ID</th>
+                <th className="px-4 py-4 font-medium w-[20%]">발생 일시</th>
+                <th className="px-4 py-4 font-medium text-center w-[10%]">발생자</th>
+                <th className="px-4 py-4 font-medium w-[15%]">요청 IP</th>
+                <th className="px-4 py-4 font-medium w-[25%]">URI</th>
+                <th className="px-4 py-4 font-medium text-right w-[10%]">응답시간</th>
+                <th className="px-4 py-4 font-medium text-center w-[10%]">상태</th>
               </tr>
             </thead>
             <tbody>
               {logs.map(log => {
                 const isError = log.statusCode >= 400;
+                
+                // ★ S급 디테일: 날짜를 "YYYY-MM-DD HH:mm:ss" 포맷으로 깔끔하게 변환하는 로직
+                const formatDateTime = (dateStr) => {
+                  if (!dateStr) return '-';
+                  const d = new Date(dateStr);
+                  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+                };
+
                 return (
                   <tr key={log.logNo} className={`border-b border-slate-50 hover:bg-slate-100 ${isError ? 'bg-red-50/50' : ''}`}>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{log.traceId || 'SYSTEM'}</td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{new Date(log.regDt).toLocaleString()}</td>
-                    <td className="px-4 py-3 font-bold text-slate-700 text-xs">{log.reqIp}</td>
-                    <td className={`px-4 py-3 truncate max-w-xs text-xs ${isError ? 'text-red-600 font-black' : 'text-blue-600 font-medium'}`}>{log.reqUri}</td>
-                    <td className="px-4 py-3 text-right text-slate-400 text-xs">{log.execTime}ms</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded text-[10px] font-black border ${!isError ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100 shadow-sm'}`}>
+                    
+                    <td className="px-4 py-3 text-slate-400 text-xs truncate" title={`접속 환경: ${log.userAgent || '알 수 없음'}`}>
+                      <span className="border-b border-dashed border-slate-400 cursor-help">{log.traceId || 'SYSTEM'}</span>
+                    </td>
+                    
+                    {/* ★ 수정됨: 깔끔하게 압축된 날짜 포맷 적용 및 툴팁으로 원본 날짜 제공 */}
+                    <td className="px-4 py-3 text-slate-600 font-medium text-xs truncate" title={new Date(log.regDt).toLocaleString()}>
+                      {formatDateTime(log.regDt)}
+                    </td>
+                    
+                    <td className="px-4 py-3 text-center text-xs truncate">
+                      {log.userNo ? (
+                        <span className="bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded-md">No. {log.userNo}</span>
+                      ) : (
+                        <span className="text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-md border border-slate-200">비회원</span>
+                      )}
+                    </td>
+                    
+                    <td className="px-4 py-3 font-bold text-slate-700 text-xs truncate">{log.reqIp}</td>
+                    
+                    <td className={`px-4 py-3 truncate text-xs ${isError ? 'text-red-600 font-black' : 'text-blue-600 font-medium'}`} title={log.reqUri}>
+                      {log.reqUri}
+                    </td>
+                    
+                    <td className="px-4 py-3 text-right text-slate-400 text-xs truncate">{log.execTime}ms</td>
+                    
+                    <td className="px-4 py-3 text-center truncate">
+                      <span 
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-black border ${!isError ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100 shadow-sm cursor-help'}`}
+                        title={isError ? log.errorMsg || '상세 에러 메시지 없음' : '정상 처리'}
+                      >
                         {log.statusCode}
+                        {isError && <AlertTriangle size={12} />}
                       </span>
                     </td>
                   </tr>
                 );
               })}
-              {logs.length === 0 && <tr><td colSpan="6" className="py-20 text-center text-slate-400 font-bold italic">데이터가 없습니다.</td></tr>}
+              {logs.length === 0 && <tr><td colSpan="7" className="py-20 text-center text-slate-400 font-bold italic">데이터가 없습니다.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -469,7 +506,10 @@ export default function AdminPage() {
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
       {/* Sidebar */}
       <aside className={`bg-[#0f172a] text-white transition-all duration-300 flex-shrink-0 flex flex-col ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
-        <div className="p-6 flex items-center gap-3">
+        <div 
+          className="p-6 flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => window.location.href = '/'} 
+        >
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black italic">AI</div>
           {isSidebarOpen && <span className="font-black text-lg tracking-tighter">LAW ADMIN</span>}
         </div>
