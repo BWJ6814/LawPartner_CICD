@@ -1,3 +1,5 @@
+/* src/BWJ/ConsultationBoard.js */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -29,7 +31,6 @@ const CATEGORIES = [
 ];
 
 const FilterSection = ({ selectedCategory, setSelectedCategory, selectedSort, setSelectedSort }) => {
-    // 리액트의 useState 개념: 화면의 특정 영역(탭)이 열려있는지 닫혀있는지 상태를 기억하는 변수입니다.
     const [activeTab, setActiveTab] = useState('category');
     const toggleTab = (tab) => setActiveTab(activeTab === tab ? null : tab);
 
@@ -92,11 +93,10 @@ const WriteQuestionCard = ({ onClick }) => (
             <Plus size={32} className="text-white" />
         </div>
         <h3 className="text-xl font-bold text-white mb-2">질문 등록하기</h3>
-        <p className="text-blue-100 text-sm text-center px-6">복잡한 법률 고민,<br/>전문가와 AI에게 물어보세요.</p>
+        <p className="text-blue-100 text-sm text-center px-6">복잡한 법률 고민,<br />전문가와 AI에게 물어보세요.</p>
     </div>
 );
 
-// [핵심 변경 1] PostCard (게시글 카드 UI) 수정
 const PostCard = ({ post, onClick }) => (
     <div onClick={onClick} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col h-full min-h-[220px]">
         <div className="mb-3">
@@ -113,37 +113,21 @@ const PostCard = ({ post, onClick }) => (
                     <span className="flex items-center gap-1"><User size={12} /> {post.author}</span>
                 </span>
             </div>
-
-            {/* ========================================================= */}
-            {/* [핵심 변경] flex-col과 items-start를 사용해서 세로로 차곡차곡 왼쪽 정렬합니다. */}
-            {/* 리액트 & 테일윈드 개념:
-                - flex-col: 안의 요소들을 위아래(세로)로 배치합니다.
-                - items-start: 요소들을 왼쪽 끝으로 딱 붙입니다.
-                - gap-2: 위(해시태그)와 아래(매칭완료 뱃지) 사이의 간격을 살짝 띄워줍니다.
-            */}
             <div className="flex flex-col items-start gap-2 mt-1">
-
-                {/* 1. 카테고리 해시태그 줄 */}
                 <div className="flex flex-wrap gap-1.5">
                     {post.categories && post.categories.map((tag, idx) => (
                         <span key={idx} className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded font-medium">#{tag}</span>
                     ))}
                 </div>
-
-                {/* 2. 매칭완료 뱃지 (해시태그 바로 아랫줄에 렌더링 됨) */}
-                {/* 디자인 변경: 글씨 크기(text-[11px])를 살짝 줄이고, 둥글기(rounded)를 태그와 비슷하게 맞췄습니다. */}
                 {post.matchYn === 'Y' && (
                     <span className="bg-[#1c2438] text-white text-[11px] font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1 opacity-90">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
-                        매칭완료
+                        상담완료
                     </span>
                 )}
-
             </div>
-            {/* ========================================================= */}
-
         </div>
     </div>
 );
@@ -157,7 +141,10 @@ const ConsultationBoard = () => {
 
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [selectedSort, setSelectedSort] = useState('최신순');
-    const [searchKeyword, setSearchKeyword] = useState('');
+
+    // [검색 로직 수정] 상태 분리: 입력값(searchInput) vs 실제 검색어(searchKeyword)
+    const [searchInput, setSearchInput] = useState('');      // 타이핑할 때 바뀌는 값
+    const [searchKeyword, setSearchKeyword] = useState('');  // 엔터 쳤을 때 적용되는 값
 
     useEffect(() => {
         const currentRole = localStorage.getItem('userRole');
@@ -170,8 +157,6 @@ const ConsultationBoard = () => {
     const fetchPosts = async () => {
         try {
             const response = await axios.get('http://localhost:8080/api/boards');
-
-            // [핵심 변경 2] 백엔드에서 온 데이터 중 matchYn을 자바스크립트 객체(사본)에 담습니다.
             const mappedData = response.data.map(board => ({
                 id: board.boardNo,
                 title: board.title,
@@ -181,7 +166,7 @@ const ConsultationBoard = () => {
                 fullDate: board.regDt ? board.regDt : '',
                 replyCnt: board.replyCnt || 0,
                 categories: board.categoryCode ? board.categoryCode.split(',') : [],
-                matchYn: board.matchYn || 'N' // 백엔드 값이 없으면 기본으로 'N' 처리
+                matchYn: board.matchYn || 'N'
             }));
             setPosts(mappedData);
         } catch (error) {
@@ -189,9 +174,23 @@ const ConsultationBoard = () => {
         }
     };
 
+    // [검색 로직 수정] 검색 실행 함수
+    const handleSearch = () => {
+        setSearchKeyword(searchInput); // 입력된 값을 검색 키워드로 설정
+        setCurrentPage(1); // 검색 시 1페이지로 이동
+    };
+
+    // [검색 로직 수정] 엔터키 처리 함수
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
+
     const getFilteredPosts = () => {
         let filtered = [...posts];
 
+        // [검색 로직 수정] searchInput이 아니라 확정된 searchKeyword로 필터링
         if (searchKeyword.trim() !== '') {
             filtered = filtered.filter(post => post.title.toLowerCase().includes(searchKeyword.toLowerCase()));
         }
@@ -294,15 +293,21 @@ const ConsultationBoard = () => {
                         </div>
                     )}
 
+                    {/* 검색 바 영역 */}
                     <div className="relative w-full max-w-lg mt-4 shadow-sm">
                         <input
                             type="text"
                             placeholder="찾고 싶은 고민의 제목을 검색해 보세요"
-                            value={searchKeyword}
-                            onChange={(e) => setSearchKeyword(e.target.value)}
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            onKeyDown={handleKeyDown} // 엔터키 이벤트 연결
                             className="w-full pl-12 pr-6 py-4 rounded-full border border-gray-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm"
                         />
-                        <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                        <Search
+                            onClick={handleSearch} // 클릭 이벤트 연결
+                            className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer hover:text-blue-600 transition-colors"
+                            size={20}
+                        />
                     </div>
                 </div>
             </main>
