@@ -42,8 +42,8 @@ public class GeneralMyPageService {
         dto.setRequestCount(0);
         dto.setDaysLeft(null);
 
-        // 3. 최근 상담 (추후 상담 테이블 만들어지면 연동, 지금은 빈 배열)
-        List<ChatRoom> myChatRooms = chatRoomRepository.findByUserNo(userNo); // 리포지토리에 이 메서드 만들어야 됨
+        // 3. [DB 연동] 내 상담 요청 내역 진짜로 가져오기
+        List<ChatRoom> myChatRooms = chatRoomRepository.findByUserNoOrderByRegDtDesc(userNo); // 리포지토리에 이 메서드 만들어야 됨
 
         List<GeneralMyPageDTO.ConsultationItemDTO> consultList = myChatRooms.stream().map(room -> {
             GeneralMyPageDTO.ConsultationItemDTO item = new GeneralMyPageDTO.ConsultationItemDTO();
@@ -57,7 +57,7 @@ public class GeneralMyPageService {
             else item.setStatus("완료");
 
             // 날짜는 String으로 임시 처리
-            item.setRegDate(room.getRegDt() != null ? room.getRegDt().toString() : "날짜 미상");
+            item.setRegDate(room.getRegDt() != null ? room.getRegDt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : "날짜 미상");
             return item;
         }).collect(Collectors.toList());
 

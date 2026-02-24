@@ -126,7 +126,7 @@ const ChatList = () => {
             <div className="p-6 border-b border-slate-100 bg-white space-y-4">
               <div className="relative">
                 <i className="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                <input type="text" placeholder="의뢰인 검색..." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium" />
+                <input type="text" placeholder="검색.." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium" />
               </div>
               <div className="flex p-1 bg-slate-100 rounded-lg">
                 <button className="flex-1 py-1.5 text-[14px] font-black text-blue-900 bg-white rounded-md shadow-sm">진행중</button>
@@ -213,7 +213,7 @@ const ChatList = () => {
               </div>
               <div className="relative bg-slate-50 rounded-2xl p-4 border border-slate-200">
                 <textarea 
-                  placeholder="법률 자문을 입력하세요..." 
+                  placeholder="채팅을 입력해주세요.."
                   className="w-full bg-transparent border-none outline-none text-sm font-medium resize-none placeholder:text-slate-300" 
                   rows="3"
                   value={message}

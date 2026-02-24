@@ -14,4 +14,6 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
     List<ChatRoom> findByUserNo(Long userNo);
 
     List<ChatRoom> findByLawyerNoAndProgressCode(Long lawyerNo, String progressCode);
+
+    List<ChatRoom> findByUserNoOrderByRegDtDesc(Long userNo);
 }

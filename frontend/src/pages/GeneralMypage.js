@@ -24,6 +24,9 @@ const GeneralMyPage = () => {
         backgroundColor : '#1e3a8a' // 기본 색상 (네이비)
     })
 
+    // ============== [ 상담 전체보기 모달 상태 관리 ] ===================
+    const [isAllConsultModalOpen, setIsAllConsultModalOpen] = useState(false);
+
 
 
     // 2. 데이터 가져오기 (API 호출)
@@ -269,7 +272,9 @@ const GeneralMyPage = () => {
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 mb-8 overflow-hidden">
                         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
                             <h3 className="font-bold text-slate-800 text-lg">최근 상담 요청 현황</h3>
-                            <button className="text-xs text-blue-600 font-bold hover:underline">전체 보기</button>
+                            <button
+                                onClick={() => setIsAllConsultModalOpen(true)}
+                                className="text-xs text-blue-600 font-bold hover:underline">전체 보기</button>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
@@ -430,6 +435,62 @@ const GeneralMyPage = () => {
                                     저장
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ================= [최근 상담 전체보기 모달 영역] ================= */}
+            {isAllConsultModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50" onClick={() => setIsAllConsultModalOpen(false)}>
+                    {/* 모달 내용물 (클릭 시 안 닫히게 e.stopPropagation() 처리) */}
+                    <div className="bg-white p-6 rounded-2xl shadow-xl w-[800px] max-w-[90%] max-h-[80vh] flex flex-col m-4 border border-slate-200" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4 border-b pb-4">
+                            <h2 className="text-xl font-black text-slate-800">
+                                전체 상담 요청 내역
+                            </h2>
+                            <button onClick={() => setIsAllConsultModalOpen(false)} className="text-slate-400 hover:text-red-500 font-bold text-xl transition">
+                                &times;
+                            </button>
+                        </div>
+
+                        {/* 스크롤 가능한 테이블 영역 */}
+                        <div className="overflow-y-auto flex-1 custom-scrollbar">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 text-xs font-bold text-slate-500 uppercase sticky top-0 z-10">
+                                <tr>
+                                    <th className="px-6 py-3">상담 변호사</th>
+                                    <th className="px-6 py-3">카테고리</th>
+                                    <th className="px-6 py-3">진행 상태</th>
+                                    <th className="px-6 py-3">접수 날짜</th>
+                                </tr>
+                                </thead>
+                                <tbody className="text-sm divide-y divide-slate-100 font-medium">
+                                {dashboardData.recentConsultations && dashboardData.recentConsultations.length > 0 ? (
+                                    dashboardData.recentConsultations.map((item, index) => (
+                                        <tr key={index} className="hover:bg-slate-50 transition">
+                                            <td className="px-6 py-4 font-bold text-slate-900">{item.lawyerName}</td>
+                                            <td className="px-6 py-4 text-blue-600 font-bold">{item.category}</td>
+                                            <td className="px-6 py-4">
+                                                {/* 상태에 따라 팩트 있게 색깔 다르게 칠해줌 */}
+                                                <span className={`font-bold ${item.status === '대기' ? 'text-orange-500' : item.status === '상담중' ? 'text-blue-500' : 'text-slate-500'}`}>
+                                            {item.status}
+                                        </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-500">{item.regDate}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr><td colSpan="4" className="px-6 py-4 text-center text-slate-400">상담 내역이 없습니다.</td></tr>
+                                )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
+                            <button onClick={() => setIsAllConsultModalOpen(false)} className="px-6 py-2 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition shadow-md">
+                                닫기
+                            </button>
                         </div>
                     </div>
                 </div>
