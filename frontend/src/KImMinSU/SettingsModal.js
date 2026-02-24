@@ -37,7 +37,7 @@ const SettingsModal = ({ isOpen, onClose, currentName, onSaveName }) => {
     const handleSaveProfile = () => handleAction(async () => {
         if (!nameInput.trim()) throw new Error("이름을 올바르게 입력해주세요.");
         await api.put('/api/mypage/profile', { name: nameInput });
-        localStorage.setItem('userNm', nameInput);
+        localStorage.setItem('nickNm', nameInput);
         onSaveName(nameInput);
         onClose();
     }, "프로필이 성공적으로 변경되었습니다.");
