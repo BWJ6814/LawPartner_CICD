@@ -2,7 +2,9 @@ package com.example.backend_main.KimMinSu;
 
 import com.example.backend_main.BWJ.BoardRepository;
 import com.example.backend_main.common.entity.CalendarEvent;
+import com.example.backend_main.common.entity.ChatRoom;
 import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.repository.ChatRoomRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.GeneralMyPageDTO;
@@ -22,6 +24,7 @@ public class GeneralMyPageService {
 
     private final UserRepository userRepository;
     private final BoardRepository boardRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
     // ★ 방금 만든 캘린더 관리자 추가!
     private final CalendarEventRepository calendarEventRepository;
@@ -39,8 +42,26 @@ public class GeneralMyPageService {
         dto.setRequestCount(0);
         dto.setDaysLeft(null);
 
-        // 3. 최근 상담 (추후 상담 테이블 만들어지면 연동, 지금은 빈 배열)
-        dto.setRecentConsultations(new ArrayList<>());
+        // 3. [DB 연동] 내 상담 요청 내역 진짜로 가져오기
+        List<ChatRoom> myChatRooms = chatRoomRepository.findByUserNoOrderByRegDtDesc(userNo); // 리포지토리에 이 메서드 만들어야 됨
+
+        List<GeneralMyPageDTO.ConsultationItemDTO> consultList = myChatRooms.stream().map(room -> {
+            GeneralMyPageDTO.ConsultationItemDTO item = new GeneralMyPageDTO.ConsultationItemDTO();
+            // 변호사 이름은 LawyerInfoRepository로 가져오거나 임시 처리
+            item.setLawyerName(room.getLawyerNo() != null ? "변호사 번호: " + room.getLawyerNo() : "매칭 대기중");
+            item.setCategory("일반상담");
+
+            // ST01=대기, ST02=상담중, ST03=완료
+            if ("ST01".equals(room.getProgressCode())) item.setStatus("대기");
+            else if ("ST02".equals(room.getProgressCode())) item.setStatus("상담중");
+            else item.setStatus("완료");
+
+            // 날짜는 String으로 임시 처리
+            item.setRegDate(room.getRegDt() != null ? room.getRegDt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : "날짜 미상");
+            return item;
+        }).collect(Collectors.toList());
+
+        dto.setRecentConsultations(consultList);
 
         // 4. [DB 연동] 최근 내 게시판 목록 가져오기 (방금 1단계에서 만든 명령어 사용)
         List<Board> myBoards = boardRepository.findTop5ByWriterNoOrderByRegDtDesc(userNo);
