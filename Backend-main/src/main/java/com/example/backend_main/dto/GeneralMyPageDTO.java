@@ -15,6 +15,7 @@ public class GeneralMyPageDTO {
 
     // 1. 사용자 정보
     private String userName;
+    private String nickName;
 
     // 2. 통계 (상단 카드)
     private int recentReplyCount;

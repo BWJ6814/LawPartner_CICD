@@ -89,6 +89,32 @@ public class GeneralMyPageController {
         return ResultVO.ok("일정 삭제 성공", null);
     }
 
+    // 1. 프로필 이름 수정
+    @PutMapping("/profile")
+    public ResultVO<String> updateProfile(
+            @RequestHeader("Authorization") String token,
+            @RequestBody java.util.Map<String, String> body) {
+        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        myPageService.updateProfile(userNo, body.get("name"));
+        return ResultVO.ok("프로필 수정 성공", null);
+    }
+
+    // 2. 비밀번호 수정
+    @PutMapping("/password")
+    public ResultVO<String> updatePassword(@RequestHeader("Authorization") String token, @RequestBody java.util.Map<String, String> body) {
+        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        myPageService.updatePassword(userNo, body.get("oldPassword"), body.get("newPassword"));
+        return ResultVO.ok("비밀번호 수정 성공", null);
+    }
+
+    // 3. 회원 탈퇴
+    @DeleteMapping("/account")
+    public ResultVO<String> deleteAccount(@RequestHeader("Authorization") String token) {
+        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        myPageService.deleteAccount(userNo);
+        return ResultVO.ok("회원 탈퇴 성공", null);
+    }
+
 
 
 }

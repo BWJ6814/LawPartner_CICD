@@ -28,6 +28,8 @@ public class GeneralMyPageService {
 
     // ★ 방금 만든 캘린더 관리자 추가!
     private final CalendarEventRepository calendarEventRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
 
     public GeneralMyPageDTO getDashboardData(Long userNo) {
         GeneralMyPageDTO dto = new GeneralMyPageDTO();
@@ -36,6 +38,7 @@ public class GeneralMyPageService {
         User user = userRepository.findById(userNo)
                 .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
         dto.setUserName(user.getUserNm());
+        dto.setNickName(user.getNickNm() != null ? user.getNickNm() : user.getUserNm());
 
         // 2. 통계 카드 (아직 관련 테이블이 미완성이면 일단 0으로 세팅)
         dto.setRecentReplyCount(0);
@@ -159,5 +162,28 @@ public class GeneralMyPageService {
         }
 
         calendarEventRepository.deleteById(eventNo);
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void updateProfile(Long userNo, String newName) {
+        User user = userRepository.findById(userNo).orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+        user.setNickNm(newName); // JPA 더티체킹으로 자동 UPDATE 됨
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void updatePassword(Long userNo, String oldPw, String newPw) {
+        User user = userRepository.findById(userNo).orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+        // 팩트 체크: 예전 비밀번호가 맞는지 검증
+        if (!passwordEncoder.matches(oldPw, user.getUserPw())) {
+            throw new RuntimeException("기존 비밀번호가 일치하지 않습니다.");
+        }
+        // 새 비밀번호 암호화해서 저장
+        user.setUserPw(passwordEncoder.encode(newPw));
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteAccount(Long userNo) {
+        // 실제 실무에서는 deleteById 대신 status를 '탈퇴'로 바꾸지만, 일단 진짜 삭제로 간다
+        userRepository.deleteById(userNo);
     }
 }

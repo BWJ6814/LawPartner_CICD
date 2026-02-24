@@ -11,7 +11,10 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
+
+
     const [userName, setUserName] = useState(localStorage.getItem('userNm') || '일반유저');
+    const [nickName, setNickName] = useState(localStorage.getItem('nickNm') || localStorage.getItem('userNm') || '일반유저')
     const userId = localStorage.getItem('userId') || 'guest';
 
     // ★ 로그아웃 로직 추가
@@ -141,7 +144,9 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
                         </div>
 
                         <div className={`flex-1 text-left overflow-hidden min-w-0 transition-all duration-300 ${isSidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 hidden'}`}>
-                            <p className="text-sm font-bold text-white truncate">{userName}</p>
+                            <p className="text-sm font-bold text-white truncate">{nickName !== userName ? `${nickName} (${userName})` : userName}
+                            </p>
+
                             <p className="text-[10px] text-slate-500 truncate font-medium">@{userId}</p>
                         </div>
 
@@ -159,7 +164,10 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
                 profileImage={profileImage}
                 setProfileImage={setProfileImage}
                 currentName={userName}
-                onSaveName={setUserName} // 모달에서 저장 시 실시간 텍스트 변경
+                onSaveName={(newName) => {
+                    setNickName(newName);
+                    localStorage.setItem('nickNm', newName); // 로컬스토리지도 바로 업데이트 쳐줌
+                }}
             />
         </>
     );
