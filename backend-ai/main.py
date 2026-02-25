@@ -1,12 +1,13 @@
 import os
-from fastapi import FastAPI, HTTPException
+
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from datasets import load_dataset
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain.docstore.document import Document
+from langchain_core.documents import Document
 from langchain.chains import RetrievalQA
+from fastapi import FastAPI, HTTPException
 
 # 환경변수 로드 (GOOGLE_API_KEY 필수)
 load_dotenv()

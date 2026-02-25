@@ -9,6 +9,7 @@ import MainPage from './pages/mainpage';
 import ConsultationBoard from './BWJ/ConsultationBoard';
 import WriteQuestionPage from './BWJ/WriteQuestionPage';
 import ConsultationDetail from './BWJ/ConsultationDetail';
+import AIChatPage from "./BWJ/AIChatPage";
 import GeneralMyPage from './pages/GeneralMypage';
 import ChatList from './KImMinSU/chatList';
 import Lawmainpage from './ky/Lawmainpage';
@@ -101,6 +102,7 @@ function App() {
                     <Route path="/consultation" element={<ConsultationBoard />} />
                     <Route path="/consultation/:id" element={<ConsultationDetail />} />
                     <Route path="/write" element={<WriteQuestionPage />} />
+                    <Route path="/ai-chat" element={<AIChatPage />} />
 
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
