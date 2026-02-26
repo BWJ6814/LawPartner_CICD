@@ -2,11 +2,12 @@ package com.example.backend_main.common.repository;
 
 
 import com.example.backend_main.common.entity.AccessLog;
+import com.example.backend_main.common.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.List;
 
 
@@ -37,7 +38,7 @@ JpaRepository : 스프링 데이터 JPA가 미리 만들어둔 [만능 기술 �
 
 */
 @Repository
-public interface AccessLogRepository extends JpaRepository<AccessLog, Long>{
+public interface AccessLogRepository extends JpaRepository<AccessLog, Long>, JpaSpecificationExecutor<AccessLog>{
     /*
     - 기본 저장 기능(save)을 사용하므로 비워도 오케이!
     - 인터페이스 하나로 처리가 가능한 이유?
@@ -59,4 +60,7 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long>{
      - Page<AccessLog> : 결과 데이터뿐만 아니라 '전체 페이지 수', '마지막 페이지 여부' 등을 상자에 담아 반환합니다.
     */
     Page<AccessLog> findByStatusCodeGreaterThanEqual(Integer statusCode, Pageable pageable);
+
+    // [탈퇴 유저 제외] 회원 리스트 목록 뽑아오기
+    List<User> findAllByStatusCodeNot(String statusCode);
 }

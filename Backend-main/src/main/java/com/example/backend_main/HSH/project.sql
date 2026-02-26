@@ -761,3 +761,14 @@ ALTER TABLE TB_REVIEW ADD WRITER_NM VARCHAR2(50);
 
 alter table tb_user modify nick_nm unique ;
 commit;
+
+select * from TB_ACCESS_LOG;
+
+delete from tb_user where user_no = 86 ;
+commit;
+
+select * from tb_user;
+
+update tb_user set nick_nm = '킹반인2' where user_no = 64;
+
+commit ;

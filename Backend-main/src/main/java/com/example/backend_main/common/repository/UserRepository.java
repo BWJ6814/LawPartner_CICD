@@ -4,6 +4,7 @@ import com.example.backend_main.common.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /*
@@ -36,6 +37,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 나중에 관리자 페이지에서 "변호사만 보기", "일반인만 보기"를 위해 쓰입니다.
     // List<User> findByRoleCode(String roleCode);
 
+    // 8. S99 상태가 아닌 유저들만 조회하기
+    List<User> findAllByStatusCodeNot(String statusCode);
+
+    //
 
 
 }

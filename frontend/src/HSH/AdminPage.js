@@ -338,6 +338,8 @@ export default function AdminPage() {
                   <td className="px-4 py-4">
                     {user.statusCode === 'S03' ? <Badge variant="red">정지</Badge> : 
                      user.statusCode === 'S02' ? <Badge variant="amber">승인 대기</Badge> : 
+                     // 혹시 모르니 DB 연동이 안 될 시, 처리 예방..
+                     user.statusCode === 'S99' ? <Badge variant="orange">회원 탈퇴</Badge> : 
                      <Badge variant="green">활동중</Badge>}
                   </td>
                   <td className="px-4 py-4 text-right">
@@ -459,7 +461,7 @@ export default function AdminPage() {
                       {log.reqUri}
                     </td>
                     
-                    <td className="px-4 py-3 text-right text-slate-400 text-xs truncate">{log.execTime}ms</td>
+                      <td className="px-4 py-3 text-right text-slate-400 text-xs truncate">{log.execTime}ms</td>
                     
                     <td className="px-4 py-3 text-center truncate">
                       <span 

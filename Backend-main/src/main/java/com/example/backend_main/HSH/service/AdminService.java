@@ -5,6 +5,7 @@ import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AccessLogRepository;
 import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.common.spec.AccessLogSpecification;
 import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil; // 해시 유틸
 import com.example.backend_main.dto.UserJoinRequestDTO;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*; // Excel 관련
 import org.apache.poi.xssf.streaming.SXSSFWorkbook; // 대용량 Excel
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // 트랜잭션
@@ -47,8 +49,8 @@ public class AdminService {
     public List<User> getAllUsers() {
 
         // userRepository.findAll() : DB의 TB_USER 테이블에 있는 모든 데이터를 싹 긁어오기
-        // .stream() : 글겅온 데이터 뭉치를 한 명씩 차례대로 처리할 수 있는 [흐름] 상태로 만들기
-        return userRepository.findAll().stream()
+        // .stream() : 긁어온 데이터 뭉치를 한 명씩 차례대로 처리할 수 있는 [흐름] 상태로 만들기
+        return userRepository.findAllByStatusCodeNot("S99").stream()
                 // .map(user -> {...} ) : 흐름 속의 유저 한 명(user)을 꺼내서 원하는 모양으로 변신시키기
                 .map(user -> {
                     try {
@@ -65,6 +67,7 @@ public class AdminService {
                                 .userNo(user.getUserNo())           // 번호 그대로
                                 .userId(user.getUserId())           // 아이디 그대로
                                 .userNm(user.getUserNm())           // 이름 그대로
+                                .nickNm(user.getNickNm())           // 유저 닉네임 그대로
                                 .email(decryptedEmail)              // [중요] 해독된 이메일
                                 .phone(decryptedPhone)              // [중요] 해독된 휴대폰 번호
                                 .roleCode(user.getRoleCode())       // 권한 코드 그대로
@@ -75,7 +78,7 @@ public class AdminService {
                         // 실패 시 암호화된 상태로 반환
                         // catch : 혹시라도 해독 중에 에러가 나면 프로그램이 멈추지 않게 방어하기..!
                         // 에러가 나면 그냥 원래의(암호화된) 유저 정보를 그대로 보내주기
-                        log.error("복호화 오류 발생: User.No {}",user.getUserNo());
+                        log.error("복호화 오류 발생: User.No {}번 ",user.getUserNo());
                         return user;
                     }
                 })
@@ -359,13 +362,35 @@ public class AdminService {
         return summary;
     }
 
-
-
     // 증감률 계산 보조 메서드
     private String calculateGrowth(long current, long previous) {
         if (previous == 0) return current > 0 ? "+100%" : "0%";
         double growth = ((double) (current - previous) / previous) * 100;
         return String.format("%s%.1f%%", growth >= 0 ? "+" : "", growth);
     }
+
+    // 시스템 감사 로그 검색 및 페이징 처리
+    @Transactional(readOnly = true)
+    public Page<AccessLogResponseDTO> searchAccessLogs(int page,
+                                                       int size,
+                                                       String startDate,
+                                                       String endDate,
+                                                       String keywordType,
+                                                       String keyword,
+                                                       String statusType) {
+
+        // 1. 페이징 설정
+        Pageable pageable = PageRequest.of(page, size);
+
+        // 2. 검색 조건 설정
+        Specification<AccessLog> spec = AccessLogSpecification.searchLog(startDate, endDate, keywordType, keyword, statusType);
+
+        // 3. 레퍼지토리 조회 및 DTO 변환
+        return accessLogRepository.findAll(spec, pageable)
+                .map(AccessLogResponseDTO::fromEntity);
+
+    }
+
+
 }
 
