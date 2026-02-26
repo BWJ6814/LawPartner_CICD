@@ -15,7 +15,7 @@ start "React Frontend" cmd /k "cd frontend && npm start"
 :: 2. FastAPI 실행 (새 창에서)
 echo [2/3] FastAPI AI 서버 시작 중...
 :: 혹시 가상환경 폴더명이 venv가 아니라 .venv라면 아래 venv를 .venv로 수정하세요.
-start "FastAPI-Server" cmd /k "cd backend-ai && (if not exist venv python -m venv venv) && venv\Scripts\activate && pip install -r requirements.txt && uvicorn main:app --reload --port 8000"
+start "FastAPI-Server" cmd /k "cd backend-ai && (if not exist venv python -m venv venv) && venv\Scripts\pip install -r requirements.txt && venv\Scripts\uvicorn main:app --reload --port 8000"
 :: 3. Spring Boot 실행 (현재 창에서)
 echo [3/3] Spring Boot 백엔드 시작 중...
 cd Backend-main
