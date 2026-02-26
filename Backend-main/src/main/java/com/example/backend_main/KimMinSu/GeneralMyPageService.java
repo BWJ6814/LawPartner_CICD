@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +30,7 @@ public class GeneralMyPageService {
     // ★ 방금 만든 캘린더 관리자 추가!
     private final CalendarEventRepository calendarEventRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
 
 
     public GeneralMyPageDTO getDashboardData(Long userNo) {
@@ -184,6 +186,22 @@ public class GeneralMyPageService {
     @org.springframework.transaction.annotation.Transactional
     public void deleteAccount(Long userNo) {
         // 실제 실무에서는 deleteById 대신 status를 '탈퇴'로 바꾸지만, 일단 진짜 삭제로 간다
-        userRepository.deleteById(userNo);
+        // userRepository.deleteById(userNo);
+
+        User user = userRepository.findById(userNo)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        user.setStatusCode("S99"); // JPA 더티 체킹으로 알아서 자동 UPDATE 됨
+
+        String dummyEmail = "deleted_" +userNo+ UUID.randomUUID().toString().substring(0, 6)+"@law.com";
+        String dummyPhone = "010-0000-" +userNo + UUID.randomUUID().toString().substring(0, 6) ;
+        String dummyUserId = "deleted_" +userNo + UUID.randomUUID().toString().substring(0, 16);
+
+        user.setNickNm("탈퇴한 사용자");
+        user.setUserId(dummyUserId);
+        user.setEmail(user.getEmailHash());
+        user.setPhone(user.getPhoneHash());
+        user.setEmailHash(dummyEmail);
+        user.setPhoneHash(dummyPhone);
     }
 }
