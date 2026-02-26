@@ -132,13 +132,23 @@ export default function AdminPage() {
 
   const fetchAuditLogs = async () => {
     try {
-      const logType = showOnlyErrors ? 'ERROR' : 'ALL';
-      const logRes = await api.get(`/api/admin/logs?page=0&size=50&type=${logType}`);
-      
+      // 기본값과 검색 조건을 합칩니다.
+      const requestParams = {
+        page: 0,
+        size: 50,
+        startDate: '',
+        endDate: '',
+        keywordType: '',
+        keyword: '',
+        statusType: 'ALL',
+         // params: '' UI에서 넘겨준 값이 있으면 덮어씌움
+      };
+
+      const logRes = await api.get('/api/admin/logs', { params: requestParams });
+       
       if (logRes.data.success && logRes.data.data.content) {
         setLogs(logRes.data.data.content);
-      } else if (logRes.data.success && Array.isArray(logRes.data.data)) {
-        setLogs(logRes.data.data);
+
       } else {
         setLogs([]);
       }
@@ -201,6 +211,7 @@ export default function AdminPage() {
 
   // [엑셀 다운로드] - 감사로그용
   const handleExcelDownload = async () => {
+    
     const reason = prompt("다운로드 사유를 입력해주세요 (보안 규정):");
     if (!reason || reason.trim() === '') return alert("사유 입력은 필수입니다.");
 
@@ -219,6 +230,31 @@ export default function AdminPage() {
       alert("다운로드 권한이 없거나 오류가 발생했습니다.");
     }
   };
+
+  // 관리자 권한 변경 핸들러
+  const handleRoleChange = async (userId, newRole) => {
+    if (!window.confirm(`해당 회원의 권한을 [${newRole}]로 변경하시겠습니까?`)) return;
+    
+    // 권한 변경은 보안상 매우 중요하므로 사유 입력 필수
+    const reason = prompt("권한 변경 사유를 입력해주세요:");
+    if (!reason || reason.trim() === '') return alert("사유 입력은 필수입니다.");
+
+    try {
+      // 백엔드 API 호출 (AdminController에 해당 API가 있다고 가정)
+      // 만약 API가 없다면 백엔드에 @PutMapping("/user/role") 추가 필요
+      const res = await api.put('/api/admin/user/role', { userId, roleCode: newRole, reason });
+      if (res.data.success) {
+        alert("권한이 변경되었습니다.");
+        fetchDashboardData(); // 목록 갱신
+        setShowModal(false);  // 모달 닫기
+      } else {
+        alert(res.data.message);
+      }
+    } catch (e) {
+      alert("권한 변경 중 오류가 발생했습니다.");
+    }
+  };
+
 
   // =================================================================
   // 🖥️ 개별 화면 렌더링 뷰
@@ -382,106 +418,106 @@ export default function AdminPage() {
 
   // 4. 보안 감사 로그 화면
   function AuditLogView() {
+    // 검색 상태 관리 (UI용)
+    const [searchParams, setSearchParams] = useState({
+      startDate: '', endDate: '', keywordType: 'IP', keyword: '', statusType: 'ALL'
+    });
+
+    const handleSearch = () => fetchAuditLogs(searchParams);
+    const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearch(); };
+
     return (
       <Card>
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg">
-            <Terminal size={20} className="text-blue-600" /> 실시간 시스템 감사 로그
-          </h3>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer bg-slate-100 px-3 py-1.5 rounded-lg border hover:bg-slate-200 transition-colors">
-              <input 
-                type="checkbox" 
-                checked={showOnlyErrors} 
-                onChange={(e) => setShowOnlyErrors(e.target.checked)}
-                className="accent-red-500 w-4 h-4"
-              />
-              <span className="text-xs font-bold text-slate-600">위협 로그(4xx, 5xx)만 보기</span>
-            </label>
-            
-            {/* 엑셀 다운로드는 슈퍼관리자/관리자만 가능 */}
-            {hasPermission(['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) && (
-              <button onClick={handleExcelDownload} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-sm">
-                <FileText size={16} /> 엑셀 다운로드
-              </button>
-            )}
+        <div className="mb-6 space-y-4">
+          <div className="flex justify-between items-end">
+             <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg">
+               <Terminal size={20} className="text-blue-600" /> 통합 로그 검색 시스템
+             </h3>
+             {/* 엑셀 다운로드 버튼 위치 이동 */}
+             {hasPermission(['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) && (
+                <button onClick={handleExcelDownload} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-sm">
+                  <FileText size={16} /> 결과 엑셀 저장
+                </button>
+             )}
+          </div>
+          
+          {/* 🔍 검색 컨트롤 패널 */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-wrap gap-3 items-end">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1">기간</label>
+              <div className="flex gap-2">
+                <input type="date" className="px-2 py-2 border rounded-lg text-sm" value={searchParams.startDate} onChange={(e) => setSearchParams({...searchParams, startDate: e.target.value})} />
+                <input type="date" className="px-2 py-2 border rounded-lg text-sm" value={searchParams.endDate} onChange={(e) => setSearchParams({...searchParams, endDate: e.target.value})} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1">조건</label>
+              <div className="flex gap-2">
+                <select className="px-2 py-2 border rounded-lg text-sm" value={searchParams.keywordType} onChange={(e) => setSearchParams({...searchParams, keywordType: e.target.value})}>
+                  <option value="IP">IP 주소</option>
+                  <option value="TRACE_ID">Trace ID</option>
+                  <option value="URI">요청 URI</option>
+                  <option value="USER_NO">회원 번호</option>
+                </select>
+                <input type="text" placeholder="검색어" className="px-3 py-2 border rounded-lg text-sm w-32" value={searchParams.keyword} onChange={(e) => setSearchParams({...searchParams, keyword: e.target.value})} onKeyDown={handleKeyDown} />
+              </div>
+            </div>
+            <div>
+               <label className="block text-xs font-bold text-slate-500 mb-1">상태</label>
+               <select className="px-2 py-2 border rounded-lg text-sm" value={searchParams.statusType} onChange={(e) => setSearchParams({...searchParams, statusType: e.target.value})}>
+                  <option value="ALL">전체</option>
+                  <option value="ERROR">에러(4xx~)</option>
+               </select>
+            </div>
+            <button onClick={handleSearch} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 flex items-center gap-2">
+               <Search size={16} /> 검색
+            </button>
           </div>
         </div>
 
-        {/* ★ w-full 추가로 가로 스크롤 영역 명확화 */}
-        <div className="overflow-x-auto rounded-xl border border-slate-200 w-full">
-          {/* ★ 레이아웃 방어 핵심: table-fixed, min-w-[1000px], whitespace-nowrap 적용 */}
-          <table className="w-full text-sm font-mono table-fixed min-w-[1000px] whitespace-nowrap">
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full text-sm font-mono">
             <thead className="bg-slate-800 text-slate-300 text-left">
               <tr>
-                {/* ★ 비율 조정: Trace ID를 10%로 줄이고, 발생 일시를 20%로 늘려서 공간 확보! */}
-                <th className="px-4 py-4 font-medium w-[10%]">Trace ID</th>
-                <th className="px-4 py-4 font-medium w-[20%]">발생 일시</th>
-                <th className="px-4 py-4 font-medium text-center w-[10%]">발생자</th>
-                <th className="px-4 py-4 font-medium w-[15%]">요청 IP</th>
-                <th className="px-4 py-4 font-medium w-[25%]">URI</th>
-                <th className="px-4 py-4 font-medium text-right w-[10%]">응답시간</th>
-                <th className="px-4 py-4 font-medium text-center w-[10%]">상태</th>
+                <th className="px-4 py-3">Trace ID</th>
+                <th className="px-4 py-3">시간</th>
+                <th className="px-4 py-3 text-center">발생자</th>
+                <th className="px-4 py-3">IP / URI</th>
+                <th className="px-4 py-3 text-center">상태</th>
               </tr>
             </thead>
             <tbody>
               {logs.map(log => {
                 const isError = log.statusCode >= 400;
-                
-                // ★ S급 디테일: 날짜를 "YYYY-MM-DD HH:mm:ss" 포맷으로 깔끔하게 변환하는 로직
-                const formatDateTime = (dateStr) => {
-                  if (!dateStr) return '-';
-                  const d = new Date(dateStr);
-                  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
-                };
-
                 return (
                   <tr key={log.logNo} className={`border-b border-slate-50 hover:bg-slate-100 ${isError ? 'bg-red-50/50' : ''}`}>
-                    
-                    <td className="px-4 py-3 text-slate-400 text-xs truncate" title={`접속 환경: ${log.userAgent || '알 수 없음'}`}>
-                      <span className="border-b border-dashed border-slate-400 cursor-help">{log.traceId || 'SYSTEM'}</span>
+                    <td className="px-4 py-3 text-xs text-slate-400" title={log.userAgent}>{log.traceId}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500">{new Date(log.regDt).toLocaleString()}</td>
+                    <td className="px-4 py-3 text-center text-xs">
+                       {/* 발생자 표시 로직 */}
+                       {log.userNo ? <span className="bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded">No.{log.userNo}</span> : <span className="text-slate-400">비회원</span>}
                     </td>
-                    
-                    {/* ★ 수정됨: 깔끔하게 압축된 날짜 포맷 적용 및 툴팁으로 원본 날짜 제공 */}
-                    <td className="px-4 py-3 text-slate-600 font-medium text-xs truncate" title={new Date(log.regDt).toLocaleString()}>
-                      {formatDateTime(log.regDt)}
+                    <td className="px-4 py-3 text-xs">
+                      <div className="font-bold text-slate-700">{log.reqIp}</div>
+                      <div className={`truncate max-w-xs ${isError ? 'text-red-600' : 'text-blue-600'}`}>{log.reqUri}</div>
                     </td>
-                    
-                    <td className="px-4 py-3 text-center text-xs truncate">
-                      {log.userNo ? (
-                        <span className="bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded-md">No. {log.userNo}</span>
-                      ) : (
-                        <span className="text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-md border border-slate-200">비회원</span>
-                      )}
-                    </td>
-                    
-                    <td className="px-4 py-3 font-bold text-slate-700 text-xs truncate">{log.reqIp}</td>
-                    
-                    <td className={`px-4 py-3 truncate text-xs ${isError ? 'text-red-600 font-black' : 'text-blue-600 font-medium'}`} title={log.reqUri}>
-                      {log.reqUri}
-                    </td>
-                    
-                      <td className="px-4 py-3 text-right text-slate-400 text-xs truncate">{log.execTime}ms</td>
-                    
-                    <td className="px-4 py-3 text-center truncate">
-                      <span 
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-black border ${!isError ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100 shadow-sm cursor-help'}`}
-                        title={isError ? log.errorMsg || '상세 에러 메시지 없음' : '정상 처리'}
-                      >
-                        {log.statusCode}
-                        {isError && <AlertTriangle size={12} />}
-                      </span>
+                    <td className="px-4 py-3 text-center">
+                       <span className={`px-2 py-1 rounded text-[10px] font-black border ${isError ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`} title={log.errorMsg}>
+                         {log.statusCode}
+                       </span>
                     </td>
                   </tr>
                 );
               })}
-              {logs.length === 0 && <tr><td colSpan="7" className="py-20 text-center text-slate-400 font-bold italic">데이터가 없습니다.</td></tr>}
+              {logs.length === 0 && <tr><td colSpan="5" className="py-10 text-center text-slate-400">검색된 로그가 없습니다.</td></tr>}
             </tbody>
           </table>
         </div>
       </Card>
     );
   }
+
+    
 
   function BlacklistView() { return <div className="p-8 text-center text-slate-500 font-bold bg-white rounded-xl border">UI 기획안 확인용 모의 화면입니다.</div>; }
   function SecurityPolicyView() { return <div className="p-8 text-center text-slate-500 font-bold bg-white rounded-xl border">UI 기획안 확인용 모의 화면입니다.</div>; }
@@ -587,29 +623,80 @@ export default function AdminPage() {
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600"><XCircle /></button>
             </div>
             <div className="p-8 space-y-6">
+              {/* 상단 프로필 영역 (기존 유지) */}
               <div className="flex items-center gap-4">
                 <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-300"><Users size={40} /></div>
                 <div>
                   <h4 className="text-2xl font-black text-slate-800">{selectedItem.userNm}</h4>
                   <p className="text-slate-500 font-medium">@{selectedItem.userId}</p>
+                  {/* 현재 권한 표시 배지 추가 */}
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded">
+                    현재: {getRoleDisplayName(selectedItem.roleCode)}
+                  </span>
                 </div>
               </div>
+
+              {/* 보안 경고 박스 (기존 유지) */}
               <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
                 <p className="text-sm font-bold text-amber-900 flex items-center gap-2"><Lock size={16} /> 개인정보 조회는 AOP 로그에 기록됩니다.</p>
               </div>
               
-              <div className="flex gap-2">
-                {hasPermission(['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) && (
-                  <button onClick={() => handleUserStatusChange(selectedItem.userId, 'S03')} className="flex-grow py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 shadow-sm">
-                    계정 정지 처리
-                  </button>
-                )}
-                {hasPermission(['ROLE_OPERATOR']) && (
-                  <button onClick={() => setShowModal(false)} className="flex-grow py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300">
-                    닫기
-                  </button>
-                )}
+              {/* ▼▼▼ [핵심 수정] 권한 및 상태 관리 통합 패널 ▼▼▼ */}
+              <div className="p-5 bg-slate-50 rounded-xl border border-slate-200">
+                <h5 className="font-bold text-sm text-slate-600 mb-3 flex items-center gap-2">
+                  <Settings size={14} /> 관리자 권한 및 상태 설정
+                </h5>
+                
+                <div className="space-y-3">
+                   {/* 1. 권한 변경 (슈퍼 관리자만 가능) */}
+                   <div className="flex items-center justify-between">
+                     <span className="text-xs font-bold text-slate-500">부여할 권한</span>
+                     <select 
+                        className="px-3 py-2 border rounded-lg text-sm bg-white min-w-[150px]"
+                        value={selectedItem.roleCode}
+                        onChange={(e) => handleRoleChange(selectedItem.userId, e.target.value)}
+                        disabled={!hasPermission(['ROLE_SUPER_ADMIN'])} // 슈퍼 관리자만 활성화
+                     >
+                        <option value="ROLE_USER">일반 회원</option>
+                        <option value="ROLE_LAWYER">변호사</option>
+                        <option value="ROLE_OPERATOR">운영자 (Operator)</option>
+                        <option value="ROLE_ADMIN">관리자 (Admin)</option>
+                        <option value="ROLE_SUPER_ADMIN">슈퍼 관리자</option>
+                     </select>
+                   </div>
+
+                   {/* 2. 블랙리스트 처리 (관리자 이상 가능) */}
+                   {hasPermission(['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) && (
+                     <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                       <span className="text-xs font-bold text-slate-500">계정 상태 제어</span>
+                       <div className="flex gap-2">
+                         {/* 정지 버튼 */}
+                         <button 
+                           onClick={() => handleUserStatusChange(selectedItem.userId, 'S03')}
+                           className="px-3 py-1.5 bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold hover:bg-rose-200 flex items-center gap-1"
+                         >
+                           <Ban size={12} /> 블랙리스트(정지)
+                         </button>
+                         {/* 복구 버튼 (정지된 회원일 때만 보임) */}
+                         {selectedItem.statusCode === 'S03' && (
+                           <button 
+                             onClick={() => handleUserStatusChange(selectedItem.userId, 'S01')}
+                             className="px-3 py-1.5 bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-lg text-xs font-bold hover:bg-emerald-200 flex items-center gap-1"
+                           >
+                             <CheckCircle size={12} /> 정상 복구
+                           </button>
+                         )}
+                       </div>
+                     </div>
+                   )}
+                </div>
               </div>
+              {/* ▲▲▲ [수정 끝] ▲▲▲ */}
+
+              {/* 하단 닫기 버튼 */}
+              <button onClick={() => setShowModal(false)} className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-700 shadow-lg shadow-slate-200 transition-all">
+                닫기
+              </button>
             </div>
           </div>
         </div>
@@ -641,6 +728,20 @@ function StatCard({ title, value, growth, icon, color = "blue" }) {
       red: "bg-red-50 text-red-600",
       amber: "bg-amber-50 text-amber-600"
     };
+
+    // 성장률 색상 로직 개선 (보안 위협은 낮을수록 좋음)
+    const isNegative = growth && growth.startsWith('-');
+    let growthClass = "text-slate-400"; // 기본
+    
+    if (title === "오늘의 보안 위협") {
+        // 위협: 감소(-) = 초록(Good), 증가(+) = 빨강(Bad)
+        growthClass = isNegative ? 'text-emerald-500' : 'text-rose-500';
+    } else {
+        // 일반: 감소(-) = 빨강(Bad), 증가(+) = 초록(Good)
+        growthClass = isNegative ? 'text-rose-500' : 'text-emerald-500';
+    }
+
+
     return (
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between hover:shadow-md transition-shadow">
         <div>
@@ -648,7 +749,7 @@ function StatCard({ title, value, growth, icon, color = "blue" }) {
           <div className="text-3xl font-black text-slate-800">
             {typeof value === 'number' ? value.toLocaleString() : value} 
           </div>
-          <div className={`mt-2 text-xs font-bold ${growth && growth.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
+          <div className={`mt-2 text-xs font-bold ${growthClass}`}>
             {growth}
           </div>
         </div>
