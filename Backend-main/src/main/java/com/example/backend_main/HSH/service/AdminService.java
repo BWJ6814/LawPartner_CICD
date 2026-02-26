@@ -26,9 +26,8 @@ import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -246,33 +245,57 @@ public class AdminService {
     }
 
     // [대시보드용] 일별 접속자 수 통계 조회하기
-    public List<Map<String, Object>> getDailyVisitStats() {
-        // 1. 최근 7일치 로그만 가져오거나, 전체를 가져와서 가공하기
-        List<AccessLog> allLogs = accessLogRepository.findAll();
+    public List<Map<String, Object>> getDailyVisitStats(int days) {
+        LocalDateTime startDate = LocalDateTime.now().minusDays(days - 1);
 
-        // 2. Java Stream을 이용해 날짜별 그룹핑 처리! (YYYY-MM-DD)기준으로
-        Map<String, Long> stats = allLogs.stream()
-                // regDt가 비어있는(Null) 불량 데이터는 무시하고 패스!
-                .filter(log -> log.getRegDt() != null)
-                // "2024-02-19"만 추출
-                .map(log -> log.getRegDt().toString().substring(0,10))
-                .collect(Collectors.groupingBy(
-                        date -> date,
-                        // 개수 세기
-                        Collectors.counting()
-                ));
-        // 3. 리액트가 그리기 좋게 리스트 형태로 변환 및 정렬
-        return stats.entrySet().stream()
-                .map(entry -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("date", entry.getKey());
-                    map.put("count", entry.getValue());
-                    return map;
-                })
-                // 날짜 오름차순(옛날->최신)으로 정렬하고 싶으면 a.compareTo(b)
-                // 최신순(최신->옛날)으로 정렬하고 싶으면 b.compareTo(a)
-                .sorted((a, b) -> ((String) b.get("date")).compareTo((String) a.get("date")))
-                .collect(Collectors.toList());
+        // 1. DB 조회 (파라미터로 계산된 startDate 넘기기)
+        List<Map<String, Object>> userStats = userRepository.findDailySignupStats(startDate);
+        List<Map<String, Object>> logStats = accessLogRepository.findDailyVisitorStats(startDate);
+
+        // 2. 날짜별로 데이터 합치기 (Key: 날짜String, Value: Map)
+        Map<String, Map<String, Object>> mergedMap = new TreeMap<>(); // 날짜 정렬을 위해 TreeMap 사용
+
+        // 3. 최근 7일 날짜를 미리 0으로 세팅 (데이터 없는 날도 0으로 나와야 차트가 안 끊김)
+        // X축 날짜 생성 (days 만큼 반복)
+        for (int i = days - 1; i >= 0; i--) {
+            String date = LocalDateTime.now().minusDays(i).toLocalDate().toString();
+            Map<String, Object> data = new HashMap<>();
+            data.put("date", date);
+            data.put("visitors", 0L);
+            data.put("users", 0L);
+            mergedMap.put(date, data);
+        }
+
+        // 4. 방문자 수 채우기
+        for (Map<String, Object> stat : logStats) {
+            // DB가 "date"로 줄지 "DATE"로 줄지 모르니 둘 다 체크!
+            Object dateObj = stat.get("date");
+            if (dateObj == null) dateObj = stat.get("DATE"); // 대문자 체크
+
+            Object countObj = stat.get("count");
+            if (countObj == null) countObj = stat.get("COUNT"); // 대문자 체크
+
+            String date = String.valueOf(dateObj);
+            if (mergedMap.containsKey(date)) {
+                mergedMap.get(date).put("visitors", countObj);
+            }
+        }
+
+        // 5. 가입자 수 채우기 (대소문자 방어 코드 적용)
+        for (Map<String, Object> stat : userStats) {
+            Object dateObj = stat.get("date");
+            if (dateObj == null) dateObj = stat.get("DATE");
+
+            Object countObj = stat.get("count");
+            if (countObj == null) countObj = stat.get("COUNT");
+
+            String date = String.valueOf(dateObj);
+            if (mergedMap.containsKey(date)) {
+                mergedMap.get(date).put("users", countObj);
+            }
+        }
+
+        return new ArrayList<>(mergedMap.values());
     }
 
     // [보안 감사 로그 조회 - 페이징 & DTO 변환 적용]

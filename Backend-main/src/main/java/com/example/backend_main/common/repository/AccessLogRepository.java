@@ -6,9 +6,14 @@ import com.example.backend_main.common.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 
 /*
@@ -61,6 +66,10 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long>, Jpa
     */
     Page<AccessLog> findByStatusCodeGreaterThanEqual(Integer statusCode, Pageable pageable);
 
-    // [탈퇴 유저 제외] 회원 리스트 목록 뽑아오기
-    List<User> findAllByStatusCodeNot(String statusCode);
+    // [신규] 최근 7일간 일별 방문자 수 (API 호출 수)
+    @Query(value = "SELECT TO_CHAR(REG_DT, 'YYYY-MM-DD') as \"date\", COUNT(*) as \"count\" " +
+            "FROM TB_ACCESS_LOG " +
+            "WHERE REG_DT >= :sevenDaysAgo " +
+            "GROUP BY TO_CHAR(REG_DT, 'YYYY-MM-DD')", nativeQuery = true)
+    List<Map<String, Object>> findDailyVisitorStats(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo);
 }

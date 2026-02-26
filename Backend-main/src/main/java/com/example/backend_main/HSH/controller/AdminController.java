@@ -191,8 +191,10 @@ public class AdminController {
     */
     @GetMapping("/status/daily")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN','ROLE_OPERATOR')")
-    public ResultVO<List<Map<String, Object>>> getDailyStats(){
-        List<Map<String, Object>> stats = adminService.getDailyVisitStats();
-        return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.",stats);
+    public ResultVO<List<Map<String, Object>>> getDailyStats(
+            @RequestParam(defaultValue = "7") int days) { // days 추가!
+
+        List<Map<String, Object>> stats = adminService.getDailyVisitStats(days);
+        return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.", stats);
     }
 }

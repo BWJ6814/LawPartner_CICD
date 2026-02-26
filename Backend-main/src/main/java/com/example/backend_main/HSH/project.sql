@@ -772,3 +772,6 @@ select * from tb_user;
 update tb_user set nick_nm = '킹반인2' where user_no = 64;
 
 commit ;
+
+
+select * from tb_user;

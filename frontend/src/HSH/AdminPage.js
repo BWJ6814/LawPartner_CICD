@@ -4,7 +4,8 @@ import {
   LayoutDashboard, Users, ShieldAlert, FileText, Settings, 
   LogOut, Search, Download, Eye, EyeOff, CheckCircle, XCircle, 
   AlertTriangle, Lock, Unlock, Filter, Calendar, Terminal,
-  UserCheck, Ban, Trash2, FileSearch, ShieldCheck, ChevronRight
+  UserCheck, Ban, Trash2, FileSearch, ShieldCheck, ChevronRight,
+  Activity, RotateCcw
 } from 'lucide-react';
 import { 
   AreaChart, Area, 
@@ -130,25 +131,29 @@ export default function AdminPage() {
     }
   };
 
-  const fetchAuditLogs = async () => {
+  // [수정] params를 받아서 axios에 정확히 태워 보내는 코드
+  const fetchAuditLogs = async (searchParams = {}) => {
     try {
-      // 기본값과 검색 조건을 합칩니다.
-      const requestParams = {
-        page: 0,
-        size: 50,
-        startDate: '',
-        endDate: '',
-        keywordType: '',
-        keyword: '',
-        statusType: 'ALL',
-         // params: '' UI에서 넘겨준 값이 있으면 덮어씌움
+      // 1. 기본값(page, size)과 검색 조건(searchParams)을 합칩니다.
+      const requestConfig = {
+        params: {
+          page: 0,
+          size: 50,
+          // searchParams가 없으면 빈 객체가 들어가므로 안전합니다.
+          startDate: searchParams.startDate || '',
+          endDate: searchParams.endDate || '',
+          keywordType: searchParams.keywordType || '',
+          keyword: searchParams.keyword || '',
+          statusType: searchParams.statusType || 'ALL'
+        }
       };
 
-      const logRes = await api.get('/api/admin/logs', { params: requestParams });
-       
+      // 2. ★ 핵심: 두 번째 인자에 { params: ... } 형태로 넣어야 쿼리스트링(?key=value)으로 날아갑니다.
+      // (기존 코드에서 이 구조가 깨졌을 수 있습니다)
+      const logRes = await api.get('/api/admin/logs', requestConfig);
+      
       if (logRes.data.success && logRes.data.data.content) {
         setLogs(logRes.data.data.content);
-
       } else {
         setLogs([]);
       }
@@ -262,11 +267,35 @@ export default function AdminPage() {
   
   // 1. 대시보드 화면
   function DashboardView() {
+    // 기간 선택 상태 (기본값 7일)
+    const [period, setPeriod] = useState(7);
+    const [dailyStats, setDailyStats] = useState([]);
+
+    // 데이터 로딩 함수 (period가 바뀔 때마다 실행)
+    useEffect(() => {
+      fetchDailyStats(period);
+    }, [period]);
+
+    const fetchDailyStats = async (days) => {
+      try {
+        // API 호출 시 days 파라미터 전달
+        const res = await api.get(`/api/admin/status/daily?days=${days}`);
+        if (res.data.success) {
+          setDailyStats(res.data.data);
+        }
+      } catch (e) {
+        console.error("통계 로드 실패", e);
+      }
+    };
+
     const chartData = useMemo(() => {
-      return dailyStats.slice(-7).map(stat => ({
-        name: stat.date.substring(5),
-        visitors: stat.count,
-        users: Math.floor(stat.count * 0.15)
+      // dailyStats가 없으면 빈 배열
+      if (!dailyStats || dailyStats.length === 0) return [];
+      
+      return dailyStats.map(stat => ({
+        name: stat.date.substring(5), // YYYY-MM-DD -> MM-DD만 표시
+        visitors: stat.visitors,      // 백엔드가 준 방문자 수
+        users: stat.users             // ★ 백엔드가 준 진짜 가입자 수
       }));
     }, [dailyStats]);
 
@@ -288,26 +317,96 @@ export default function AdminPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card title="가입자 및 방문자 통합 추이 (최근 7일)" rightElement={chartDownloadBtn}>
-            {/* ★ 캡처를 위해 차트 영역에 ref 부여 */}
-            <div className="h-72 p-2 bg-white" ref={chartRef}>
-              <ResponsiveContainer width="100%" height="100%" key={chartData.length}>
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8', fontWeight: 500}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                  <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
-                  <Area type="monotone" dataKey="users" name="신규 가입자" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" dot={{ r: 4, fill: '#2563eb', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6, strokeWidth: 0 }} />
-                  <Line type="monotone" dataKey="visitors" name="전체 방문자" stroke="#cbd5e1" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
+          {/* 가입자 추이 그래프 카드 */}
+          <Card>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <Activity size={20} className="text-blue-600"/> 
+                가입자 및 방문자 추이
+              </h3>
+              
+              {/* 🕹️ [핵심] 기간 선택 버튼 그룹 */}
+              <div className="bg-slate-100 p-1 rounded-lg flex text-xs font-bold">
+                {[
+                  { label: '오늘', value: 1 },
+                  { label: '1주일', value: 7 },
+                  { label: '1개월', value: 30 }
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setPeriod(opt.value)}
+                    className={`px-3 py-1.5 rounded-md transition-all ${
+                      period === opt.value 
+                        ? 'bg-white text-blue-600 shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="h-64 w-full">
+               {/* Recharts 그래프 영역 (기존 코드 유지) */}
+               <ResponsiveContainer width="100%" height="100%">
+                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                   <defs>
+                     <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                       <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8}/>
+                       <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                     </linearGradient>
+                     <linearGradient id="colorVisitors" x1="0" y1="0" x2="0" y2="1">
+                       <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                       <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                     </linearGradient>
+                   </defs>
+                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                   <XAxis 
+                     dataKey="name" 
+                     axisLine={false} 
+                     tickLine={false} 
+                     tick={{fontSize: 12, fill: '#64748b'}} 
+                     dy={10}
+                   />
+                   <YAxis 
+                     axisLine={false} 
+                     tickLine={false} 
+                     tick={{fontSize: 12, fill: '#64748b'}} 
+                   />
+                   <Tooltip 
+                     contentStyle={{
+                       backgroundColor: '#fff', 
+                       borderRadius: '12px', 
+                       border: 'none', 
+                       boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                     }} 
+                   />
+                   <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }}/>
+                   
+                   {/* 가입자 수 (파란색) */}
+                   <Area 
+                     type="monotone" 
+                     dataKey="users" 
+                     name="신규 가입" 
+                     stroke="#2563eb" 
+                     fillOpacity={1} 
+                     fill="url(#colorUsers)" 
+                     strokeWidth={3} 
+                   />
+                   
+                   {/* 방문자 수 (보라색) */}
+                   <Area 
+                     type="monotone" 
+                     dataKey="visitors" 
+                     name="방문자" 
+                     stroke="#8b5cf6" 
+                     fillOpacity={1} 
+                     fill="url(#colorVisitors)" 
+                     strokeWidth={3} 
+                   />
+                 </AreaChart>
+               </ResponsiveContainer>
             </div>
           </Card>
 
@@ -418,12 +517,34 @@ export default function AdminPage() {
 
   // 4. 보안 감사 로그 화면
   function AuditLogView() {
-    // 검색 상태 관리 (UI용)
+    // 검색 조건 상태 관리 (여기 있는 값들이 Input에 표시됨)
+    // 검색 버튼을 눌러도 setFunction을 호출하지 않으므로 값은 계속 '유지'처리.
     const [searchParams, setSearchParams] = useState({
       startDate: '', endDate: '', keywordType: 'IP', keyword: '', statusType: 'ALL'
     });
 
-    const handleSearch = () => fetchAuditLogs(searchParams);
+    // 검색 실행 핸들러
+    const handleSearch = () => {
+      // 1. 현재 입력된 값들로 검색 요청을 보냅니다.
+      fetchAuditLogs(searchParams);
+      
+      // 2. [비우기] API 요청 직후, 화면의 상태를 업데이트합니다.
+      // ...prev : 날짜, 조건(IP), 상태 등은 그대로 유지하고
+      // keyword: '' : 오직 검색어만 빈 문자열로 덮어씁니다.
+      setSearchParams(prev => ({
+        ...prev,
+        keyword: '' 
+      }));
+    };
+
+    const handleReset = () => {
+      // 1. UI 상태 초기화
+      setSearchParams({
+        startDate: '', endDate: '', keywordType: 'IP', keyword: '', statusType: 'ALL'
+      });
+      // 2. 전체 데이터 다시 로드 (파라미터 없이 호출)
+      fetchAuditLogs({}); 
+    };
     const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearch(); };
 
     return (
@@ -433,7 +554,6 @@ export default function AdminPage() {
              <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg">
                <Terminal size={20} className="text-blue-600" /> 통합 로그 검색 시스템
              </h3>
-             {/* 엑셀 다운로드 버튼 위치 이동 */}
              {hasPermission(['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) && (
                 <button onClick={handleExcelDownload} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-sm">
                   <FileText size={16} /> 결과 엑셀 저장
@@ -446,13 +566,14 @@ export default function AdminPage() {
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1">기간</label>
               <div className="flex gap-2">
+                {/* value={searchParams.xxx} 덕분에 입력값이 화면에 계속 남아있음 */}
                 <input type="date" className="px-2 py-2 border rounded-lg text-sm" value={searchParams.startDate} onChange={(e) => setSearchParams({...searchParams, startDate: e.target.value})} />
                 <input type="date" className="px-2 py-2 border rounded-lg text-sm" value={searchParams.endDate} onChange={(e) => setSearchParams({...searchParams, endDate: e.target.value})} />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">조건</label>
-              <div className="flex gap-2">
+               <label className="block text-xs font-bold text-slate-500 mb-1">조건</label>
+               <div className="flex gap-2">
                 <select className="px-2 py-2 border rounded-lg text-sm" value={searchParams.keywordType} onChange={(e) => setSearchParams({...searchParams, keywordType: e.target.value})}>
                   <option value="IP">IP 주소</option>
                   <option value="TRACE_ID">Trace ID</option>
@@ -460,7 +581,7 @@ export default function AdminPage() {
                   <option value="USER_NO">회원 번호</option>
                 </select>
                 <input type="text" placeholder="검색어" className="px-3 py-2 border rounded-lg text-sm w-32" value={searchParams.keyword} onChange={(e) => setSearchParams({...searchParams, keyword: e.target.value})} onKeyDown={handleKeyDown} />
-              </div>
+               </div>
             </div>
             <div>
                <label className="block text-xs font-bold text-slate-500 mb-1">상태</label>
@@ -469,12 +590,21 @@ export default function AdminPage() {
                   <option value="ERROR">에러(4xx~)</option>
                </select>
             </div>
-            <button onClick={handleSearch} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 flex items-center gap-2">
-               <Search size={16} /> 검색
-            </button>
+
+            {/* 버튼 그룹 */}
+            <div className="flex gap-2">
+              <button onClick={handleSearch} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 flex items-center gap-2 transition-colors">
+                 <Search size={16} /> 검색
+              </button>
+              {/* 초기화 버튼 (값 지우기용) */}
+              <button onClick={handleReset} className="px-3 py-2 bg-slate-200 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-300 flex items-center gap-2 transition-colors" title="조건 초기화">
+                 <RotateCcw size={16} />
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* 테이블 영역 (기존 코드 유지) */}
         <div className="overflow-x-auto rounded-xl border border-slate-200">
           <table className="w-full text-sm font-mono">
             <thead className="bg-slate-800 text-slate-300 text-left">
@@ -494,7 +624,6 @@ export default function AdminPage() {
                     <td className="px-4 py-3 text-xs text-slate-400" title={log.userAgent}>{log.traceId}</td>
                     <td className="px-4 py-3 text-xs text-slate-500">{new Date(log.regDt).toLocaleString()}</td>
                     <td className="px-4 py-3 text-center text-xs">
-                       {/* 발생자 표시 로직 */}
                        {log.userNo ? <span className="bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded">No.{log.userNo}</span> : <span className="text-slate-400">비회원</span>}
                     </td>
                     <td className="px-4 py-3 text-xs">
@@ -720,6 +849,7 @@ function MenuItem({ icon, label, active, onClick, isOpen }) {
     </button>
   );
 }
+
 function StatCard({ title, value, growth, icon, color = "blue" }) {
     const colorMap = {
       blue: "bg-blue-50 text-blue-600",

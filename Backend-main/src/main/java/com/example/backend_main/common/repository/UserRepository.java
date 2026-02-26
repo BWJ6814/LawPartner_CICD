@@ -3,8 +3,12 @@ package com.example.backend_main.common.repository;
 import com.example.backend_main.common.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /*
@@ -41,6 +45,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findAllByStatusCodeNot(String statusCode);
 
     //
-
-
+    @Query(value = "SELECT TO_CHAR(JOIN_DT, 'YYYY-MM-DD') as \"date\", COUNT(*) as \"count\" " +
+            "FROM TB_USER " +
+            "WHERE JOIN_DT >= :sevenDaysAgo " +
+            "GROUP BY TO_CHAR(JOIN_DT, 'YYYY-MM-DD')", nativeQuery = true)
+    List<Map<String, Object>> findDailySignupStats(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo);
 }
