@@ -142,6 +142,9 @@ public class AuthService {
         if("S02".equals(status)) {
             throw new IllegalStateException("현재 가입 심사 대기중입니다. 승인 완료 후 이용 가능합니다.");
         }
+        if("S99".equals(status)) {
+            throw new IllegalStateException("이미 탈퇴 처리된 계정입니다.");
+        }
 
 
         // 3. [핵심] 이메일 복호화 (JWT의 식별자로 사용하기 위해)
