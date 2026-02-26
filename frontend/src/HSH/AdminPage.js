@@ -100,6 +100,38 @@ export default function AdminPage() {
     return allowedRoles.includes(currentRole);
   };
 
+    // 검색 조건 상태 관리 (여기 있는 값들이 Input에 표시됨)
+    // 검색 버튼을 눌러도 setFunction을 호출하지 않으므로 값은 계속 '유지'처리.
+  const [searchParams, setSearchParams] = useState({
+    startDate: '', endDate: '', keywordType: 'IP', keyword: '', statusType: 'ALL'
+  });
+
+  // 검색 실행 핸들러
+  const handleSearch = () => {
+    // 1. 현재 입력된 값들로 검색 요청을 보냅니다.
+    fetchAuditLogs(searchParams);
+    
+    // 2. [비우기] API 요청 직후, 화면의 상태를 업데이트합니다.
+    // ...prev : 날짜, 조건(IP), 상태 등은 그대로 유지하고
+    // keyword: '' : 오직 검색어만 빈 문자열로 덮어씁니다.
+    setSearchParams(prev => ({
+      ...prev,
+      keyword: '' 
+    }));
+  };
+  
+  // 리셋..
+  const handleReset = () => {
+    // 1. UI 상태 초기화
+    setSearchParams({
+      startDate: '', endDate: '', keywordType: 'IP', keyword: '', statusType: 'ALL'
+    });
+    // 2. 전체 데이터 다시 로드 (파라미터 없이 호출)
+    fetchAuditLogs({}); 
+  };
+
+  const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearch(); };
+  
   // =================================================================
   // 🔄 데이터 호출 로직
   // =================================================================
@@ -516,37 +548,9 @@ export default function AdminPage() {
   }
 
   // 4. 보안 감사 로그 화면
-  function AuditLogView() {
-    // 검색 조건 상태 관리 (여기 있는 값들이 Input에 표시됨)
-    // 검색 버튼을 눌러도 setFunction을 호출하지 않으므로 값은 계속 '유지'처리.
-    const [searchParams, setSearchParams] = useState({
-      startDate: '', endDate: '', keywordType: 'IP', keyword: '', statusType: 'ALL'
-    });
-
-    // 검색 실행 핸들러
-    const handleSearch = () => {
-      // 1. 현재 입력된 값들로 검색 요청을 보냅니다.
-      fetchAuditLogs(searchParams);
-      
-      // 2. [비우기] API 요청 직후, 화면의 상태를 업데이트합니다.
-      // ...prev : 날짜, 조건(IP), 상태 등은 그대로 유지하고
-      // keyword: '' : 오직 검색어만 빈 문자열로 덮어씁니다.
-      setSearchParams(prev => ({
-        ...prev,
-        keyword: '' 
-      }));
-    };
-
-    const handleReset = () => {
-      // 1. UI 상태 초기화
-      setSearchParams({
-        startDate: '', endDate: '', keywordType: 'IP', keyword: '', statusType: 'ALL'
-      });
-      // 2. 전체 데이터 다시 로드 (파라미터 없이 호출)
-      fetchAuditLogs({}); 
-    };
-    const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearch(); };
-
+  // [수정] function -> const renderAuditLogView 변경
+  // (이제 컴포넌트가 아니라 AdminPage의 일부인 '화면 그리는 함수'가 됩니다)
+  const renderAuditLogView = () => {
     return (
       <Card>
         <div className="mb-6 space-y-4">
@@ -566,7 +570,7 @@ export default function AdminPage() {
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1">기간</label>
               <div className="flex gap-2">
-                {/* value={searchParams.xxx} 덕분에 입력값이 화면에 계속 남아있음 */}
+                {/* 상위 state인 searchParams를 직접 연결 */}
                 <input type="date" className="px-2 py-2 border rounded-lg text-sm" value={searchParams.startDate} onChange={(e) => setSearchParams({...searchParams, startDate: e.target.value})} />
                 <input type="date" className="px-2 py-2 border rounded-lg text-sm" value={searchParams.endDate} onChange={(e) => setSearchParams({...searchParams, endDate: e.target.value})} />
               </div>
@@ -596,7 +600,6 @@ export default function AdminPage() {
               <button onClick={handleSearch} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 flex items-center gap-2 transition-colors">
                  <Search size={16} /> 검색
               </button>
-              {/* 초기화 버튼 (값 지우기용) */}
               <button onClick={handleReset} className="px-3 py-2 bg-slate-200 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-300 flex items-center gap-2 transition-colors" title="조건 초기화">
                  <RotateCcw size={16} />
               </button>
@@ -604,7 +607,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* 테이블 영역 (기존 코드 유지) */}
+        {/* 테이블 영역 (여기는 기존 코드 그대로 두셔도 됩니다) */}
         <div className="overflow-x-auto rounded-xl border border-slate-200">
           <table className="w-full text-sm font-mono">
             <thead className="bg-slate-800 text-slate-300 text-left">
@@ -644,7 +647,7 @@ export default function AdminPage() {
         </div>
       </Card>
     );
-  }
+  };
 
     
 
@@ -658,7 +661,7 @@ export default function AdminPage() {
       case 'dashboard': return <DashboardView />;
       case 'user-manage': return <UserManagementView />;
       case 'lawyer-approve': return <LawyerApprovalView />;
-      case 'audit-log': return <AuditLogView />;
+      case 'audit-log': return renderAuditLogView();
       case 'blacklist': return <BlacklistView />;
       case 'security-policy': return <SecurityPolicyView />;
       case 'content-security': return <ContentSecurityView />;
