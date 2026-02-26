@@ -323,7 +323,7 @@ const Header = ({auth, onLoginUpdate}) => {
                   </Link>
                 ) : (
                   /* 3. 일반 회원 */
-                  <Link to="/mypage" style={noUnderlineStyle} className="bg-white text-slate-700 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition shadow-sm whitespace-nowrap no-underline">
+                  <Link to="/mypage" style={noUnderlineStyle} className="bg-blue-900 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition shadow-md whitespace-nowrap no-underline">
                     마이페이지
                   </Link>
                 )}
