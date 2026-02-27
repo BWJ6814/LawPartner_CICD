@@ -5,6 +5,7 @@ import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AccessLogRepository;
 import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.common.spec.AccessLogSpecification;
 import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil; // 해시 유틸
 import com.example.backend_main.dto.UserJoinRequestDTO;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*; // Excel 관련
 import org.apache.poi.xssf.streaming.SXSSFWorkbook; // 대용량 Excel
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // 트랜잭션
@@ -24,9 +26,8 @@ import org.springframework.data.domain.Sort;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,8 +48,8 @@ public class AdminService {
     public List<User> getAllUsers() {
 
         // userRepository.findAll() : DB의 TB_USER 테이블에 있는 모든 데이터를 싹 긁어오기
-        // .stream() : 글겅온 데이터 뭉치를 한 명씩 차례대로 처리할 수 있는 [흐름] 상태로 만들기
-        return userRepository.findAll().stream()
+        // .stream() : 긁어온 데이터 뭉치를 한 명씩 차례대로 처리할 수 있는 [흐름] 상태로 만들기
+        return userRepository.findAllByStatusCodeNot("S99").stream()
                 // .map(user -> {...} ) : 흐름 속의 유저 한 명(user)을 꺼내서 원하는 모양으로 변신시키기
                 .map(user -> {
                     try {
@@ -65,6 +66,7 @@ public class AdminService {
                                 .userNo(user.getUserNo())           // 번호 그대로
                                 .userId(user.getUserId())           // 아이디 그대로
                                 .userNm(user.getUserNm())           // 이름 그대로
+                                .nickNm(user.getNickNm())           // 유저 닉네임 그대로
                                 .email(decryptedEmail)              // [중요] 해독된 이메일
                                 .phone(decryptedPhone)              // [중요] 해독된 휴대폰 번호
                                 .roleCode(user.getRoleCode())       // 권한 코드 그대로
@@ -75,7 +77,7 @@ public class AdminService {
                         // 실패 시 암호화된 상태로 반환
                         // catch : 혹시라도 해독 중에 에러가 나면 프로그램이 멈추지 않게 방어하기..!
                         // 에러가 나면 그냥 원래의(암호화된) 유저 정보를 그대로 보내주기
-                        log.error("복호화 오류 발생: User.No {}",user.getUserNo());
+                        log.error("복호화 오류 발생: User.No {}번 ",user.getUserNo());
                         return user;
                     }
                 })
@@ -243,33 +245,57 @@ public class AdminService {
     }
 
     // [대시보드용] 일별 접속자 수 통계 조회하기
-    public List<Map<String, Object>> getDailyVisitStats() {
-        // 1. 최근 7일치 로그만 가져오거나, 전체를 가져와서 가공하기
-        List<AccessLog> allLogs = accessLogRepository.findAll();
+    public List<Map<String, Object>> getDailyVisitStats(int days) {
+        LocalDateTime startDate = LocalDateTime.now().minusDays(days - 1);
 
-        // 2. Java Stream을 이용해 날짜별 그룹핑 처리! (YYYY-MM-DD)기준으로
-        Map<String, Long> stats = allLogs.stream()
-                // regDt가 비어있는(Null) 불량 데이터는 무시하고 패스!
-                .filter(log -> log.getRegDt() != null)
-                // "2024-02-19"만 추출
-                .map(log -> log.getRegDt().toString().substring(0,10))
-                .collect(Collectors.groupingBy(
-                        date -> date,
-                        // 개수 세기
-                        Collectors.counting()
-                ));
-        // 3. 리액트가 그리기 좋게 리스트 형태로 변환 및 정렬
-        return stats.entrySet().stream()
-                .map(entry -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("date", entry.getKey());
-                    map.put("count", entry.getValue());
-                    return map;
-                })
-                // 날짜 오름차순(옛날->최신)으로 정렬하고 싶으면 a.compareTo(b)
-                // 최신순(최신->옛날)으로 정렬하고 싶으면 b.compareTo(a)
-                .sorted((a, b) -> ((String) b.get("date")).compareTo((String) a.get("date")))
-                .collect(Collectors.toList());
+        // 1. DB 조회 (파라미터로 계산된 startDate 넘기기)
+        List<Map<String, Object>> userStats = userRepository.findDailySignupStats(startDate);
+        List<Map<String, Object>> logStats = accessLogRepository.findDailyVisitorStats(startDate);
+
+        // 2. 날짜별로 데이터 합치기 (Key: 날짜String, Value: Map)
+        Map<String, Map<String, Object>> mergedMap = new TreeMap<>(); // 날짜 정렬을 위해 TreeMap 사용
+
+        // 3. 최근 7일 날짜를 미리 0으로 세팅 (데이터 없는 날도 0으로 나와야 차트가 안 끊김)
+        // X축 날짜 생성 (days 만큼 반복)
+        for (int i = days - 1; i >= 0; i--) {
+            String date = LocalDateTime.now().minusDays(i).toLocalDate().toString();
+            Map<String, Object> data = new HashMap<>();
+            data.put("date", date);
+            data.put("visitors", 0L);
+            data.put("users", 0L);
+            mergedMap.put(date, data);
+        }
+
+        // 4. 방문자 수 채우기
+        for (Map<String, Object> stat : logStats) {
+            // DB가 "date"로 줄지 "DATE"로 줄지 모르니 둘 다 체크!
+            Object dateObj = stat.get("date");
+            if (dateObj == null) dateObj = stat.get("DATE"); // 대문자 체크
+
+            Object countObj = stat.get("count");
+            if (countObj == null) countObj = stat.get("COUNT"); // 대문자 체크
+
+            String date = String.valueOf(dateObj);
+            if (mergedMap.containsKey(date)) {
+                mergedMap.get(date).put("visitors", countObj);
+            }
+        }
+
+        // 5. 가입자 수 채우기 (대소문자 방어 코드 적용)
+        for (Map<String, Object> stat : userStats) {
+            Object dateObj = stat.get("date");
+            if (dateObj == null) dateObj = stat.get("DATE");
+
+            Object countObj = stat.get("count");
+            if (countObj == null) countObj = stat.get("COUNT");
+
+            String date = String.valueOf(dateObj);
+            if (mergedMap.containsKey(date)) {
+                mergedMap.get(date).put("users", countObj);
+            }
+        }
+
+        return new ArrayList<>(mergedMap.values());
     }
 
     // [보안 감사 로그 조회 - 페이징 & DTO 변환 적용]
@@ -359,13 +385,35 @@ public class AdminService {
         return summary;
     }
 
-
-
     // 증감률 계산 보조 메서드
     private String calculateGrowth(long current, long previous) {
         if (previous == 0) return current > 0 ? "+100%" : "0%";
         double growth = ((double) (current - previous) / previous) * 100;
         return String.format("%s%.1f%%", growth >= 0 ? "+" : "", growth);
     }
+
+    // 시스템 감사 로그 검색 및 페이징 처리
+    @Transactional(readOnly = true)
+    public Page<AccessLogResponseDTO> searchAccessLogs(int page,
+                                                       int size,
+                                                       String startDate,
+                                                       String endDate,
+                                                       String keywordType,
+                                                       String keyword,
+                                                       String statusType) {
+
+        // 1. 페이징 설정
+        Pageable pageable = PageRequest.of(page, size);
+
+        // 2. 검색 조건 설정
+        Specification<AccessLog> spec = AccessLogSpecification.searchLog(startDate, endDate, keywordType, keyword, statusType);
+
+        // 3. 레퍼지토리 조회 및 DTO 변환
+        return accessLogRepository.findAll(spec, pageable)
+                .map(AccessLogResponseDTO::fromEntity);
+
+    }
+
+
 }
 

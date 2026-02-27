@@ -18,6 +18,18 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 
+// 페이징 처리를 위한 핵심 클래스들
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+// 동적 쿼리(검색)을 위한 JPA Specification
+import org.springframework.data.jpa.domain.Specification;
+// 검색 규칙 클래스
+import com.example.backend_main.common.spec.AccessLogSpecification;
+// 엔티티 및 DTO
+import com.example.backend_main.common.entity.AccessLog;
+import com.example.backend_main.dto.AccessLogResponseDTO;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -124,16 +136,20 @@ public class AdminController {
     - 엑셀이 아닌, JSON 데이터로 로그 리스트를 반환합니다.
     */
     @GetMapping("/logs")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')") // 관리자 접근 제어 추가
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
     public ResultVO<Page<AccessLogResponseDTO>> getAccessLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
-            @RequestParam(required = false) String type){
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) String keywordType,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "ALL") String statusType){
 
-        // 비즈니스 로직(Service) 호출 -> DTO로 변환된 Page 객체를 받음
-        Page<AccessLogResponseDTO> logPage = adminService.getAccessLogs(page, size, type);
+        //  컨트롤러가 직접 레포지토리를 만지지 않고, 서비스에게 요청합니다.
+        Page<AccessLogResponseDTO> logs = adminService.searchAccessLogs(page, size, startDate, endDate, keywordType, keyword, statusType);
 
-        return ResultVO.ok("로그 목록을 성공적으로 불러왔습니다.", logPage);
+        return ResultVO.ok("로그 조회 성공", logs);
     }
     
     // 그래프(차트)용 데이터를 만드는 전용 창구
@@ -175,8 +191,10 @@ public class AdminController {
     */
     @GetMapping("/status/daily")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN','ROLE_OPERATOR')")
-    public ResultVO<List<Map<String, Object>>> getDailyStats(){
-        List<Map<String, Object>> stats = adminService.getDailyVisitStats();
-        return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.",stats);
+    public ResultVO<List<Map<String, Object>>> getDailyStats(
+            @RequestParam(defaultValue = "7") int days) { // days 추가!
+
+        List<Map<String, Object>> stats = adminService.getDailyVisitStats(days);
+        return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.", stats);
     }
 }
