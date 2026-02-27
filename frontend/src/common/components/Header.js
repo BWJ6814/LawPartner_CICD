@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/axiosConfig';
 
 const Header = ({auth, onLoginUpdate}) => {
   const navigate = useNavigate();
@@ -152,27 +153,24 @@ const Header = ({auth, onLoginUpdate}) => {
     };
   }, []);
 
-  // 알림 데이터 가져오기 (시뮬레이션)
-  const fetchNotifications = (role) => {
-    // 실제로는 백엔드 API에서 받아오는 데이터입니다.
-    const dummyData = role === 'LAWYER' ? [
-      { id: 1, text: "새로운 상담 요청이 도착했습니다.", time: "방금 전", read: false },
-      { id: 2, text: "홍길동님이 상담 후기를 남겼습니다.", time: "1시간 전", read: false },
-      { id: 3, text: "이번 달 정산 내역이 생성되었습니다.", time: "어제", read: true },
-      { id: 4, text: "AI 판례 분석이 완료되었습니다.", time: "2일 전", read: true },
-      { id: 5, text: "시스템 점검 안내", time: "3일 전", read: true },
-      // 변호사용 알림들
-    ] : [
-      { id: 1, text: "변호사님이 답변을 등록했습니다.", time: "방금 전", read: false },
-      { id: 2, text: "1:1 상담 예약이 확정되었습니다.", time: "30분 전", read: false },
-      { id: 3, text: "회원가입 환영 쿠폰이 지급되었습니다.", time: "1일 전", read: true },
-      // 일반 사용자용 알림들
-    ];
+    useEffect(() => {
+        if (auth.isLoggedIn) {
+            fetchNotificationCount();
+        }
+    }, [auth.isLoggedIn]); // auth.isLoggedIn이 바뀔 때마다 실행
 
-    setNotifications(dummyData);
-    // 읽지 않은 알림 개수 계산
-    setNotificationCount(dummyData.filter(n => !n.read).length);
-  };
+    const fetchNotificationCount = async () => {
+        try {
+            // 백엔드 API 찌르기
+            const res = await api.get('/api/mypage/notifications/count');
+            // ★ [핵심 3] setNotiCount가 아니라 네가 만든 setNotificationCount로 바꿔라!
+            setNotificationCount(res.data);
+        } catch (error) {
+            console.error("알림 카운트 에러:", error);
+        }
+    };
+
+
 
   const noUnderlineStyle = { textDecoration: 'none', outline: 'none' };
 
@@ -276,10 +274,19 @@ const Header = ({auth, onLoginUpdate}) => {
 
                 {/* 알림 아이콘 & 드롭다운 (핵심 구현) */}
                 <div className="relative" ref={notificationRef}>
-                  <button 
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className={`relative p-2 transition rounded-full ${showNotifications ? 'bg-gray-100 text-blue-900' : 'text-gray-500 hover:text-blue-900 hover:bg-gray-50'}`}
-                  >
+                    <button
+                        onClick={() => {
+                            setShowNotifications(!showNotifications);
+                            // ★ [핵심] 창을 열 때 숫자를 0으로 만들어버림 (UX 디테일)
+                            if (!showNotifications && notificationCount > 0) {
+                                setNotificationCount(0);
+
+                                // 나중에 백엔드 쪽에 "이 유저 알림 다 읽었음" 처리하는 API 뚫리면 여기서 쏴주면 됨
+                                // api.post('/api/mypage/notifications/read-all');
+                            }
+                        }}
+                        className={`relative p-2 transition rounded-full ${showNotifications ? 'bg-gray-100 text-blue-900' : 'text-gray-500 hover:text-blue-900 hover:bg-gray-50'}`}
+                    >
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
                     {notificationCount > 0 && (
                       <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
