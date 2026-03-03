@@ -13,6 +13,8 @@ public class ChatRoomDTO {
     private String progressCode; // ST01(대기), ST02(진행중)
     private String statusCode;   // OPEN, CLOSE
     private LocalDateTime regDt;
+    private String userNm;
+    private String lawyerName;
 
     // (선택사항) 나중에 추가할 꿀기능들
     private String opponentName; // 상대방 이름

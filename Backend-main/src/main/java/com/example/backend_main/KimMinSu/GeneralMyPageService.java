@@ -1,5 +1,6 @@
 package com.example.backend_main.KimMinSu;
 
+import com.example.backend_main.BWJ.BoardReplyRepository;
 import com.example.backend_main.BWJ.BoardRepository;
 import com.example.backend_main.common.entity.CalendarEvent;
 import com.example.backend_main.common.entity.ChatRoom;
@@ -31,6 +32,7 @@ public class GeneralMyPageService {
 
     // ★ 방금 만든 캘린더 관리자 추가!
     private final CalendarEventRepository calendarEventRepository;
+    private final BoardReplyRepository boardReplyRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     private final Aes256Util aes256Util;
     private final HashUtil hashUtil;
@@ -51,8 +53,17 @@ public class GeneralMyPageService {
 
         List<GeneralMyPageDTO.ConsultationItemDTO> consultList = myChatRooms.stream().map(room -> {
             GeneralMyPageDTO.ConsultationItemDTO item = new GeneralMyPageDTO.ConsultationItemDTO();
-            // 변호사 이름은 LawyerInfoRepository로 가져오거나 임시 처리
-            item.setLawyerName(room.getLawyerNo() != null ? "변호사 번호: " + room.getLawyerNo() : "매칭 대기중");
+
+            String lawyerName = "매칭 대기중";
+
+            if (room.getLawyerNo() != null) {
+                // userRepository를 통해 변호사의 User 정보를 팩트 체크함
+                lawyerName = userRepository.findById(room.getLawyerNo())
+                        .map(u -> u.getUserNm() + " 변호사") // 이름 뒤에 '변호사' 칭호 붙여주는 게 국룰
+                        .orElse("퇴사한 변호사"); // 혹시 유저 정보가 없으면 예외 처리
+            }
+
+            item.setLawyerName(lawyerName);
             item.setCategory("일반상담");
 
             // ST01=대기, ST02=상담중, ST03=완료
@@ -78,7 +89,10 @@ public class GeneralMyPageService {
             if(board.getRegDt() != null) {
                 postDTO.setRegDate(board.getRegDt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
             }
-            postDTO.setReplyCount(0); // 추후 답글 개수 연동
+
+            int replyCount = boardReplyRepository.countByBoardNo(board.getBoardNo());
+            postDTO.setReplyCount(replyCount);
+
             return postDTO;
         }).collect(Collectors.toList());
 

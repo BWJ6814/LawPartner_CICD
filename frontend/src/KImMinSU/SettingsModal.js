@@ -73,7 +73,11 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
         }
 
         // 헤더에 multipart/form-data 안 붙여도 axios가 FormData 객체 보면 알아서 세팅해줌
-        await api.put('/api/mypage/profile', formData);
+        await api.put('/api/mypage/profile', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
 
         localStorage.setItem('nickNm', nameInput);
         alert("프로필이 성공적으로 변경되었습니다.");
