@@ -66,8 +66,9 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long>, Jpa
     */
     Page<AccessLog> findByStatusCodeGreaterThanEqual(Integer statusCode, Pageable pageable);
 
-    // [신규] 최근 7일간 일별 방문자 수 (API 호출 수)
-    @Query(value = "SELECT TO_CHAR(REG_DT, 'YYYY-MM-DD') as \"date\", COUNT(*) as \"count\" " +
+    // [신규] 지정일별 방문자 수 (API 호출 수)
+    // DISTINCT REQ_IP = 중복을 제거(DISTINCT) 어떤 것을?(REQ_IP) 아이피를 중복 제거하여, 아이피별 방문자수로 처리!
+    @Query(value = "SELECT TO_CHAR(REG_DT, 'YYYY-MM-DD') as \"date\", COUNT(DISTINCT REQ_IP) as \"count\" " +
             "FROM TB_ACCESS_LOG " +
             "WHERE REG_DT >= :sevenDaysAgo " +
             "GROUP BY TO_CHAR(REG_DT, 'YYYY-MM-DD')", nativeQuery = true)

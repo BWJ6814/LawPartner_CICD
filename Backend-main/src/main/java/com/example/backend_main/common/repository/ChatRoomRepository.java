@@ -12,9 +12,9 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
     // 팩트: 내가 의뢰인인 방 또는 내가 변호사인 방 다 가져와라!
     List<ChatRoom> findByUserNoOrLawyerNoOrderByRegDtDesc(Long userNo, Long lawyerNo);
 
-    List<ChatRoom> findByUserNo(Long userNo);
-
     List<ChatRoom> findByLawyerNoAndProgressCode(Long lawyerNo, String progressCode);
+
+    List<ChatRoom> findByUserNoAndProgressCode(Long userNo, String progressCode);
 
     List<ChatRoom> findByUserNoOrderByRegDtDesc(Long userNo);
 

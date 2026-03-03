@@ -298,6 +298,7 @@ export default function AdminPage() {
   // =================================================================
   
   // 1. 대시보드 화면
+  // 1. 대시보드 화면
   function DashboardView() {
     // 기간 선택 상태 (기본값 7일)
     const [period, setPeriod] = useState(7);
@@ -321,22 +322,34 @@ export default function AdminPage() {
     };
 
     const chartData = useMemo(() => {
-      // dailyStats가 없으면 빈 배열
+      // 1. 데이터가 아예 없으면 빈 배열 반환
       if (!dailyStats || dailyStats.length === 0) return [];
       
-      return dailyStats.map(stat => ({
-        name: stat.date.substring(5), // YYYY-MM-DD -> MM-DD만 표시
-        visitors: stat.visitors,      // 백엔드가 준 방문자 수
-        users: stat.users             // ★ 백엔드가 준 진짜 가입자 수
+      // 2. 기본 데이터 매핑 (MM-DD 포맷팅)
+      let processedData = dailyStats.map(stat => ({
+        name: stat.date.substring(5), // YYYY-MM-DD -> MM-DD
+        visitors: stat.visitors !== undefined ? stat.visitors : (stat.count || 0), // 백엔드 호환
+        users: stat.users || 0 
       }));
-    }, [dailyStats]);
 
-    // ★ S급 디테일: 차트 다운로드 버튼을 Card의 rightElement로 배치
-    const chartDownloadBtn = hasPermission(['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR']) ? (
-      <button onClick={handleDownloadChart} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors text-sm">
-        <Download size={14} /> 차트 캡처
-      </button>
-    ) : null;
+      // ★★★ [방어 로직] ★★★
+      // '오늘'을 눌렀는데 백엔드에서 1개만 줄 경우, 선을 그리기 위해 어제 날짜(0명)를 강제로 앞에 끼워넣음
+      if (period === 2 && processedData.length === 1) {
+        const todayStr = dailyStats[0].date;
+        const todayObj = new Date(todayStr);
+        todayObj.setDate(todayObj.getDate() - 1); // 하루 전으로 세팅
+        
+        const dummyYesterday = `${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+        
+        // 배열의 맨 앞에 어제(0) 데이터를 추가!
+        processedData = [
+          { name: dummyYesterday, visitors: 0, users: 0 },
+          processedData[0]
+        ];
+      }
+      
+      return processedData;
+    }, [dailyStats, period]);
 
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
@@ -350,6 +363,7 @@ export default function AdminPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 가입자 추이 그래프 카드 */}
+          {/* 가입자 추이 그래프 카드 */}
           <Card>
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -357,10 +371,10 @@ export default function AdminPage() {
                 가입자 및 방문자 추이
               </h3>
               
-              {/* 🕹️ [핵심] 기간 선택 버튼 그룹 */}
+              {/* 🕹️ 기간 선택 버튼 그룹 (오늘 value=2 유지) */}
               <div className="bg-slate-100 p-1 rounded-lg flex text-xs font-bold">
                 {[
-                  { label: '오늘', value: 1 },
+                  { label: '오늘', value: 2 },
                   { label: '1주일', value: 7 },
                   { label: '1개월', value: 30 }
                 ].map((opt) => (
@@ -379,66 +393,96 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="h-64 w-full">
-               {/* Recharts 그래프 영역 (기존 코드 유지) */}
-               <ResponsiveContainer width="100%" height="100%">
-                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                   <defs>
-                     <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                       <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8}/>
-                       <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                     </linearGradient>
-                     <linearGradient id="colorVisitors" x1="0" y1="0" x2="0" y2="1">
-                       <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                       <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                     </linearGradient>
-                   </defs>
-                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                   <XAxis 
-                     dataKey="name" 
-                     axisLine={false} 
-                     tickLine={false} 
-                     tick={{fontSize: 12, fill: '#64748b'}} 
-                     dy={10}
-                   />
-                   <YAxis 
-                     axisLine={false} 
-                     tickLine={false} 
-                     tick={{fontSize: 12, fill: '#64748b'}} 
-                   />
-                   <Tooltip 
-                     contentStyle={{
-                       backgroundColor: '#fff', 
-                       borderRadius: '12px', 
-                       border: 'none', 
-                       boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                     }} 
-                   />
-                   <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }}/>
-                   
-                   {/* 가입자 수 (파란색) */}
-                   <Area 
-                     type="monotone" 
-                     dataKey="users" 
-                     name="신규 가입" 
-                     stroke="#2563eb" 
-                     fillOpacity={1} 
-                     fill="url(#colorUsers)" 
-                     strokeWidth={3} 
-                   />
-                   
-                   {/* 방문자 수 (보라색) */}
-                   <Area 
-                     type="monotone" 
-                     dataKey="visitors" 
-                     name="방문자" 
-                     stroke="#8b5cf6" 
-                     fillOpacity={1} 
-                     fill="url(#colorVisitors)" 
-                     strokeWidth={3} 
-                   />
-                 </AreaChart>
-               </ResponsiveContainer>
+            {/* 차트 영역 */}
+            <div className="w-full">
+              {/* 캡처를 위한 ref 추가 */}
+              <div className="h-64 w-full bg-white" ref={chartRef}>
+                 <ResponsiveContainer width="100%" height="100%">
+                   {/* ★ 수정 1: left 마진을 -15로 줘서 우측으로 쏠린 차트를 왼쪽으로(정중앙으로) 당김 */}
+                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                     <defs>
+                       <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8}/>
+                         <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                       </linearGradient>
+                       <linearGradient id="colorVisitors" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                         <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                       </linearGradient>
+                     </defs>
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                     <XAxis 
+                       dataKey="name" 
+                       axisLine={false} 
+                       tickLine={false} 
+                       tick={{fontSize: 12, fill: '#64748b'}} 
+                       dy={10}
+                     />
+                     {/* ★ 수정 2: Y축이 낭비하던 기본 60px 공간을 30px로 확 줄임 */}
+                     <YAxis 
+                       axisLine={false} 
+                       tickLine={false} 
+                       tick={{fontSize: 12, fill: '#64748b'}} 
+                       width={30}
+                     />
+                     <Tooltip 
+                       contentStyle={{
+                         backgroundColor: '#fff', 
+                         borderRadius: '12px', 
+                         border: 'none', 
+                         boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                       }} 
+                     />
+                     
+                     <Area 
+                       type="monotone" 
+                       dataKey="users" 
+                       name="신규 가입" 
+                       stroke="#2563eb" 
+                       fillOpacity={1} 
+                       fill="url(#colorUsers)" 
+                       strokeWidth={3} 
+                       activeDot={{ r: 6, strokeWidth: 0 }}
+                     />
+                     
+                     <Area 
+                       type="monotone" 
+                       dataKey="visitors" 
+                       name="방문자" 
+                       stroke="#8b5cf6" 
+                       fillOpacity={1} 
+                       fill="url(#colorVisitors)" 
+                       strokeWidth={3} 
+                       activeDot={{ r: 6, strokeWidth: 0 }}
+                     />
+                   </AreaChart>
+                 </ResponsiveContainer>
+              </div>
+
+              {/* ★ 핵심: 차트 밖으로 빼서 Flex로 묶어 완벽한 수평(평행) 달성! */}
+              <div className="flex justify-between items-center mt-2 px-2">
+                
+                {/* 좌측: 직접 만든 커스텀 범례 (어긋남 방지) */}
+                <div className="flex items-center gap-4 text-xs font-bold text-[#64748b]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#2563eb]"></span> 신규 가입
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#8b5cf6]"></span> 방문자
+                  </div>
+                </div>
+
+                {/* 우측: 다운로드 버튼 (data-html2canvas-ignore="true"로 캡처 방지) */}
+                {hasPermission(['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR']) && (
+                  <button 
+                    onClick={handleDownloadChart} 
+                    data-html2canvas-ignore="true"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors text-xs border border-blue-100 shadow-sm"
+                  >
+                    <Download size={14} /> 차트 캡처
+                  </button>
+                )}
+              </div>
             </div>
           </Card>
 
