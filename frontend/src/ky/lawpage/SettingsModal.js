@@ -1,16 +1,22 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import PaymentModal from './PaymentModal';
+import api from '../../common/api/axiosConfig';
 
 const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubscribed, setIsSubscribed }) => {
     const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'password', 'payment'
     const fileInputRef = useRef(null);
+    const withdrawPwRef = useRef(null); // 회원탈퇴 비밀번호 입력 (DOM 직접 접근 제거)
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false); // 결제 모달 상태
+    const userRole = localStorage.getItem('userRole');
 
     // 프로필 변경 상태
     const [profileData, setProfileData] = useState({
-        name: '김구역',
-        email: 'gen03@example.com',
-        phone: '010-1234-5678'
+        name: '',
+        email: '',
+        phone: '',
+        specialties: [],
+        bio: '',
+        imgUrl: ''
     });
 
     // 비밀번호 변경 상태
@@ -20,32 +26,71 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
         confirmPassword: ''
     });
 
+    // 모달 열릴 때 프로필 데이터 로드
+    useEffect(() => {
+        if (!isOpen) return;
+        const load = async () => {
+            // 1. 기본 정보 (이름/이메일/전화번호) — KimMinSu팀 API
+            try {
+                const res = await api.get('/api/mypage/profile');
+                const d = res.data.data;
+                setProfileData(prev => ({
+                    ...prev,
+                    name:  d.name  || '',
+                    email: d.email || '',
+                    phone: d.phone || ''
+                }));
+            } catch (err) {
+                console.error('기본 프로필 로딩 실패:', err);
+            }
+            // 2. 변호사 전용 정보 (전문분야/소개글/사진) — KY팀 API
+            if (userRole === 'ROLE_LAWYER') {
+                try {
+                    const kyRes = await api.get('/api/ky/profile');
+                    const kd = kyRes.data.data || {};
+                    setProfileData(prev => ({
+                        ...prev,
+                        specialties: kd.specialties || [],
+                        bio: kd.bio || ''
+                    }));
+                    if (kd.imgUrl) {
+                        setProfileImage(`http://localhost:8080${kd.imgUrl}`);
+                    }
+                } catch (err) {
+                    console.error('변호사 프로필 로딩 실패:', err);
+                }
+            }
+        };
+        load();
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
-    // 이미지 업로드 핸들러
-    const handleImageUpload = (e) => {
+    // 이미지 업로드 핸들러 (백엔드 API 연동)
+    const handleImageUpload = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            // 파일 크기 체크 (5MB 제한)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('파일 크기는 5MB 이하여야 합니다.');
-                return;
-            }
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) { alert('파일 크기는 5MB 이하여야 합니다.'); return; }
+        if (!file.type.startsWith('image/')) { alert('이미지 파일만 업로드 가능합니다.'); return; }
 
-            // 이미지 파일인지 확인
-            if (!file.type.startsWith('image/')) {
-                alert('이미지 파일만 업로드 가능합니다.');
-                return;
-            }
+        // 미리보기 (즉시 반영)
+        const reader = new FileReader();
+        reader.onloadend = () => setProfileImage(reader.result);
+        reader.readAsDataURL(file);
 
-            // FileReader로 미리보기
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setProfileImage(reader.result);
-                console.log('프로필 이미지 업로드:', file.name);
-                // 실제로는 서버에 업로드하는 로직 필요
-            };
-            reader.readAsDataURL(file);
+        // 변호사는 서버에 저장 (KY팀 API)
+        if (userRole === 'ROLE_LAWYER') {
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                await api.post('/api/ky/profile/image', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                alert('프로필 사진이 저장되었습니다.');
+            } catch (err) {
+                alert('사진 업로드에 실패했습니다.');
+                console.error(err);
+            }
         }
     };
 
@@ -57,9 +102,27 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
         }
     };
 
-    const handleProfileSave = () => {
-        console.log('프로필 저장:', profileData);
-        // 실제 저장 로직
+    const handleProfileSave = async () => {
+        try {
+            // 1. 기본 정보 저장 — KimMinSu팀 API
+            await api.put('/api/mypage/profile', {
+                name:  profileData.name,
+                email: profileData.email,
+                phone: profileData.phone
+            });
+            // 2. 변호사 전용 정보 저장 — KY팀 API
+            if (userRole === 'ROLE_LAWYER') {
+                await api.put('/api/ky/profile', {
+                    specialties: profileData.specialties || [],
+                    bio: profileData.bio || ''
+                });
+            }
+            alert('프로필이 저장되었습니다.');
+            localStorage.setItem('userNm', profileData.name);
+        } catch (err) {
+            alert('저장에 실패했습니다.');
+            console.error(err);
+        }
     };
 
     const handlePasswordChange = () => {
@@ -67,8 +130,19 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
             alert('새 비밀번호가 일치하지 않습니다.');
             return;
         }
-        console.log('비밀번호 변경');
-        // 실제 비밀번호 변경 로직
+        api.put('/api/mypage/password', {
+            currentPassword: passwordData.currentPassword,
+            newPassword: passwordData.newPassword
+        })
+            .then(() => {
+                alert('비밀번호가 변경되었습니다.');
+                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            })
+            .catch(err => {
+                const msg = err.response?.data?.message || '비밀번호 변경에 실패했습니다.';
+                alert(msg);
+                console.error(err);
+            });
     };
 
     const handleSubscriptionToggle = () => {
@@ -92,10 +166,10 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 py-6">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
                 {/* 헤더 */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 flex-shrink-0">
                     <h2 className="text-xl font-bold text-gray-900">설정</h2>
                     <button
                         onClick={onClose}
@@ -107,9 +181,9 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
                     </button>
                 </div>
 
-                <div className="flex">
+                <div className="flex flex-1 min-h-0">
                     {/* 사이드바 메뉴 */}
-                    <div className="w-64 bg-gray-50 border-r border-gray-200 p-4">
+                    <div className="w-52 bg-gray-50 border-r border-gray-200 p-3 flex-shrink-0">
                         <nav className="space-y-1">
                             <button
                                 onClick={() => setActiveTab('profile')}
@@ -172,7 +246,7 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
                     </div>
 
                     {/* 콘텐츠 영역 */}
-                    <div className="flex-1 p-6 overflow-y-auto max-h-[calc(90vh-73px)]">
+                    <div className="flex-1 p-5 overflow-y-auto">
                         {/* 프로필 변경 */}
                         {activeTab === 'profile' && (
                             <div className="space-y-6">
@@ -230,12 +304,13 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 이름
+                                                <span className="ml-2 text-xs text-gray-400 font-normal">변경 불가</span>
                                             </label>
                                             <input
                                                 type="text"
                                                 value={profileData.name}
-                                                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                readOnly
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
                                             />
                                         </div>
 
@@ -254,22 +329,24 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 전화번호
+                                                <span className="ml-2 text-xs text-gray-400 font-normal">변경 불가</span>
                                             </label>
                                             <input
                                                 type="tel"
                                                 value={profileData.phone}
-                                                onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                readOnly
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
                                             />
                                         </div>
 
-                                        {/* 전문 분야 */}
+                                        {/* 전문 분야 - 변호사만 표시 */}
+                                        {userRole === 'ROLE_LAWYER' && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 전문 분야
                                             </label>
                                             <div className="flex flex-wrap gap-2 mb-2">
-                                                {['민사', '형사', '가사', '부동산', '노동', '기업', '교통사고', '이민'].map((field) => (
+                                                {['형사범죄', '교통사고', '부동산', '임대차', '손해배상', '대여금', '미수금', '채권추심', '이혼', '상속/가사', '노동', '기업', '지식재산권', '회생/파산', '계약서 검토', '기타'].map((field) => (
                                                     <button
                                                         key={field}
                                                         type="button"
@@ -292,8 +369,10 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
                                             </div>
                                             <p className="text-xs text-gray-500">해당하는 전문 분야를 선택하세요</p>
                                         </div>
+                                        )}
 
-                                        {/* 소개글 */}
+                                        {/* 소개글 - 변호사만 표시 */}
+                                        {userRole === 'ROLE_LAWYER' && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 소개글
@@ -310,6 +389,7 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
                                                 {(profileData.bio || '').length} / 300
                                             </p>
                                         </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -432,6 +512,7 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
                                         비밀번호 확인
                                     </label>
                                     <input
+                                        ref={withdrawPwRef}
                                         type="password"
                                         placeholder="현재 비밀번호를 입력해주세요"
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -440,9 +521,19 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
 
                                 <button
                                     onClick={() => {
+                                        const pw = withdrawPwRef.current?.value;
+                                        if (!pw) { alert('비밀번호를 입력해주세요.'); return; }
                                         if (window.confirm('정말로 탈퇴하시겠습니까?\n탈퇴 후에는 모든 데이터가 삭제되며 복구할 수 없습니다.')) {
-                                            console.log('회원탈퇴 처리');
-                                            // 실제 회원탈퇴 API 호출 로직
+                                            api.delete('/api/mypage/withdraw', { data: { password: pw } })
+                                                .then(() => {
+                                                    alert('탈퇴 처리가 완료되었습니다.');
+                                                    localStorage.clear();
+                                                    window.location.href = '/';
+                                                })
+                                                .catch(err => {
+                                                    const msg = err.response?.data?.message || '탈퇴 처리에 실패했습니다.';
+                                                    alert(msg);
+                                                });
                                         }
                                     }}
                                     className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"

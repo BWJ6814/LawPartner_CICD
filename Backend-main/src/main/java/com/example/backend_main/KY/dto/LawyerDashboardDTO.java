@@ -17,6 +17,7 @@ public class LawyerDashboardDTO {
         private Double  stars;  // NUMBER(2,1) → 소수점 지원
         private String content;
         private String regDate;   // yyyy-MM-dd
+        private Long   boardNo;  // 연결된 게시글 번호 (클릭 시 이동용)
     }
 
     // ── 상담(채팅방) 응답 ──────────────────────

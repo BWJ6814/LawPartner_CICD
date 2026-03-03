@@ -84,15 +84,21 @@ export function Calendar({ events = [], onDayClick }) {
 ─────────────────────────────────────────────── */
 export function ScheduleModal({ isOpen, onClose, onRefresh }) {
     const now = new Date();
-    const [year,         setYear]        = useState(now.getFullYear());
-    const [month,        setMonth]       = useState(now.getMonth());
-    const [selectedDate, setSelectedDate] = useState(null);
-    const [newTitle,     setNewTitle]    = useState("");
-    const [events,       setEvents]      = useState([]);
-    const [loading,      setLoading]     = useState(false);
+    const [year,           setYear]          = useState(now.getFullYear());
+    const [month,          setMonth]         = useState(now.getMonth());
+    const [selectedDate,   setSelectedDate]  = useState(null);
+    const [newTitle,       setNewTitle]      = useState("");
+    const [events,         setEvents]        = useState([]);
+    const [loading,        setLoading]       = useState(false);
+    const [editingEventNo, setEditingEventNo] = useState(null);
+    const [editTitle,      setEditTitle]     = useState("");
+    const [editDate,       setEditDate]      = useState("");
 
     useEffect(() => {
-        if (isOpen) fetchEvents();
+        if (!isOpen) return;
+        api.get('/api/lawyer/dashboard/calendars')
+            .then(res => setEvents(res.data.data || []))
+            .catch(() => setEvents([]));
     }, [isOpen]);
 
     const fetchEvents = () => {
@@ -142,6 +148,23 @@ export function ScheduleModal({ isOpen, onClose, onRefresh }) {
             if (onRefresh) onRefresh();
         } catch {
             alert("일정 삭제에 실패했습니다.");
+        }
+    };
+
+    const handleUpdate = async (eventNo) => {
+        if (!editTitle.trim()) { alert("제목을 입력해주세요."); return; }
+        try {
+            await api.patch(`/api/lawyer/dashboard/calendars/${eventNo}`, {
+                title: editTitle,
+                startDate: editDate,
+            });
+            setEditingEventNo(null);
+            fetchEvents();
+            if (onRefresh) onRefresh();
+            // 날짜가 바뀌면 선택 날짜도 업데이트
+            if (editDate) setSelectedDate(Number(editDate.slice(8, 10)));
+        } catch {
+            alert("일정 수정에 실패했습니다.");
         }
     };
 
@@ -212,7 +235,13 @@ export function ScheduleModal({ isOpen, onClose, onRefresh }) {
                                 .filter(e => e.startDate && e.startDate.startsWith(toKey(year, month, 1).slice(0, 7)))
                                 .sort((a, b) => a.startDate.localeCompare(b.startDate))
                                 .map(e => (
-                                    <div key={e.eventNo} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
+                                    <div
+                                        key={e.eventNo}
+                                        onClick={() => setSelectedDate(Number(e.startDate.slice(8, 10)))}
+                                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb", cursor: "pointer", borderRadius: 4 }}
+                                        onMouseEnter={ev => ev.currentTarget.style.background = "#f0f4ff"}
+                                        onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}
+                                    >
                                         <div style={{ width: 6, height: 6, borderRadius: "50%", background: e.colorCode || BLUE, flexShrink: 0 }} />
                                         <span style={{ color: "#374151", fontWeight: 600 }}>{e.startDate.slice(8)}일</span>
                                         <span style={{ color: "#6b7280" }}>{e.title}</span>
@@ -242,16 +271,62 @@ export function ScheduleModal({ isOpen, onClose, onRefresh }) {
                                 {selectedEvents.length > 0 ? (
                                     <div style={{ marginBottom: 20 }}>
                                         {selectedEvents.map(e => (
-                                            <div key={e.eventNo} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", marginBottom: 8, borderRadius: 10, background: "#F9FAFB", border: "1px solid #f3f4f6" }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{e.title}</div>
-                                                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{e.startDate}</div>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleDelete(e.eventNo)}
-                                                    style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 13, fontWeight: 700 }}>
-                                                    삭제
-                                                </button>
+                                             <div key={e.eventNo} style={{ padding: "12px 14px", marginBottom: 8, borderRadius: 10, background: "#F9FAFB", border: "1px solid #f3f4f6" }}>
+                                                {editingEventNo === e.eventNo ? (
+                                                    /* 수정 폼 */
+                                                    <div>
+                                                        <div style={{ marginBottom: 8 }}>
+                                                            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 3 }}>제목</label>
+                                                            <input
+                                                                value={editTitle}
+                                                                onChange={ev => setEditTitle(ev.target.value)}
+                                                                style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: `1px solid ${BLUE}`, fontSize: 13, fontFamily: FONT, boxSizing: "border-box", outline: "none" }}
+                                                                onKeyDown={ev => ev.key === 'Enter' && handleUpdate(e.eventNo)}
+                                                            />
+                                                        </div>
+                                                        <div style={{ marginBottom: 10 }}>
+                                                            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 3 }}>날짜</label>
+                                                            <input
+                                                                type="date"
+                                                                value={editDate}
+                                                                onChange={ev => setEditDate(ev.target.value)}
+                                                                style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: `1px solid ${BLUE}`, fontSize: 13, fontFamily: FONT, boxSizing: "border-box", outline: "none" }}
+                                                            />
+                                                        </div>
+                                                        <div style={{ display: "flex", gap: 6 }}>
+                                                            <button
+                                                                onClick={() => handleUpdate(e.eventNo)}
+                                                                style={{ flex: 1, padding: "7px 0", borderRadius: 6, background: BLUE, color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>
+                                                                저장
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setEditingEventNo(null)}
+                                                                style={{ flex: 1, padding: "7px 0", borderRadius: 6, background: "#f3f4f6", color: "#374151", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>
+                                                                취소
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    /* 일반 보기 */
+                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                        <div>
+                                                            <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{e.title}</div>
+                                                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{e.startDate}</div>
+                                                        </div>
+                                                        <div style={{ display: "flex", gap: 8 }}>
+                                                            <button
+                                                                onClick={() => { setEditingEventNo(e.eventNo); setEditTitle(e.title); setEditDate(e.startDate); }}
+                                                                style={{ background: "none", border: "none", cursor: "pointer", color: BLUE, fontSize: 13, fontWeight: 700 }}>
+                                                                수정
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(e.eventNo)}
+                                                                style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 13, fontWeight: 700 }}>
+                                                                삭제
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

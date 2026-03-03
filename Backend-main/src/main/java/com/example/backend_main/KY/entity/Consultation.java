@@ -1,47 +1,12 @@
 package com.example.backend_main.KY.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDateTime;
-
 /*
- [Consultation Entity]
- TB_CHAT_ROOM 테이블과 매핑
- PROGRESS_CODE: CASE_STEP 공통코드 (ST01~ST05)
- STATUS_CODE  : OPEN / CLOSED
-*/
-@Entity
-@Table(name = "TB_CHAT_ROOM")
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
+ * [Deprecated] KY/entity/Consultation
+ * TB_CHAT_ROOM 테이블은 common/entity/ChatRoom 으로 통합 관리합니다.
+ * 이 클래스는 더 이상 @Entity로 등록되지 않으며 사용하지 않습니다.
+ * ConsultationRepository → ChatRoom 엔티티 기반으로 교체됨.
+ */
+@Deprecated
 public class Consultation {
-
-    @Id
-    @Column(name = "ROOM_ID", length = 50)
-    private String roomId;           // UUID (PK)
-
-    @Column(name = "USER_NO", nullable = false)
-    private Long userNo;             // 의뢰인 유저 번호
-
-    @Column(name = "LAWYER_NO", nullable = false)
-    private Long lawyerNo;           // 변호사 유저 번호
-
-    @Column(name = "STATUS_CODE", length = 20)
-    @Builder.Default
-    private String statusCode = "OPEN";   // OPEN / CLOSED
-
-    @Column(name = "PROGRESS_CODE", length = 20)
-    @Builder.Default
-    private String progressCode = "ST01"; // ST01~ST05 (CASE_STEP 공통코드)
-
-    @Column(name = "REG_DT", updatable = false)
-    private LocalDateTime regDt;
-
-    @PrePersist
-    public void prePersist() {
-        if (this.regDt == null) this.regDt = LocalDateTime.now();
-    }
+    // 사용하지 않음 - common.entity.ChatRoom 을 사용하세요
 }

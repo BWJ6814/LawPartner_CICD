@@ -1,12 +1,12 @@
 package com.example.backend_main.KY.service;
 
+import com.example.backend_main.BWJ.BoardReplyRepository;
 import com.example.backend_main.KY.dto.LawyerDashboardDTO;
-import com.example.backend_main.KY.entity.Consultation;
-import com.example.backend_main.KY.entity.Review;
-import com.example.backend_main.KY.repository.CalendarRepository;
 import com.example.backend_main.KY.repository.ConsultationRepository;
 import com.example.backend_main.KY.repository.ReviewRepository;
+import com.example.backend_main.KY.repository.CalendarRepository;
 import com.example.backend_main.common.entity.CalendarEvent;
+import com.example.backend_main.common.entity.ChatRoom;
 import com.example.backend_main.common.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,8 @@ public class LawyerDashboardService {
     private final ReviewRepository       reviewRepository;
     private final ConsultationRepository consultationRepository;
     private final CalendarRepository     calendarRepository;
-    private final UserRepository         userRepository;   // common
+    private final UserRepository         userRepository;
+    private final BoardReplyRepository   boardReplyRepository;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -35,9 +36,12 @@ public class LawyerDashboardService {
                 dto.setStars(r.getStars());
                 dto.setContent(r.getContent());
                 if (r.getRegDt() != null) dto.setRegDate(r.getRegDt().format(DATE_FMT));
-                // TB_USER 에서 작성자 이름 조회
                 userRepository.findById(r.getWriterNo())
                     .ifPresent(u -> dto.setWriterNm(u.getUserNm()));
+                if (r.getReplyNo() != null) {
+                    boardReplyRepository.findById(r.getReplyNo())
+                        .ifPresent(reply -> dto.setBoardNo(reply.getBoardNo()));
+                }
                 return dto;
             }).collect(Collectors.toList());
     }
@@ -51,7 +55,6 @@ public class LawyerDashboardService {
                 dto.setProgressCode(c.getProgressCode());
                 dto.setStatusLabel(convertProgress(c.getProgressCode()));
                 if (c.getRegDt() != null) dto.setRegDate(c.getRegDt().format(DATE_FMT));
-                // TB_USER 에서 의뢰인 이름 조회
                 userRepository.findById(c.getUserNo())
                     .ifPresent(u -> dto.setClientNm(u.getUserNm()));
                 return dto;
@@ -86,7 +89,7 @@ public class LawyerDashboardService {
         CalendarEvent saved = calendarRepository.save(
             CalendarEvent.builder()
                 .lawyerNo(lawyerNo)
-                .userNo(lawyerNo)   // 변호사 본인 일정 → userNo = lawyerNo
+                .userNo(lawyerNo)
                 .title(req.getTitle())
                 .startDate(req.getStartDate())
                 .colorCode(req.getColorCode() != null ? req.getColorCode() : "#3b82f6")
@@ -100,6 +103,18 @@ public class LawyerDashboardService {
         return dto;
     }
 
+    // ── 일정 수정 ──────────────────────────────────────────────
+    @org.springframework.transaction.annotation.Transactional
+    public void updateCalendar(Long lawyerNo, Long eventNo, String title, String startDate) {
+        CalendarEvent event = calendarRepository.findById(eventNo)
+            .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다."));
+        if (!lawyerNo.equals(event.getLawyerNo())) {
+            throw new RuntimeException("수정 권한이 없습니다.");
+        }
+        if (title != null && !title.isBlank()) event.setTitle(title);
+        if (startDate != null && !startDate.isBlank()) event.setStartDate(startDate);
+    }
+
     // ── 일정 삭제 ──────────────────────────────────────────────
     public void deleteCalendar(Long lawyerNo, Long eventNo) {
         CalendarEvent event = calendarRepository.findById(eventNo)
@@ -108,6 +123,17 @@ public class LawyerDashboardService {
             throw new RuntimeException("삭제 권한이 없습니다.");
         }
         calendarRepository.deleteById(eventNo);
+    }
+
+    // ── 상담 진행 상태 변경 ────────────────────────────────────
+    @org.springframework.transaction.annotation.Transactional
+    public void updateConsultationStatus(Long lawyerNo, String roomId, String progressCode) {
+        ChatRoom room = consultationRepository.findById(roomId)
+            .orElseThrow(() -> new RuntimeException("채팅방을 찾을 수 없습니다."));
+        if (!lawyerNo.equals(room.getLawyerNo())) {
+            throw new RuntimeException("수정 권한이 없습니다.");
+        }
+        room.setProgressCode(progressCode);
     }
 
     // ── CASE_STEP 코드 → 한글 변환 ───────────────────────────

@@ -1,20 +1,27 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const FONT = "'Pretendard', 'Noto Sans KR', sans-serif";
 const BLUE = "#1D4ED8";
 
+// stars: 백엔드에서 Double로 오므로 Math.round 처리
 function Stars({ count }) {
+    const rounded = Math.round(count || 0);
     return (
         <span style={{ color: "#facc15", fontSize: 14 }}>
-            {"★".repeat(count)}{"☆".repeat(5 - count)}
+            {"★".repeat(rounded)}{"☆".repeat(5 - rounded)}
         </span>
     );
 }
-//데이터 구조(name, stars, text, date, category)만 맞추면 작동
 export { Stars };
+
+// 백엔드 ReviewDTO 필드: writerNm, stars, content, regDate
+const PAGE_SIZE = 3;
 
 export default function ReviewsModal({ isOpen, onClose, reviews }) {
     const [filter, setFilter] = useState("all");
+    const [page, setPage] = useState(0);
+    const navigate = useNavigate();
 
     if (!isOpen) return null;
 
@@ -22,13 +29,21 @@ export default function ReviewsModal({ isOpen, onClose, reviews }) {
         ? reviews
         : reviews.filter(r => r.stars === Number(filter));
 
+    const totalPages = Math.ceil(filteredReviews.length / PAGE_SIZE);
+    const pagedReviews = filteredReviews.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+    const handleFilterChange = (f) => {
+        setFilter(f);
+        setPage(0); // 필터 바뀌면 1페이지로
+    };
+
     const avgRating = reviews.length > 0
-        ? (reviews.reduce((sum, r) => sum + r.stars, 0) / reviews.length).toFixed(1)
+        ? (reviews.reduce((sum, r) => sum + (r.stars || 0), 0) / reviews.length).toFixed(1)
         : "0.0";
 
     const starCounts = [5, 4, 3, 2, 1].map(star => ({
         star,
-        count: reviews.filter(r => r.stars === star).length,
+        count: reviews.filter(r => Math.round(r.stars) === star).length,
     }));
 
     return (
@@ -82,7 +97,7 @@ export default function ReviewsModal({ isOpen, onClose, reviews }) {
                     {/* 필터 */}
                     <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
                         {["all", "5", "4", "3", "2", "1"].map(f => (
-                            <button key={f} onClick={() => setFilter(f)} style={{
+                            <button key={f} onClick={() => handleFilterChange(f)} style={{
                                 padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 600,
                                 border: "none", cursor: "pointer", fontFamily: FONT,
                                 background: filter === f ? BLUE : "#f3f4f6",
@@ -94,14 +109,22 @@ export default function ReviewsModal({ isOpen, onClose, reviews }) {
                         ))}
                     </div>
 
-                    {/* 후기 목록 */}
+                    {/* 후기 목록 (3개씩 페이징) */}
                     {filteredReviews.length > 0 ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            {filteredReviews.map((r, i) => (
-                                <div key={i} style={{
-                                    padding: 16, borderRadius: 12, background: "#F9FAFB",
-                                    border: "1px solid #f3f4f6",
-                                }}>
+                            {pagedReviews.map((r, i) => (
+                                <div
+                                    key={r.reviewNo ?? i}
+                                    onClick={() => r.boardNo && (onClose(), navigate(`/consultation/${r.boardNo}`))}
+                                    style={{
+                                        padding: 16, borderRadius: 12, background: "#F9FAFB",
+                                        border: "1px solid #f3f4f6",
+                                        cursor: r.boardNo ? "pointer" : "default",
+                                        transition: "box-shadow 0.2s",
+                                    }}
+                                    onMouseEnter={e => { if (r.boardNo) e.currentTarget.style.boxShadow = "0 4px 12px rgba(29,78,216,0.12)"; }}
+                                    onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; }}
+                                >
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                                             <div style={{
@@ -109,24 +132,45 @@ export default function ReviewsModal({ isOpen, onClose, reviews }) {
                                                 display: "flex", alignItems: "center", justifyContent: "center",
                                                 color: "#fff", fontWeight: 700, fontSize: 14,
                                             }}>
-                                                {r.name.charAt(0)}
+                                                {(r.writerNm || '?').charAt(0)}
                                             </div>
                                             <div>
-                                                <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{r.name}</div>
-                                                <div style={{ fontSize: 11, color: "#9ca3af" }}>{r.date || ""}</div>
+                                                <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{r.writerNm || '익명'}</div>
+                                                <div style={{ fontSize: 11, color: "#9ca3af" }}>{r.regDate || ""}</div>
                                             </div>
                                         </div>
                                         <Stars count={r.stars} />
                                     </div>
-                                    <p style={{ margin: 0, fontSize: 13, color: "#4b5563", lineHeight: 1.7 }}>{r.text}</p>
-                                    {r.category && (
-                                        <span style={{
-                                            display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 600,
-                                            padding: "3px 10px", borderRadius: 12, background: "#EEF2FF", color: BLUE,
-                                        }}>{r.category}</span>
+                                    <p style={{ margin: 0, fontSize: 13, color: "#4b5563", lineHeight: 1.7 }}>{r.content}</p>
+                                    {r.boardNo && (
+                                        <div style={{ marginTop: 8, fontSize: 11, color: BLUE, fontWeight: 600 }}>
+                                            📄 연결된 게시글 보기 →
+                                        </div>
                                     )}
                                 </div>
                             ))}
+                            {/* 페이징 */}
+                            {totalPages > 1 && (
+                                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, paddingTop: 8 }}>
+                                    <button
+                                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                                        disabled={page === 0}
+                                        style={{ border: "1px solid #e5e7eb", borderRadius: 6, padding: "5px 12px", fontSize: 13, cursor: page === 0 ? "not-allowed" : "pointer", background: page === 0 ? "#f9fafb" : "#fff", color: page === 0 ? "#d1d5db" : "#374151" }}
+                                    >‹</button>
+                                    {Array.from({ length: totalPages }, (_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setPage(i)}
+                                            style={{ border: "1px solid", borderRadius: 6, padding: "5px 12px", fontSize: 13, cursor: "pointer", borderColor: page === i ? BLUE : "#e5e7eb", background: page === i ? BLUE : "#fff", color: page === i ? "#fff" : "#374151", fontWeight: page === i ? 700 : 400 }}
+                                        >{i + 1}</button>
+                                    ))}
+                                    <button
+                                        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                                        disabled={page >= totalPages - 1}
+                                        style={{ border: "1px solid #e5e7eb", borderRadius: 6, padding: "5px 12px", fontSize: 13, cursor: page >= totalPages - 1 ? "not-allowed" : "pointer", background: page >= totalPages - 1 ? "#f9fafb" : "#fff", color: page >= totalPages - 1 ? "#d1d5db" : "#374151" }}
+                                    >›</button>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af", fontSize: 14 }}>

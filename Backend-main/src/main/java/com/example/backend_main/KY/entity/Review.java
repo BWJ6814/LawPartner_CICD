@@ -35,6 +35,9 @@ public class Review {
     @Column(name = "CONTENT", length = 1000)
     private String content;
 
+    @Column(name = "REPLY_NO")
+    private Long replyNo;
+
     @Column(name = "REG_DT", updatable = false)
     private LocalDateTime regDt;
 

@@ -13,6 +13,7 @@ import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.GeneralMyPageDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.temporal.TemporalAdjusters;
 import java.time.LocalDateTime;
@@ -34,8 +35,10 @@ public class GeneralMyPageService {
     private final CalendarEventRepository calendarEventRepository;
     private final BoardReplyRepository boardReplyRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     private final Aes256Util aes256Util;
     private final HashUtil hashUtil;
+
 
 
     public GeneralMyPageDTO getDashboardData(Long userNo) {
@@ -47,6 +50,10 @@ public class GeneralMyPageService {
         dto.setUserName(user.getUserNm());
         dto.setNickName(user.getNickNm() != null ? user.getNickNm() : user.getUserNm());
 
+        // 2. 통계 카드 (아직 관련 테이블이 미완성이면 일단 0으로 세팅)
+        dto.setRecentReplyCount(0);
+        dto.setRequestCount(0);
+        dto.setDaysLeft(null);
 
         // 3. [DB 연동] 내 상담 요청 내역 진짜로 가져오기
         List<ChatRoom> myChatRooms = chatRoomRepository.findByUserNoOrderByRegDtDesc(userNo); // 리포지토리에 이 메서드 만들어야 됨
@@ -125,21 +132,6 @@ public class GeneralMyPageService {
 
         dto.setCalendarEvents(eventList);
 
-        try {
-            if("S99".equals(user.getStatusCode())) {
-                dto.setEmail(user.getEmail());
-                dto.setPhone(user.getPhone());
-            } else {
-                dto.setEmail(aes256Util.decrypt(user.getEmail()));
-                dto.setPhone(aes256Util.decrypt(user.getPhone()));
-            }
-        } catch (Exception e) {
-            dto.setEmail("데이터 오류");
-            dto.setPhone("데이터 오류");
-        }
-
-
-
         return dto;
 
 
@@ -195,42 +187,28 @@ public class GeneralMyPageService {
     }
 
     @org.springframework.transaction.annotation.Transactional
-    public void updateProfileData(Long userNo, String newName, String newEmail, String newPhone, org.springframework.web.multipart.MultipartFile profileImage) throws Exception {
+    public void updateProfile(Long userNo, String newName) {
+        User user = userRepository.findById(userNo).orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+        user.setNickNm(newName); // JPA 더티체킹으로 자동 UPDATE 됨
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void updateProfileData(Long userNo, String name, String email, String phone, MultipartFile profileImage) throws Exception {
         User user = userRepository.findById(userNo)
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
-        // 1. 닉네임 변경
-        if (newName != null && !newName.trim().isEmpty()) {
-            user.setNickNm(newName);
+        if (name != null && !name.isBlank()) {
+            user.setUserNm(name);
         }
-
-        // 2. 이메일 변경 (중복 검사 + 암호화 + 해시 교체)
-        if (newEmail != null && !newEmail.trim().isEmpty()) {
-            String newEmailHash = hashUtil.generateHash(newEmail);
-            // 내 기존 해시값이랑 다른데, DB에 이미 존재하면 남이 쓰고 있는 거임
-            if (!newEmailHash.equals(user.getEmailHash()) && userRepository.existsByEmailHash(newEmailHash)) {
-                throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-            }
-            user.setEmail(aes256Util.encrypt(newEmail));
-            user.setEmailHash(newEmailHash);
+        if (email != null && !email.isBlank()) {
+            user.setEmail(aes256Util.encrypt(email));
+            user.setEmailHash(hashUtil.generateHash(email));
         }
-
-        // 3. 전화번호 변경 (중복 검사 + 암호화 + 해시 교체)
-        if (newPhone != null && !newPhone.trim().isEmpty()) {
-            String newPhoneHash = hashUtil.generateHash(newPhone);
-            if (!newPhoneHash.equals(user.getPhoneHash()) && userRepository.existsByPhoneHash(newPhoneHash)) {
-                throw new IllegalArgumentException("이미 사용 중인 전화번호입니다.");
-            }
-            user.setPhone(aes256Util.encrypt(newPhone));
-            user.setPhoneHash(newPhoneHash);
+        if (phone != null && !phone.isBlank()) {
+            user.setPhone(aes256Util.encrypt(phone));
+            user.setPhoneHash(hashUtil.generateHash(phone));
         }
-
-        // 4. 프로필 이미지 저장 로직 (너네 FileController 쪽에 있는 저장 로직 활용해라)
-        if (profileImage != null && !profileImage.isEmpty()) {
-            // TODO: 너네 팀의 파일 저장 방식(S3 or 로컬 경로)에 맞춰서 파일 저장하고,
-            // DB에 이미지 URL 또는 파일명을 꽂아넣는 코드를 여기에 추가해라!
-            System.out.println("프론트에서 넘어온 이미지 이름: " + profileImage.getOriginalFilename());
-        }
+        // profileImage: 일반 유저는 프로필 이미지 서버 저장 미지원 (변호사는 /api/ky/profile/image 사용)
     }
 
     @org.springframework.transaction.annotation.Transactional

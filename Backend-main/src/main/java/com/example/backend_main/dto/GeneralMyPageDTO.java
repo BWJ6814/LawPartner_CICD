@@ -62,6 +62,37 @@ public class GeneralMyPageDTO {
         private String backgroundColor; // 색상 코드
     }
 
+    // 프로필 조회 응답
+    @Data
+    public static class ProfileDTO {
+        private String name;
+        private String email;
+        private String phone;
+    }
+
+    // 프로필 수정 요청
+    @Data
+    public static class ProfileUpdateDTO {
+        private String name;
+        private String email;
+        private String phone;
+    }
+
+    // 비밀번호 변경 요청
+    @Data
+    public static class PasswordChangeDTO {
+        @NotBlank(message = "현재 비밀번호를 입력해주세요.")
+        private String currentPassword;
+        @NotBlank(message = "새 비밀번호를 입력해주세요.")
+        private String newPassword;
+    }
+
+    // 회원탈퇴 요청
+    @Data
+    public static class WithdrawDTO {
+        @NotBlank(message = "비밀번호를 입력해주세요.")
+        private String password;
+    }
 
 }
 

@@ -9,7 +9,7 @@ import java.util.List;
 @Repository
 // ★ JpaRepository<ChatRoom, Long> 에서 JpaRepository<ChatRoom, String> 으로 변경
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
-    // 팩트: 내가 의뢰인인 방 또는 내가 변호사인 방 다 가져와라!
+    // 팩트: 라!내가 의뢰인인 방 또는 내가 변호사인 방 다 가져와
     List<ChatRoom> findByUserNoOrLawyerNoOrderByRegDtDesc(Long userNo, Long lawyerNo);
 
     List<ChatRoom> findByUserNo(Long userNo);
@@ -23,4 +23,10 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
 
     // 일반인용: 내가 신청한 것 중 수락(ST02)된 상담 개수
     int countByUserNoAndProgressCode(Long userNo, String progressCode);
+
+    // [KY] 대시보드용: 변호사의 상담 목록 (최신순)
+    List<ChatRoom> findByLawyerNoOrderByRegDtDesc(Long lawyerNo);
+
+    // [KY] 대시보드용: 변호사의 전체 상담 건수
+    long countByLawyerNo(Long lawyerNo);
 }

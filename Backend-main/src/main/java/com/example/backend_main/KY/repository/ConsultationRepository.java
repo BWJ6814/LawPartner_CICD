@@ -1,15 +1,19 @@
 package com.example.backend_main.KY.repository;
 
-import com.example.backend_main.KY.entity.Consultation;
+import com.example.backend_main.common.entity.ChatRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-// PK 가 String(UUID) 으로 변경됨
-public interface ConsultationRepository extends JpaRepository<Consultation, String> {
+/*
+ * [KY] 대시보드용 상담(채팅방) 레포지토리
+ * TB_CHAT_ROOM ↔ ChatRoom 엔티티 (common) 사용
+ * 기존 KY/entity/Consultation 는 중복 엔티티였으므로 더 이상 사용하지 않습니다.
+ */
+public interface ConsultationRepository extends JpaRepository<ChatRoom, String> {
 
     // 특정 변호사의 상담 목록 (최신순)
-    List<Consultation> findByLawyerNoOrderByRegDtDesc(Long lawyerNo);
+    List<ChatRoom> findByLawyerNoOrderByRegDtDesc(Long lawyerNo);
 
     // 특정 변호사의 전체 상담 건수
     long countByLawyerNo(Long lawyerNo);

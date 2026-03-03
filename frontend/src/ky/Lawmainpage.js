@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from './lawpage/Sidebar';
 import { Calendar, ScheduleModal } from './lawpage/ScheduleCalendar';
 import ReviewsModal, { Stars } from './lawpage/ReviewsModal';
@@ -25,6 +26,8 @@ export default function LawyerDashboard() {
     const [isSidebarCollapsed,  setIsSidebarCollapsed]  = useState(false);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [isReviewsModalOpen,  setIsReviewsModalOpen]  = useState(false);
+    const [reviewPage, setReviewPage] = useState(0); // 후기 페이지 (5개씩)
+    const [editingRoomId, setEditingRoomId] = useState(null); // 인라인 수정 중인 roomId
 
     // ── API 상태 ──
     const [stats,          setStats]          = useState({ solvedCount: 0, requestCount: 0, avgRating: 0.0 });
@@ -59,27 +62,37 @@ export default function LawyerDashboard() {
         { label: "상담 요청 건수", sub: "전체 상담 건수",  value: `${stats.requestCount}건`, color: "#f97316" },
     ];
 
+    const navigate = useNavigate();
     const lawyerNm = localStorage.getItem('userNm') || '변호사';
 
     return (
-        <div style={{ display: "flex", minHeight: "100vh", fontFamily: FONT }}>
+        <div style={{ display: "flex", minHeight: "100%", fontFamily: FONT }}>
             <Sidebar
                 isCollapsed={isSidebarCollapsed}
                 toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             />
 
-            <div style={{ flex: 1, background: "#F9FAFB", padding: "32px", boxSizing: "border-box", overflowY: "auto" }}>
+            <div style={{ flex: 1, background: "#F9FAFB", minWidth: 0, display: "flex", flexDirection: "column" }}>
 
-                {/* ── 헤더 ── */}
-                <div style={{ marginBottom: 24 }}>
-                    <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#111827", letterSpacing: "-0.02em" }}>
-                        안녕하세요, {lawyerNm} 변호사님!
+                {/* ── 헤더 바 ── */}
+                <div style={{
+                    background: "#fff",
+                    borderBottom: "1px solid #e5e7eb",
+                    padding: "20px 32px",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+                    flexShrink: 0,
+                }}>
+                    <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#111827", letterSpacing: "-0.02em" }}>
+                        안녕하세요, {lawyerNm} 변호사님 👋
                     </h2>
-                    <p style={{ margin: "8px 0 0", fontSize: 14, fontWeight: 400, color: "#6b7280" }}>
+                    <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 400, color: "#6b7280" }}>
                         현재 처리해야 할 상담 건이{" "}
                         <span style={{ color: BLUE, fontWeight: 700 }}>{stats.requestCount}건</span> 있습니다.
                     </p>
                 </div>
+
+                {/* ── 메인 콘텐츠 ── */}
+                <div style={{ flex: 1, padding: "28px 32px", overflowY: "auto" }}>
 
                 {/* ── 통계 카드 ── */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
@@ -130,10 +143,49 @@ export default function LawyerDashboard() {
                                             </td>
                                         </tr>
                                     ) : consultations.map((c, i) => (
-                                        <tr key={i} style={{ borderTop: "1px solid #f3f4f6" }}>
+                                        <tr
+                                            key={i}
+                                            style={{ borderTop: "1px solid #f3f4f6" }}
+                                            onMouseEnter={e => e.currentTarget.style.background = "#F9FAFB"}
+                                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                                        >
                                             <td style={{ padding: "10px 12px", color: "#111827", fontWeight: 500 }}>{c.clientNm}</td>
                                             <td style={{ padding: "10px 12px" }}>
-                                                <span style={{ color: statusColor(c.progressCode), fontWeight: 700 }}>{c.statusLabel}</span>
+                                                {editingRoomId === c.roomId ? (
+                                                    // 인라인 select
+                                                    <select
+                                                        autoFocus
+                                                        defaultValue={c.progressCode}
+                                                        onBlur={() => setEditingRoomId(null)}
+                                                        onChange={e => {
+                                                            const newCode = e.target.value;
+                                                            api.patch(`/api/lawyer/dashboard/consultations/${c.roomId}/status`, { progressCode: newCode })
+                                                                .then(() => {
+                                                                    setConsultations(prev => prev.map(r =>
+                                                                        r.roomId === c.roomId
+                                                                            ? { ...r, progressCode: newCode, statusLabel: { ST01:"접수 대기", ST02:"상담 진행중", ST03:"소장 작성중", ST04:"소송 진행중", ST05:"사건 종료" }[newCode] }
+                                                                            : r
+                                                                    ));
+                                                                    setEditingRoomId(null);
+                                                                })
+                                                                .catch(() => setEditingRoomId(null));
+                                                        }}
+                                                        style={{ fontSize: 12, padding: "4px 6px", borderRadius: 6, border: `1px solid ${BLUE}`, color: BLUE, fontWeight: 700, cursor: "pointer", outline: "none" }}
+                                                    >
+                                                        {[["ST01","접수 대기"],["ST02","상담 진행중"],["ST03","소장 작성중"],["ST04","소송 진행중"],["ST05","사건 종료"]].map(([code, label]) => (
+                                                            <option key={code} value={code}>{label}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    // 배지 클릭 → 수정 모드
+                                                    <span
+                                                        onClick={() => setEditingRoomId(c.roomId)}
+                                                        title="클릭하여 상태 변경"
+                                                        style={{ color: statusColor(c.progressCode), fontWeight: 700, cursor: "pointer", borderBottom: `1px dashed ${statusColor(c.progressCode)}` }}
+                                                    >
+                                                        {c.statusLabel} ✎
+                                                    </span>
+                                                )}
                                             </td>
                                             <td style={{ padding: "10px 12px", color: "#9ca3af", fontWeight: 400 }}>{c.regDate}</td>
                                         </tr>
@@ -158,29 +210,81 @@ export default function LawyerDashboard() {
                     {/* 오른쪽 - 후기 */}
                     <div style={cardStyle}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                            <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>최근 의뢰인 후기</span>
-                            <span
-                                onClick={() => setIsReviewsModalOpen(true)}
-                                style={{ fontSize: 12, fontWeight: 600, color: BLUE, cursor: "pointer" }}
-                            >전체 보기</span>
+                            <span style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>
+                                최근 의뢰인 후기
+                                <span style={{ fontSize: 12, fontWeight: 500, color: "#9ca3af", marginLeft: 6 }}>
+                                    ({reviews.length}건)
+                                </span>
+                            </span>
+                            <span onClick={() => setIsReviewsModalOpen(true)} style={{ fontSize: 12, fontWeight: 600, color: BLUE, cursor: "pointer" }}>전체 보기</span>
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+                        {/* 후기 목록 (5개씩) */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                             {reviews.length === 0 ? (
                                 <div style={{ textAlign: "center", color: "#9ca3af", fontSize: 13, padding: "20px 0" }}>
                                     후기가 없습니다.
                                 </div>
-                            ) : reviews.slice(0, 3).map((r, i) => (
-                                <div key={i} style={{ paddingBottom: 16, borderBottom: i < 2 ? "1px solid #f3f4f6" : "none" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                                        <span style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{r.writerNm}</span>
+                            ) : reviews.slice(reviewPage * 5, reviewPage * 5 + 5).map((r, i) => (
+                                <div
+                                    key={r.reviewNo ?? i}
+                                    onClick={() => r.boardNo && navigate(`/consultation/${r.boardNo}`)}
+                                    style={{
+                                        padding: "10px 8px",
+                                        borderBottom: "1px solid #f3f4f6",
+                                        cursor: r.boardNo ? "pointer" : "default",
+                                        borderRadius: 8,
+                                        transition: "background 0.15s",
+                                    }}
+                                    onMouseEnter={e => { if (r.boardNo) e.currentTarget.style.background = "#f0f4ff"; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                                >
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                                        <span style={{ fontWeight: 700, fontSize: 13, color: "#111827" }}>{r.writerNm}</span>
                                         <Stars count={r.stars} />
                                     </div>
-                                    <p style={{ margin: 0, fontSize: 13, fontWeight: 400, color: "#6b7280", lineHeight: 1.6 }}>{r.content}</p>
+                                    <p style={{ margin: 0, fontSize: 12, color: "#6b7280", lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                                        {r.content}
+                                    </p>
+                                    {r.boardNo && (
+                                        <div style={{ marginTop: 4, fontSize: 11, color: BLUE, fontWeight: 600 }}>📄 게시글 보기 →</div>
+                                    )}
                                 </div>
                             ))}
                         </div>
+
+                        {/* 페이징 버튼 */}
+                        {reviews.length > 5 && (
+                            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 12 }}>
+                                <button
+                                    onClick={() => setReviewPage(p => Math.max(0, p - 1))}
+                                    disabled={reviewPage === 0}
+                                    style={{ border: "1px solid #e5e7eb", borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: reviewPage === 0 ? "not-allowed" : "pointer", background: reviewPage === 0 ? "#f9fafb" : "#fff", color: reviewPage === 0 ? "#d1d5db" : "#374151" }}
+                                >
+                                    ‹
+                                </button>
+                                {Array.from({ length: Math.ceil(reviews.length / 5) }, (_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setReviewPage(i)}
+                                        style={{ border: "1px solid", borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer", borderColor: reviewPage === i ? BLUE : "#e5e7eb", background: reviewPage === i ? BLUE : "#fff", color: reviewPage === i ? "#fff" : "#374151", fontWeight: reviewPage === i ? 700 : 400 }}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => setReviewPage(p => Math.min(Math.ceil(reviews.length / 5) - 1, p + 1))}
+                                    disabled={reviewPage >= Math.ceil(reviews.length / 5) - 1}
+                                    style={{ border: "1px solid #e5e7eb", borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: reviewPage >= Math.ceil(reviews.length / 5) - 1 ? "not-allowed" : "pointer", background: reviewPage >= Math.ceil(reviews.length / 5) - 1 ? "#f9fafb" : "#fff", color: reviewPage >= Math.ceil(reviews.length / 5) - 1 ? "#d1d5db" : "#374151" }}
+                                >
+                                    ›
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
+
+                </div>{/* 메인 콘텐츠 끝 */}
             </div>
 
             {/* 일정 모달 */}
