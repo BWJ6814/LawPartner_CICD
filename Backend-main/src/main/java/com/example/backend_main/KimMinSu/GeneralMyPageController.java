@@ -1,6 +1,7 @@
 package com.example.backend_main.KimMinSu;
 
 import com.example.backend_main.common.entity.CalendarEvent;
+import com.example.backend_main.common.entity.ChatRoom;
 import com.example.backend_main.common.repository.ChatRoomRepository;
 import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.security.JwtTokenProvider;
@@ -139,27 +140,102 @@ public class GeneralMyPageController {
 
     @GetMapping("/notifications/count")
     public ResponseEntity<?> getUnreadNotificationCount(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            // ★ 시큐리티 의존 안 하고 토큰 직접 받음
+            @RequestHeader(value = "Authorization", required = false) String token
     ) {
-        // 혹시 로그인이 안 된 놈이 찌르면 빠꾸 먹이기
-        if (userDetails == null) {
+        // 1. 토큰 없으면 바로 401 빠꾸
+        if (token == null || !token.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(0);
         }
 
-        // ★ [핵심 2] 검증된 신분증에서 안전하게 유저 번호랑 권한 빼오기
-        Long userNo = userDetails.getUserNo(); // CustomUserDetails에 getUserNo()가 있다고 가정
-        String role = userDetails.getAuthorities().iterator().next().getAuthority(); // 권한(Role) 꺼내기
+        try {
+            // 2. 토큰에서 유저 번호 직접 빼오기 (네가 짰던 기존 방식)
+            String actualToken = token.substring(7);
+            Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
 
-        int count = 0;
-        if ("ROLE_LAWYER".equals(role)) {
-            // 변호사: 나한테 온 대기(ST01) 중인 상담 요청
-            count = chatRoomRepository.countByLawyerNoAndProgressCode(userNo, "ST01");
-        } else {
-            // 일반 유저: 내가 신청한 것 중 수락(ST02)된 상담
-            count = chatRoomRepository.countByUserNoAndProgressCode(userNo, "ST02");
+            // ★ 여기서 권한(Role) 확인이 필요한데, DB에서 유저 정보를 직접 조회해서 팩트 체크
+            com.example.backend_main.common.entity.User user = myPageService.getUserById(userNo); // 서비스에 없으면 userRepository.findById(userNo).get() 써라
+            String role = user.getRoleCode(); // 네 엔티티 구조에 맞게 권한 가져오기 (ex: user.getRoleCode() 등)
+
+            int count = 0;
+            if ("ROLE_LAWYER".equals(role)) {
+                count = chatRoomRepository.countByLawyerNoAndProgressCode(userNo, "ST01");
+            } else {
+                count = chatRoomRepository.countByUserNoAndProgressCode(userNo, "ST02");
+            }
+
+            return ResponseEntity.ok(count);
+
+        } catch (Exception e) {
+            // 토큰이 만료됐거나 위조됐으면 401 처리
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(0);
+        }
+    }
+
+    @GetMapping("/notifications/list")
+    public ResponseEntity<?> getNotificationList(
+            @RequestHeader(value = "Authorization", required = false) String token) {
+
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        return ResponseEntity.ok(count);
+        try {
+            String actualToken = token.substring(7);
+            Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
+            com.example.backend_main.common.entity.User user = myPageService.getUserById(userNo);
+            String role = user.getRoleCode(); // (또는 getRoleCode() 등 엔티티에 맞게)
+
+            List<java.util.Map<String, Object>> notiList = new java.util.ArrayList<>();
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+            // 역할에 맞게 리스트를 긁어와서 프론트가 원하는 알림 포맷으로 맵핑
+            if ("ROLE_LAWYER".equals(role)) {
+                List<ChatRoom> rooms = chatRoomRepository.findByLawyerNoAndProgressCode(userNo, "ST01");
+                for (ChatRoom r : rooms) {
+                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("id", r.getRoomId()); // 고유 ID
+                    map.put("text", "새로운 1:1 상담 요청이 들어왔습니다.");
+                    map.put("time", r.getRegDt() != null ? r.getRegDt().format(formatter) : "최근");
+                    map.put("read", false);
+                    notiList.add(map);
+                }
+            } else {
+                List<ChatRoom> rooms = chatRoomRepository.findByUserNoAndProgressCode(userNo, "ST02");
+                for (ChatRoom r : rooms) {
+                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("id", r.getRoomId());
+                    map.put("text", "변호사님이 상담 요청을 수락했습니다!");
+                    map.put("time", r.getRegDt() != null ? r.getRegDt().format(formatter) : "최근");
+                    map.put("read", false);
+                    notiList.add(map);
+                }
+            }
+
+            return ResponseEntity.ok(notiList);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    @DeleteMapping("/chat/room/{roomId}")
+    public ResultVO<String> deleteConsultation(
+            @PathVariable("roomId") String roomId,
+            // ★ 여기도 토큰 직접 받기
+            @RequestHeader(value = "Authorization", required = false) String token) {
+
+        // 1. 토큰 유무 팩트 체크
+        if (token == null || !token.startsWith("Bearer ")) {
+            throw new RuntimeException("로그인이 필요한 서비스입니다. (토큰 없음)");
+        }
+
+        // 2. 수동으로 유저 번호 해독
+        String actualToken = token.substring(7);
+        Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
+
+        // 3. 서비스 호출
+        myPageService.deleteChatRoom(roomId, userNo);
+        return ResultVO.ok("상담이 삭제되었습니다.", null);
     }
 
 

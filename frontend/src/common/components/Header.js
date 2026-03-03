@@ -146,18 +146,46 @@ const Header = ({auth, onLoginUpdate}) => {
 
     useEffect(() => {
         if (auth.isLoggedIn) {
-            fetchNotificationCount();
+            const fetchAll = () => {
+                fetchNotificationCount();
+                fetchNotificationList(); // ★ 핵심: 카운트랑 리스트 둘 다 가져와라!
+            };
+
+            fetchAll(); // 처음 로딩 시 한 방 긁고
+
+            const timer = setInterval(() => {
+                fetchAll(); // 30초마다 무한 갱신
+            }, 30000);
+
+            return () => clearInterval(timer);
         }
     }, [auth.isLoggedIn]); // auth.isLoggedIn이 바뀔 때마다 실행
 
     const fetchNotificationCount = async () => {
+        // 토큰이 아예 없는 비로그인 상태면 API 호출 자체를 안 함
+        if (!localStorage.getItem('accessToken')) return;
+
         try {
-            // 백엔드 API 찌르기
-            const res = await api.get('/api/mypage/notifications/count');
-            // ★ [핵심 3] setNotiCount가 아니라 네가 만든 setNotificationCount로 바꿔라!
-            setNotificationCount(res.data);
+            // ★ api 객체가 알아서 토큰 실어 보냄
+            const response = await api.get('/api/mypage/notifications/count');
+            setNotificationCount(response.data.data || response.data);
         } catch (error) {
             console.error("알림 카운트 에러:", error);
+            // 만약 401이 뜨면 진짜로 토큰이 만료된 거니까 로그아웃 시키는 게 맞다
+        }
+    };
+
+    const fetchNotificationList = async () => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        try {
+            // 방금 백엔드에 만든 리스트 가져오기 API 호출
+            const response = await api.get('/api/mypage/notifications/list');
+            // 가져온 리스트 데이터를 드디어 빈 배열(notifications)에 채워넣음!
+            setNotifications(response.data);
+        } catch (error) {
+            console.error("알림 리스트 에러:", error);
         }
     };
 

@@ -37,6 +37,7 @@ public class GeneralMyPageDTO {
 
     @Data
     public static class ConsultationItemDTO {
+        private String roomId;
         private String lawyerName;     // 상담자(변호사) 이름
         private String category;       // 카테고리 (교통사고 등)
         private String status;         // 진행 상태
