@@ -2,8 +2,10 @@ package com.example.backend_main.KimMinSu;
 
 import com.example.backend_main.common.entity.ChatMessage;
 import com.example.backend_main.common.entity.ChatRoom;
+import com.example.backend_main.common.entity.Notification;
 import com.example.backend_main.common.repository.ChatMessageRepository;
 import com.example.backend_main.common.repository.ChatRoomRepository;
+import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.dto.ChatMessageDTO;
 import com.example.backend_main.dto.ChatRoomDTO;
