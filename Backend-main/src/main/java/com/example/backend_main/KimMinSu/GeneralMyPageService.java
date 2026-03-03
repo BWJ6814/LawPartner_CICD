@@ -1,11 +1,14 @@
 package com.example.backend_main.KimMinSu;
 
+import com.example.backend_main.BWJ.BoardReplyRepository;
 import com.example.backend_main.BWJ.BoardRepository;
 import com.example.backend_main.common.entity.CalendarEvent;
 import com.example.backend_main.common.entity.ChatRoom;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.ChatRoomRepository;
 import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.common.util.Aes256Util;
+import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.GeneralMyPageDTO;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +32,10 @@ public class GeneralMyPageService {
 
     // ★ 방금 만든 캘린더 관리자 추가!
     private final CalendarEventRepository calendarEventRepository;
+    private final BoardReplyRepository boardReplyRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
-
+    private final Aes256Util aes256Util;
+    private final HashUtil hashUtil;
 
 
     public GeneralMyPageDTO getDashboardData(Long userNo) {
@@ -42,18 +47,23 @@ public class GeneralMyPageService {
         dto.setUserName(user.getUserNm());
         dto.setNickName(user.getNickNm() != null ? user.getNickNm() : user.getUserNm());
 
-        // 2. 통계 카드 (아직 관련 테이블이 미완성이면 일단 0으로 세팅)
-        dto.setRecentReplyCount(0);
-        dto.setRequestCount(0);
-        dto.setDaysLeft(null);
 
         // 3. [DB 연동] 내 상담 요청 내역 진짜로 가져오기
         List<ChatRoom> myChatRooms = chatRoomRepository.findByUserNoOrderByRegDtDesc(userNo); // 리포지토리에 이 메서드 만들어야 됨
 
         List<GeneralMyPageDTO.ConsultationItemDTO> consultList = myChatRooms.stream().map(room -> {
             GeneralMyPageDTO.ConsultationItemDTO item = new GeneralMyPageDTO.ConsultationItemDTO();
-            // 변호사 이름은 LawyerInfoRepository로 가져오거나 임시 처리
-            item.setLawyerName(room.getLawyerNo() != null ? "변호사 번호: " + room.getLawyerNo() : "매칭 대기중");
+
+            String lawyerName = "매칭 대기중";
+
+            if (room.getLawyerNo() != null) {
+                // userRepository를 통해 변호사의 User 정보를 팩트 체크함
+                lawyerName = userRepository.findById(room.getLawyerNo())
+                        .map(u -> u.getUserNm() + " 변호사") // 이름 뒤에 '변호사' 칭호 붙여주는 게 국룰
+                        .orElse("퇴사한 변호사"); // 혹시 유저 정보가 없으면 예외 처리
+            }
+
+            item.setLawyerName(lawyerName);
             item.setCategory("일반상담");
 
             // ST01=대기, ST02=상담중, ST03=완료
@@ -79,7 +89,10 @@ public class GeneralMyPageService {
             if(board.getRegDt() != null) {
                 postDTO.setRegDate(board.getRegDt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
             }
-            postDTO.setReplyCount(0); // 추후 답글 개수 연동
+
+            int replyCount = boardReplyRepository.countByBoardNo(board.getBoardNo());
+            postDTO.setReplyCount(replyCount);
+
             return postDTO;
         }).collect(Collectors.toList());
 
@@ -111,6 +124,21 @@ public class GeneralMyPageService {
         }).collect(Collectors.toList());
 
         dto.setCalendarEvents(eventList);
+
+        try {
+            if("S99".equals(user.getStatusCode())) {
+                dto.setEmail(user.getEmail());
+                dto.setPhone(user.getPhone());
+            } else {
+                dto.setEmail(aes256Util.decrypt(user.getEmail()));
+                dto.setPhone(aes256Util.decrypt(user.getPhone()));
+            }
+        } catch (Exception e) {
+            dto.setEmail("데이터 오류");
+            dto.setPhone("데이터 오류");
+        }
+
+
 
         return dto;
 
@@ -167,9 +195,42 @@ public class GeneralMyPageService {
     }
 
     @org.springframework.transaction.annotation.Transactional
-    public void updateProfile(Long userNo, String newName) {
-        User user = userRepository.findById(userNo).orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
-        user.setNickNm(newName); // JPA 더티체킹으로 자동 UPDATE 됨
+    public void updateProfileData(Long userNo, String newName, String newEmail, String newPhone, org.springframework.web.multipart.MultipartFile profileImage) throws Exception {
+        User user = userRepository.findById(userNo)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        // 1. 닉네임 변경
+        if (newName != null && !newName.trim().isEmpty()) {
+            user.setNickNm(newName);
+        }
+
+        // 2. 이메일 변경 (중복 검사 + 암호화 + 해시 교체)
+        if (newEmail != null && !newEmail.trim().isEmpty()) {
+            String newEmailHash = hashUtil.generateHash(newEmail);
+            // 내 기존 해시값이랑 다른데, DB에 이미 존재하면 남이 쓰고 있는 거임
+            if (!newEmailHash.equals(user.getEmailHash()) && userRepository.existsByEmailHash(newEmailHash)) {
+                throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            }
+            user.setEmail(aes256Util.encrypt(newEmail));
+            user.setEmailHash(newEmailHash);
+        }
+
+        // 3. 전화번호 변경 (중복 검사 + 암호화 + 해시 교체)
+        if (newPhone != null && !newPhone.trim().isEmpty()) {
+            String newPhoneHash = hashUtil.generateHash(newPhone);
+            if (!newPhoneHash.equals(user.getPhoneHash()) && userRepository.existsByPhoneHash(newPhoneHash)) {
+                throw new IllegalArgumentException("이미 사용 중인 전화번호입니다.");
+            }
+            user.setPhone(aes256Util.encrypt(newPhone));
+            user.setPhoneHash(newPhoneHash);
+        }
+
+        // 4. 프로필 이미지 저장 로직 (너네 FileController 쪽에 있는 저장 로직 활용해라)
+        if (profileImage != null && !profileImage.isEmpty()) {
+            // TODO: 너네 팀의 파일 저장 방식(S3 or 로컬 경로)에 맞춰서 파일 저장하고,
+            // DB에 이미지 URL 또는 파일명을 꽂아넣는 코드를 여기에 추가해라!
+            System.out.println("프론트에서 넘어온 이미지 이름: " + profileImage.getOriginalFilename());
+        }
     }
 
     @org.springframework.transaction.annotation.Transactional

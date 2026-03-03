@@ -1,12 +1,20 @@
 package com.example.backend_main.KimMinSu;
 
 import com.example.backend_main.common.entity.CalendarEvent;
+import com.example.backend_main.common.repository.ChatRoomRepository;
+import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.GeneralMyPageDTO;
+import com.example.backend_main.dto.ProfileUpdateDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -18,6 +26,7 @@ public class GeneralMyPageController {
 
     private final GeneralMyPageService myPageService;
     private final JwtTokenProvider jwtTokenProvider; // ★ 신분증 해독기 추가
+    private final ChatRoomRepository chatRoomRepository;
 
     @GetMapping("/general")
     // ★ 리턴 타입을 팀 표준인 ResultVO로 변경
@@ -90,14 +99,27 @@ public class GeneralMyPageController {
     }
 
     // 1. 프로필 이름 수정
-    @PutMapping("/profile")
+    @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResultVO<String> updateProfile(
-            @RequestHeader("Authorization") String token,
-            @RequestBody java.util.Map<String, String> body) {
-        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
-        myPageService.updateProfile(userNo, body.get("name"));
+            @ModelAttribute ProfileUpdateDTO dto, // ★ @RequestPart 대신 @ModelAttribute 사용
+            @AuthenticationPrincipal CustomUserDetails userDetails // ★ 이미 토큰 검증 끝난 객체
+    ) throws Exception {
+
+        // 1. 중복된 토큰 파싱 로직 제거! userDetails에서 바로 꺼낸다.
+        Long userNo = userDetails.getUserNo();
+
+        // 2. 서비스 호출 (DTO에서 데이터 꺼내서 전달)
+        myPageService.updateProfileData(
+                userNo,
+                dto.getName(),
+                dto.getEmail(),
+                dto.getPhone(),
+                dto.getProfileImage()
+        );
+
         return ResultVO.ok("프로필 수정 성공", null);
     }
+
 
     // 2. 비밀번호 수정
     @PutMapping("/password")
@@ -113,6 +135,31 @@ public class GeneralMyPageController {
         Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
         myPageService.deleteAccount(userNo);
         return ResultVO.ok("회원 탈퇴 성공", null);
+    }
+
+    @GetMapping("/notifications/count")
+    public ResponseEntity<?> getUnreadNotificationCount(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        // 혹시 로그인이 안 된 놈이 찌르면 빠꾸 먹이기
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(0);
+        }
+
+        // ★ [핵심 2] 검증된 신분증에서 안전하게 유저 번호랑 권한 빼오기
+        Long userNo = userDetails.getUserNo(); // CustomUserDetails에 getUserNo()가 있다고 가정
+        String role = userDetails.getAuthorities().iterator().next().getAuthority(); // 권한(Role) 꺼내기
+
+        int count = 0;
+        if ("ROLE_LAWYER".equals(role)) {
+            // 변호사: 나한테 온 대기(ST01) 중인 상담 요청
+            count = chatRoomRepository.countByLawyerNoAndProgressCode(userNo, "ST01");
+        } else {
+            // 일반 유저: 내가 신청한 것 중 수락(ST02)된 상담
+            count = chatRoomRepository.countByUserNoAndProgressCode(userNo, "ST02");
+        }
+
+        return ResponseEntity.ok(count);
     }
 
 

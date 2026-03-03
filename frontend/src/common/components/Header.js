@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Settings } from 'lucide-react';
+import api from '../api/axiosConfig';
 
 const Header = ({auth, onLoginUpdate}) => {
   const navigate = useNavigate();
@@ -42,74 +44,64 @@ const Header = ({auth, onLoginUpdate}) => {
     // 1. 역할별 아우라 정의 (이게 디자인의 핵심)
     const USER_AURA = {
         ROLE_LAWYER: {
-            label: "PRO LAWYER",
+            label: "LAWYER",
             nameSuffix: "변호사",
-            bg: "bg-indigo-600",
-            text: "text-white",
-            border: "border-indigo-400/50",
-            shadow: "shadow-[0_0_20px_rgba(79,70,229,0.4)]",
+            bg: "bg-indigo-50",
+            text: "text-indigo-700",
+            border: "border-indigo-100",
+            shadow: "shadow-sm",
             icon: (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 21.75c-2.676 0-5.216-.584-7.499-1.632A12.02 12.02 0 013 12c0-5.335 3.42-9.879 8.188-11.536L12 3l.812-2.536a11.954 11.954 0 018.688 11.536c0 3.513-1.5 6.676-3.89 8.868L12 21.75z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                 </svg>
             )
         },
         ROLE_OPERATOR: {
-          label: "Operator",
-          nameSuffix: "운영자",
-          bg: "bg-emerald-500",
-          text: "text-white",
-          border: "border-emerald-300/50",
-          shadow: "shadow-[0_0_20px_rgba(16,185,129,0.4)] operator-aura",
+          label: "OPERATOR",
+          nameSuffix: "일반 관리자",
+          bg: "bg-emerald-50",
+          text: "text-emerald-700",
+          border: "border-emerald-200",
+          shadow: "shadow-sm",
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           )
         },
         ROLE_ADMIN: {
-            label: "Admin",
-            nameSuffix: "관리자",
-            bg: "bg-slate-900",
-            text: "text-cyan-400",
-            border: "border-cyan-500/50",
-            shadow: "shadow-[0_0_25px_rgba(6,182,212,0.5)] operator-aura",
+            label: "ADMIN",
+            nameSuffix: "중간 관리자",
+            bg: "bg-slate-100", // 진한 검정 -> 은은한 회색
+            text: "text-slate-700", // 형광 파랑 -> 차분한 진회색
+            border: "border-slate-200",
+            shadow: "shadow-sm",
             icon: (
-                <svg className="w-4 h-4 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
             )
         },
         ROLE_SUPER_ADMIN: {
-            label: "Super Admin",
-            nameSuffix: "슈퍼 관리자",
-            bg: "bg-gray-950", 
-            text: "text-amber-400", 
-            border: "border-amber-500",
-            shadow: "shadow-[0_0_25px_rgba(245,158,11,0.6)] operator-aura",
+            label: "ROOT",
+            nameSuffix: "슈퍼 어드민",
+            bg: "bg-orange-50",
+            text: "text-orange-800", // 형광 노랑 -> 고급스러운 오렌지 브라운
+            border: "border-orange-200",
+            shadow: "shadow-sm",
             icon: (
-              <div className="relative flex items-center justify-center">
-                {/* 배경 박동 후광 효과 */}
-                <div className="absolute inset-0 bg-amber-400 blur-[4px] opacity-40 animate-pulse rounded-full"></div>
-                
-                {/* 메인 아이콘: 왕관이 씌워진 방패 (권위와 보호의 상징) */}
-                <svg className="relative w-4 h-4 text-amber-400 drop-shadow-[0_0_2px_rgba(0,0,0,0.5)]" 
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" 
-                        d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                  {/* 왕관 포인트 (상단에 작게 추가) */}
-                  <path d="M12 2L13 4H11L12 2Z" fill="currentColor" stroke="none" />
-                </svg>
-              </div>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 21.75c-2.676 0-5.216-.584-7.499-1.632A12.02 12.02 0 013 12c0-5.335 3.42-9.879 8.188-11.536L12 3l.812-2.536a11.954 11.954 0 018.688 11.536c0 3.513-1.5 6.676-3.89 8.868L12 21.75z" />
+              </svg>
             )
-          },
+        },
         ROLE_USER: {
-            label: "CLIENT",
+            label: "MEMBER",
             nameSuffix: "님",
-            bg: "bg-blue-50",
-            text: "text-blue-700",
-            border: "border-blue-200",
+            bg: "bg-gray-50",
+            text: "text-gray-600",
+            border: "border-gray-200",
             shadow: "shadow-sm",
             icon: (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,27 +144,24 @@ const Header = ({auth, onLoginUpdate}) => {
     };
   }, []);
 
-  // 알림 데이터 가져오기 (시뮬레이션)
-  const fetchNotifications = (role) => {
-    // 실제로는 백엔드 API에서 받아오는 데이터입니다.
-    const dummyData = role === 'LAWYER' ? [
-      { id: 1, text: "새로운 상담 요청이 도착했습니다.", time: "방금 전", read: false },
-      { id: 2, text: "홍길동님이 상담 후기를 남겼습니다.", time: "1시간 전", read: false },
-      { id: 3, text: "이번 달 정산 내역이 생성되었습니다.", time: "어제", read: true },
-      { id: 4, text: "AI 판례 분석이 완료되었습니다.", time: "2일 전", read: true },
-      { id: 5, text: "시스템 점검 안내", time: "3일 전", read: true },
-      // 변호사용 알림들
-    ] : [
-      { id: 1, text: "변호사님이 답변을 등록했습니다.", time: "방금 전", read: false },
-      { id: 2, text: "1:1 상담 예약이 확정되었습니다.", time: "30분 전", read: false },
-      { id: 3, text: "회원가입 환영 쿠폰이 지급되었습니다.", time: "1일 전", read: true },
-      // 일반 사용자용 알림들
-    ];
+    useEffect(() => {
+        if (auth.isLoggedIn) {
+            fetchNotificationCount();
+        }
+    }, [auth.isLoggedIn]); // auth.isLoggedIn이 바뀔 때마다 실행
 
-    setNotifications(dummyData);
-    // 읽지 않은 알림 개수 계산
-    setNotificationCount(dummyData.filter(n => !n.read).length);
-  };
+    const fetchNotificationCount = async () => {
+        try {
+            // 백엔드 API 찌르기
+            const res = await api.get('/api/mypage/notifications/count');
+            // ★ [핵심 3] setNotiCount가 아니라 네가 만든 setNotificationCount로 바꿔라!
+            setNotificationCount(res.data);
+        } catch (error) {
+            console.error("알림 카운트 에러:", error);
+        }
+    };
+
+
 
   const noUnderlineStyle = { textDecoration: 'none', outline: 'none' };
 
@@ -276,10 +265,19 @@ const Header = ({auth, onLoginUpdate}) => {
 
                 {/* 알림 아이콘 & 드롭다운 (핵심 구현) */}
                 <div className="relative" ref={notificationRef}>
-                  <button 
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className={`relative p-2 transition rounded-full ${showNotifications ? 'bg-gray-100 text-blue-900' : 'text-gray-500 hover:text-blue-900 hover:bg-gray-50'}`}
-                  >
+                    <button
+                        onClick={() => {
+                            setShowNotifications(!showNotifications);
+                            // ★ [핵심] 창을 열 때 숫자를 0으로 만들어버림 (UX 디테일)
+                            if (!showNotifications && notificationCount > 0) {
+                                setNotificationCount(0);
+
+                                // 나중에 백엔드 쪽에 "이 유저 알림 다 읽었음" 처리하는 API 뚫리면 여기서 쏴주면 됨
+                                // api.post('/api/mypage/notifications/read-all');
+                            }
+                        }}
+                        className={`relative p-2 transition rounded-full ${showNotifications ? 'bg-gray-100 text-blue-900' : 'text-gray-500 hover:text-blue-900 hover:bg-gray-50'}`}
+                    >
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
                     {notificationCount > 0 && (
                       <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
@@ -317,12 +315,21 @@ const Header = ({auth, onLoginUpdate}) => {
                   )}
                 </div>
 
-                {/* 권한별 마이페이지 분기 */}
-                {auth.role === 'ROLE_LAWYER' ? (
-                  <Link to="/lawyer-dashboard" style={noUnderlineStyle} className="bg-blue-900 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition shadow-md whitespace-nowrap no-underline">
-                    <span className="w-2 h-2 bg-green-400 rounded-full"></span> 마이페이지
+                {/* 권한별 페이지 이동 분기처리 (관리자 -> 변호사 -> 일반) */}
+                {['ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR'].includes(auth.role) ? (
+                  /* 1. 관리자 그룹 (심플 버전: 진회색의 깔끔한 버튼) */
+                  <Link to="/admin" style={noUnderlineStyle} className="bg-slate-700 text-white border border-slate-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-600 transition shadow-sm whitespace-nowrap no-underline flex items-center gap-2">
+                    <Settings size={14} className="text-slate-300" />
+                    관리자 페이지
+                  </Link>
+                ) : auth.role === 'ROLE_LAWYER' ? (
+                  /* 2. 변호사 */
+                  <Link to="/lawyer-dashboard" style={noUnderlineStyle} className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-indigo-500 transition shadow-sm whitespace-nowrap no-underline flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full opacity-70"></span>
+                    변호사 페이지
                   </Link>
                 ) : (
+                  /* 3. 일반 회원 */
                   <Link to="/mypage" style={noUnderlineStyle} className="bg-blue-900 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-800 transition shadow-md whitespace-nowrap no-underline">
                     마이페이지
                   </Link>

@@ -22,6 +22,10 @@ public class GeneralMyPageDTO {
     private int requestCount;
     private Integer daysLeft;
 
+    private String email;
+    private String phone;
+
+
     // 3. 최근 상담 요청 현황 (테이블)
     private List<ConsultationItemDTO> recentConsultations;
 
