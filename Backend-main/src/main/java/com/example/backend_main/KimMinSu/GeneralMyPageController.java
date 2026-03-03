@@ -2,7 +2,9 @@ package com.example.backend_main.KimMinSu;
 
 import com.example.backend_main.common.entity.CalendarEvent;
 import com.example.backend_main.common.entity.ChatRoom;
+import com.example.backend_main.common.entity.Notification;
 import com.example.backend_main.common.repository.ChatRoomRepository;
+import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
@@ -28,6 +30,7 @@ public class GeneralMyPageController {
     private final GeneralMyPageService myPageService;
     private final JwtTokenProvider jwtTokenProvider; // ★ 신분증 해독기 추가
     private final ChatRoomRepository chatRoomRepository;
+    private final NotificationRepository notificationRepository;
 
     @GetMapping("/general")
     // ★ 리턴 타입을 팀 표준인 ResultVO로 변경
@@ -138,37 +141,43 @@ public class GeneralMyPageController {
         return ResultVO.ok("회원 탈퇴 성공", null);
     }
 
+    // ==============================================================
+    // 1. 알림 개수 세기 (수정)
+    // ==============================================================
     @GetMapping("/notifications/count")
     public ResponseEntity<?> getUnreadNotificationCount(
-            // ★ 시큐리티 의존 안 하고 토큰 직접 받음
             @RequestHeader(value = "Authorization", required = false) String token
     ) {
-        // 1. 토큰 없으면 바로 401 빠꾸
         if (token == null || !token.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(0);
         }
-
         try {
-            // 2. 토큰에서 유저 번호 직접 빼오기 (네가 짰던 기존 방식)
-            String actualToken = token.substring(7);
-            Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
+            Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
 
-            // ★ 여기서 권한(Role) 확인이 필요한데, DB에서 유저 정보를 직접 조회해서 팩트 체크
-            com.example.backend_main.common.entity.User user = myPageService.getUserById(userNo); // 서비스에 없으면 userRepository.findById(userNo).get() 써라
-            String role = user.getRoleCode(); // 네 엔티티 구조에 맞게 권한 가져오기 (ex: user.getRoleCode() 등)
-
-            int count = 0;
-            if ("ROLE_LAWYER".equals(role)) {
-                count = chatRoomRepository.countByLawyerNoAndProgressCode(userNo, "ST01");
-            } else {
-                count = chatRoomRepository.countByUserNoAndProgressCode(userNo, "ST02");
-            }
-
+            // ★ 과거의 쓰레기 로직(ChatRoom 상태로 세기) 버리고 진짜 Notification DB에서 센다!
+            int count = (int) notificationRepository.countByUserNoAndReadYn(userNo, "N");
             return ResponseEntity.ok(count);
 
         } catch (Exception e) {
-            // 토큰이 만료됐거나 위조됐으면 401 처리
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(0);
+        }
+    }
+
+    // ==============================================================
+    // 2. 알림 읽음 처리 API (신규 추가)
+    // ==============================================================
+    @PutMapping("/notifications/read")
+    public ResponseEntity<?> markNotificationsAsRead(
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        if (token == null || !token.startsWith("Bearer ")) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        try {
+            Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+            // DB에 있는 내 알림을 전부 'Y'로 바꾼다.
+            notificationRepository.markAllAsRead(userNo);
+            return ResponseEntity.ok("처리 완료");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
@@ -183,36 +192,23 @@ public class GeneralMyPageController {
         try {
             String actualToken = token.substring(7);
             Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
-            com.example.backend_main.common.entity.User user = myPageService.getUserById(userNo);
-            String role = user.getRoleCode(); // (또는 getRoleCode() 등 엔티티에 맞게)
 
-            List<java.util.Map<String, Object>> notiList = new java.util.ArrayList<>();
+            // ★ [핵심] 아까 수정한 레포지토리 메서드 사용 (안 읽은 알림 'N'만 가져오기)
+            List<Notification> notis = notificationRepository.findByUserNoAndReadYnOrderByRegDtDesc(userNo, "N");
+
+            List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
             java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-            // 역할에 맞게 리스트를 긁어와서 프론트가 원하는 알림 포맷으로 맵핑
-            if ("ROLE_LAWYER".equals(role)) {
-                List<ChatRoom> rooms = chatRoomRepository.findByLawyerNoAndProgressCode(userNo, "ST01");
-                for (ChatRoom r : rooms) {
-                    java.util.Map<String, Object> map = new java.util.HashMap<>();
-                    map.put("id", r.getRoomId()); // 고유 ID
-                    map.put("text", "새로운 1:1 상담 요청이 들어왔습니다.");
-                    map.put("time", r.getRegDt() != null ? r.getRegDt().format(formatter) : "최근");
-                    map.put("read", false);
-                    notiList.add(map);
-                }
-            } else {
-                List<ChatRoom> rooms = chatRoomRepository.findByUserNoAndProgressCode(userNo, "ST02");
-                for (ChatRoom r : rooms) {
-                    java.util.Map<String, Object> map = new java.util.HashMap<>();
-                    map.put("id", r.getRoomId());
-                    map.put("text", "변호사님이 상담 요청을 수락했습니다!");
-                    map.put("time", r.getRegDt() != null ? r.getRegDt().format(formatter) : "최근");
-                    map.put("read", false);
-                    notiList.add(map);
-                }
+            for(Notification n : notis) {
+                java.util.Map<String, Object> map = new java.util.HashMap<>();
+                map.put("id", n.getAlarmNo());
+                // 프론트에서 line-clamp-2로 자를 거니까 원본 그대로 보냄
+                map.put("text", n.getMsgContent() != null ? n.getMsgContent() : "새로운 알림이 도착했습니다.");
+                map.put("time", n.getRegDt() != null ? n.getRegDt().format(formatter) : "방금 전");
+                map.put("read", "Y".equals(n.getReadYn()));
+                result.add(map);
             }
-
-            return ResponseEntity.ok(notiList);
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
