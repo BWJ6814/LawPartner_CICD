@@ -62,5 +62,5 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long>, Jpa
     Page<AccessLog> findByStatusCodeGreaterThanEqual(Integer statusCode, Pageable pageable);
 
     // [탈퇴 유저 제외] 회원 리스트 목록 뽑아오기
-    List<User> findAllByStatusCodeNot(String statusCode);
+    List<User> findAllByStatusCodeNot(Integer statusCode);
 }
