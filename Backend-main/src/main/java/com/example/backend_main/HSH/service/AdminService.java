@@ -248,6 +248,12 @@ public class AdminService {
     public List<Map<String, Object>> getDailyVisitStats(int days) {
         LocalDateTime startDate = LocalDateTime.now().minusDays(days - 1);
 
+        // 0. 혹시 프론트에서 처리했지만, 혹시 모르는 백엔드 분기 처리
+        // 우선 1이하로 오면 1로 만들고, 만일 1이라면 그래프를 그리기 위해 2로 설정합니다.
+        if (days < 1 || days == 1) {
+            days = 2;
+        }
+
         // 1. DB 조회 (파라미터로 계산된 startDate 넘기기)
         List<Map<String, Object>> userStats = userRepository.findDailySignupStats(startDate);
         List<Map<String, Object>> logStats = accessLogRepository.findDailyVisitorStats(startDate);
