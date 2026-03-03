@@ -26,6 +26,26 @@ const SignupPage = () => {
     const [specialties, setSpecialties] = useState([]); // 전문분야 배열
     const [selectedFile, setSelectedFile] = useState(null); // 자격증 파일
     
+    // 카테고리
+    const legalCategories = [
+      { icon: 'fa-gavel', label: '형사범죄', color: 'text-slate-700' },
+      { icon: 'fa-car', label: '교통사고', color: 'text-red-500' },
+      { icon: 'fa-home', label: '부동산', color: 'text-amber-600' },
+      { icon: 'fa-key', label: '임대차', color: 'text-blue-500' },
+      { icon: 'fa-hand-holding-usd', label: '손해배상', color: 'text-green-600' },
+      { icon: 'fa-coins', label: '대여금', color: 'text-yellow-500' },
+      { icon: 'fa-calculator', label: '미수금', color: 'text-gray-600' },
+      { icon: 'fa-balance-scale', label: '채권추심', color: 'text-indigo-600' },
+      { icon: 'fa-heart-broken', label: '이혼', color: 'text-rose-500' },
+      { icon: 'fa-users', label: '상속/가사', color: 'text-teal-600' },
+      { icon: 'fa-briefcase', label: '노동', color: 'text-blue-800' },
+      { icon: 'fa-building', label: '기업', color: 'text-blue-600' },
+      { icon: 'fa-copyright', label: '지식재산권', color: 'text-yellow-400' },
+      { icon: 'fa-file-invoice-dollar', label: '회생/파산', color: 'text-red-600' },
+      { icon: 'fa-file-alt', label: '계약서 검토', color: 'text-gray-700' },
+      { icon: 'fa-ellipsis-h', label: '기타', color: 'text-gray-400' },
+    ];
+
     // 제출 버튼 
     const [isSubmitting, setIsSubmitting] = useState(false);
     // 검증 상태
@@ -139,11 +159,15 @@ const SignupPage = () => {
         }
     };
 
-    // 전문분야 체크박스 처리
+    // 전문분야 체크박스 처리 
     const handleSpecialtyChange = (e) => {
         const { value, checked } = e.target;
-        if (checked) setSpecialties([...specialties, value]);
-        else setSpecialties(specialties.filter(item => item !== value));
+        console.log("클릭됨:", value, checked); // 동작 확인용 (필요시 주석 해제)
+        if (checked) {
+            setSpecialties([...specialties, value]);
+        } else {
+            setSpecialties(specialties.filter(item => item !== value));
+        }
     };
 
     // 파일 업로드 처리
@@ -224,8 +248,7 @@ const SignupPage = () => {
     const labelStyle = "text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1";
 
     return (
-        <main className="w-full flex items-center justify-center py-12 relative overflow-hidden bg-mesh min-h-screen">
-            
+        <main className="w-full flex flex-col items-center justify-start py-12 relative bg-mesh min-h-screen">
             {/* 배경 장식 */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/30 rounded-full blur-[120px] pointer-events-none"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-blue-50/50 rounded-full blur-[100px] pointer-events-none"></div>
@@ -361,6 +384,7 @@ const SignupPage = () => {
 
                     </div>
 
+
                     {/* [변호사 전용 정보] - role이 lawyer일 때만 보임 */}
                     {role === 'lawyer' && (
                         <div className="space-y-4 pt-4 border-t-2 border-blue-50 animate-fade-in">
@@ -409,20 +433,46 @@ const SignupPage = () => {
                                 <input type="text" name="officeAddr" placeholder="법률사무소 주소" className={inputStyle} onChange={handleChange} />
                             </div>
                             
-                            {/* 전문 분야 (체크박스) */}
-                            <div className="space-y-2">
-                                <label className={`${labelStyle} text-blue-900`}>Specialty Fields</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {['민사', '형사', '이혼', '노동', '부동산', '기업'].map((field) => (
-                                        <label key={field} className="specialty-tag relative cursor-pointer">
-                                            <input type="checkbox" value={field} onChange={handleSpecialtyChange} className="hidden peer" />
-                                            <span className="block text-center py-2 rounded-xl border border-slate-200 text-[10px] font-bold text-slate-500 hover:border-blue-300 peer-checked:bg-blue-900 peer-checked:text-white peer-checked:border-blue-900 transition-all">
-                                                {field}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
+                            {/* 전문 분야 (4열 그리드) */}
+                            <div className="grid grid-cols-4 gap-3">
+                                {legalCategories.map((field) => (
+                                    <label key={field.label} className="relative cursor-pointer group">
+                                    <input 
+                                        type="checkbox" 
+                                        value={field.label} 
+                                        checked={specialties.includes(field.label)} 
+                                        onChange={handleSpecialtyChange} 
+                                        className="hidden peer" 
+                                    />
+                                    
+                                    {/* 메인 카드 박스 */}
+                                    <div className="flex flex-col items-center justify-center p-3 h-24 rounded-2xl border-2 border-slate-100 bg-white transition-all duration-300
+                                        hover:border-blue-200 hover:bg-blue-50/20
+                                        peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:ring-4 peer-checked:ring-blue-100/50 peer-checked:scale-[1.02]">
+                                        
+                                        {/* 선택 시 나타나는 우측 상단 체크 배지 */}
+                                        <div className="absolute top-2 right-2 opacity-0 scale-50 peer-checked:opacity-100 peer-checked:scale-100 transition-all duration-300 z-10">
+                                        <div className="bg-blue-600 rounded-full p-1 shadow-sm">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        </div>
+                                        </div>
+
+                                        {/* 아이콘: 선택 시 테마 색상 적용 */}
+                                        <div className={`mb-1.5 transition-transform duration-300 ${field.color} peer-checked:text-blue-800`}>
+                                            <i className={`fas ${field.icon} text-xl`}></i>
+                                        </div>
+                                        
+                                        {/* 라벨 텍스트: 선택 시 강조 */}
+                                        <span className="text-[11.5px] font-bold leading-tight text-center text-slate-700 peer-checked:text-blue-900 tracking-tight transition-colors">
+                                        {field.label}
+                                        </span>
+                                    </div>
+                                    </label>
+                                ))}
                             </div>
+
 
                             {/* 파일 업로드 */}
                             <div className="space-y-1">
