@@ -6,12 +6,15 @@ import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.GeneralMyPageDTO;
+import com.example.backend_main.dto.ProfileUpdateDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -96,19 +99,23 @@ public class GeneralMyPageController {
     }
 
     // 1. 프로필 이름 수정
-    @PutMapping("/profile")
+    @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResultVO<String> updateProfile(
-            @RequestHeader("Authorization") String token,
-            // ★ [핵심] JSON이 아니라 FormData로 받기 때문에 @RequestParam을 쓴다!
-            @RequestParam("name") String name,
-            @RequestParam("email") String email,
-            @RequestParam("phone") String phone,
-            @RequestParam(value = "profileImage", required = false) org.springframework.web.multipart.MultipartFile profileImage) throws Exception {
+            @ModelAttribute ProfileUpdateDTO dto, // ★ @RequestPart 대신 @ModelAttribute 사용
+            @AuthenticationPrincipal CustomUserDetails userDetails // ★ 이미 토큰 검증 끝난 객체
+    ) throws Exception {
 
-        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        // 1. 중복된 토큰 파싱 로직 제거! userDetails에서 바로 꺼낸다.
+        Long userNo = userDetails.getUserNo();
 
-        // 서비스로 다 넘겨버리기
-        myPageService.updateProfileData(userNo, name, email, phone, profileImage);
+        // 2. 서비스 호출 (DTO에서 데이터 꺼내서 전달)
+        myPageService.updateProfileData(
+                userNo,
+                dto.getName(),
+                dto.getEmail(),
+                dto.getPhone(),
+                dto.getProfileImage()
+        );
 
         return ResultVO.ok("프로필 수정 성공", null);
     }
