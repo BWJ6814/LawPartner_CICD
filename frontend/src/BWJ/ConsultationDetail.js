@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+// useParams: URL에 있는 값(예: /boards/1 에서 1)을 뽑아오는 리액트 훅입니다.
+// useNavigate: 다른 페이지로 이동시켜주는(링크 역할) 리액트 훅입니다.
 import { useParams, useNavigate } from 'react-router-dom';
+// axios: 스프링 서버랑 통신(데이터 주고받기)하기 위한 라이브러리입니다.
 import axios from 'axios';
 import {
     CaretLeft, ChatCircleDots, Star, PencilSimple, Trash,
@@ -11,34 +14,33 @@ const ConsultationDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    // [상태 관리] 게시글 데이터 및 UI 상태
-    const [post, setPost] = useState(null); // 게시글 정보
-    const [loading, setLoading] = useState(true); // 로딩 상태
+    // [상태 관리] useState는 리액트에서 데이터를 담아두는 바구니 같은 겁니다.
+    // 이 바구니(상태)의 값이 바뀌면 화면이 알아서 새로고침(렌더링) 됩니다.
+    const [post, setPost] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // [상태 관리] 답변(댓글) 관련 상태
-    const [replyContent, setReplyContent] = useState(''); // 새 답변 입력값
-    const [editingReplyId, setEditingReplyId] = useState(null); // 수정 중인 답변 번호
-    const [editingReplyContent, setEditingReplyContent] = useState(""); // 수정 중인 답변 내용
+    const [replyContent, setReplyContent] = useState('');
+    const [editingReplyId, setEditingReplyId] = useState(null);
+    const [editingReplyContent, setEditingReplyContent] = useState("");
 
-    // [상태 관리] 게시글 수정 모드 관련
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const [editContent, setEditContent] = useState('');
 
-    // [상태 관리] 후기 모달 관련
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [selectedLawyer, setSelectedLawyer] = useState(null);
     const [rating, setRating] = useState(0);
     const [reviewContent, setReviewContent] = useState('');
 
-    // [로그인 정보] 로컬스토리지에서 가져오기
+    // [로그인 정보] 로컬스토리지(브라우저 저장소)에서 로그인한 유저 정보를 가져옵니다.
     const currentUser = {
         userNo: localStorage.getItem('userNo'),
         role: localStorage.getItem('userRole'),
         name: localStorage.getItem('userNm') || localStorage.getItem('nickNm')
     };
 
-    // [초기 데이터 로드]
+    // [초기 데이터 로드] useEffect는 화면이 처음 켜질 때 한 번만 실행되는 함수입니다.
+    // 여기서 스프링 백엔드에서 글 상세정보를 가져옵니다.
     useEffect(() => {
         const fetchPost = async () => {
             try {
@@ -59,7 +61,7 @@ const ConsultationDetail = () => {
         try {
             const fileNo = (typeof file === 'object') ? (file.fileNo || file.file_no) : file;
             const response = await axios.get(`http://localhost:8080/api/boards/download/${fileNo}`, {
-                responseType: 'blob',
+                responseType: 'blob', // 파일 다운로드를 위해 blob 타입으로 받아옵니다.
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
@@ -127,7 +129,7 @@ const ConsultationDetail = () => {
                 lawyerNo: currentUser.userNo
             });
             alert("답변이 등록되었습니다.");
-            window.location.reload();
+            window.location.reload(); // 등록 후 새로고침
         } catch (err) {
             alert("답변 등록 중 오류가 발생했습니다.");
         }
@@ -189,11 +191,40 @@ const ConsultationDetail = () => {
         }
     };
 
+    // [기능 10] 1:1 대화방 생성 (★ 여기서 백엔드랑 통신합니다)
+    const handleCreateChatRoom = async (lawyerNo) => {
+        if (!currentUser.userNo) {
+            alert("로그인이 필요한 서비스입니다.");
+            return;
+        }
+
+        try {
+            // axios.post로 스프링 백엔드에 채팅방 생성 요청을 보냅니다.
+            const response = await axios.post(`http://localhost:8080/api/boards/chat/room`, {
+                userNo: currentUser.userNo,
+                lawyerNo: lawyerNo
+            });
+
+            if (response.status === 200) {
+                alert("1:1 대화 요청이 완료되었습니다!");
+
+                // ★ 주목! response.data.roomId에는 이제 "550e8400-e29b-..." 같은 문자열 UUID가 들어있습니다.
+                // 만약 바로 채팅방으로 넘어가고 싶다면 아래 주석을 풀고 사용하세요.
+                // navigate(`/chat/${response.data.roomId}`);
+            }
+        } catch (err) {
+            console.error("채팅방 생성 중 오류:", err);
+            alert("대화 요청 중 오류가 발생했습니다. 다시 시도해주세요.");
+        }
+    };
+
+    // 데이터를 가져오는 중일 때 보여줄 로딩 화면입니다.
     if (loading) return <div className="text-center py-20 font-bold text-gray-500">데이터를 불러오는 중입니다...</div>;
 
     const isMyPost = currentUser.role === 'ROLE_USER' && String(post.writerNo) === String(currentUser.userNo);
     const isLawyer = currentUser.role === 'ROLE_LAWYER';
 
+    // Tailwind CSS를 이용해 화면을 그리는 부분(JSX)입니다.
     return (
         <div className="min-h-screen bg-gray-50 pt-8 pb-20 px-4 font-sans text-left">
             <div className="max-w-4xl mx-auto">
@@ -297,7 +328,6 @@ const ConsultationDetail = () => {
                                             </div>
                                         </div>
 
-                                        {/* [변경됨] 수정/삭제 버튼을 '글씨'로 변경 */}
                                         {isMyReply && !editingReplyId && (
                                             <div className="flex items-center gap-3">
                                                 <button
@@ -335,7 +365,7 @@ const ConsultationDetail = () => {
 
                                     {isMyPost && !isMyReply && (
                                         <div className="flex flex-col gap-2">
-                                            <button className="w-full py-3.5 rounded-lg border border-blue-500 text-blue-600 font-bold flex justify-center gap-2 hover:bg-blue-50">
+                                            <button onClick={() => handleCreateChatRoom(reply.lawyerNo)} className="w-full py-3.5 rounded-lg border border-blue-500 text-blue-600 font-bold flex justify-center gap-2 hover:bg-blue-50">
                                                 <ChatCircleDots size={20} /> 1:1 대화 요청하기
                                             </button>
                                             <button onClick={() => { setSelectedLawyer(reply); setIsReviewModalOpen(true); }} className="w-full py-3.5 rounded-lg border border-gray-300 text-gray-700 font-bold flex justify-center gap-2 hover:bg-gray-50">

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
+// ★ JpaRepository<ChatRoom, Long> 에서 JpaRepository<ChatRoom, String> 으로 변경
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
     // 팩트: 내가 의뢰인인 방 또는 내가 변호사인 방 다 가져와라!
     List<ChatRoom> findByUserNoOrLawyerNoOrderByRegDtDesc(Long userNo, Long lawyerNo);
