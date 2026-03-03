@@ -15,6 +15,7 @@ const ChatList = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [currentRoomStatus, setCurrentRoomStatus] = useState(null);
 
+
     // ★ [추가 1] 검색 및 필터링을 위한 State
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('ALL'); // 'ALL', 'ST01', 'ST02', 'ST03'
