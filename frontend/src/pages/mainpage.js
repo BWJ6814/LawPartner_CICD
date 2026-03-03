@@ -147,22 +147,22 @@ const MainPage = () => {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6">
           {[
-            { icon: 'fa-home', label: '부동산', color: 'text-amber-600' },
-            { icon: 'fa-heart-broken', label: '이혼/상속', color: 'text-rose-500' },
-            { icon: 'fa-gavel', label: '형사', color: 'text-slate-700' },
-            { icon: 'fa-building', label: '기업/노동', color: 'text-blue-600' },
-            { icon: 'fa-coins', label: '금전/채무', color: 'text-yellow-500' },
-            { icon: 'fa-car-crash', label: '교통사고', color: 'text-red-500' },
-            { icon: 'fa-balance-scale', label: '민사', color: 'text-indigo-600' },
-            { icon: 'fa-landmark', label: '행정', color: 'text-gray-600' },
-            { icon: 'fa-lightbulb', label: '지식재산', color: 'text-yellow-400' },
-            { icon: 'fa-file-invoice-dollar', label: '세무/회계', color: 'text-green-600' },
-            { icon: 'fa-stethoscope', label: '의료', color: 'text-teal-500' },
-            { icon: 'fa-hard-hat', label: '건설', color: 'text-orange-600' },
-            { icon: 'fa-globe', label: '국제', color: 'text-blue-400' },
-            { icon: 'fa-rocket', label: '스타트업', color: 'text-purple-600' },
-            { icon: 'fa-shield-virus', label: '사이버', color: 'text-emerald-500' },
-            { icon: 'fa-ellipsis-h', label: '기타', color: 'text-gray-400' },
+              { icon: 'fa-gavel', label: '형사범죄', color: 'text-slate-700' },
+              { icon: 'fa-car', label: '교통사고', color: 'text-red-500' },
+              { icon: 'fa-home', label: '부동산', color: 'text-amber-600' },
+              { icon: 'fa-key', label: '임대차', color: 'text-blue-500' },
+              { icon: 'fa-hand-holding-usd', label: '손해배상', color: 'text-green-600' },
+              { icon: 'fa-coins', label: '대여금', color: 'text-yellow-500' },
+              { icon: 'fa-calculator', label: '미수금', color: 'text-gray-600' },
+              { icon: 'fa-balance-scale', label: '채권추심', color: 'text-indigo-600' },
+              { icon: 'fa-heart-broken', label: '이혼', color: 'text-rose-500' },
+              { icon: 'fa-users', label: '상속/가사', color: 'text-teal-600' },
+              { icon: 'fa-briefcase', label: '노동', color: 'text-blue-800' },
+              { icon: 'fa-building', label: '기업', color: 'text-blue-600' },
+              { icon: 'fa-copyright', label: '지식재산권', color: 'text-yellow-400' },
+              { icon: 'fa-file-invoice-dollar', label: '회생/파산', color: 'text-red-600' },
+              { icon: 'fa-file-alt', label: '계약서 검토', color: 'text-gray-700' },
+              { icon: 'fa-ellipsis-h', label: '기타', color: 'text-gray-400' },
           ].map((cat, idx) => (
             // 실무(Jitsumu): 카테고리 클릭 시 전문가 찾기 페이지로 이동하면서 
             // 쿼리 스트링(?category=...)을 넘겨줍니다. '기타'는 전체보기를 위해 파라미터 없이 이동합니다.

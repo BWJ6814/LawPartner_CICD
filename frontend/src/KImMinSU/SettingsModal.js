@@ -1,20 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../common/api/axiosConfig'; // 경로 확인 필요!
 
-const SettingsModal = ({ isOpen, onClose, currentName, onSaveName }) => {
+const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
     const [activeTab, setActiveTab] = useState('profile'); // profile, password, delete
+
     const [nameInput, setNameInput] = useState('');
+    const [emailInput, setEmailInput] = useState('');
+    const [phoneInput, setPhoneInput] = useState('');
+
+    // ★ [핵심 2] 이미지 파일 상태들
+    const [imageFile, setImageFile] = useState(null); // 백엔드로 보낼 실제 파일 객체
+    const [imagePreview, setImagePreview] = useState(''); // 화면에 띄울 미리보기 URL
+    const fileInputRef = useRef(null);
+
     const [pwInput, setPwInput] = useState({ oldPw: '', newPw: '', confirmPw: '' });
     const [isLoading, setIsLoading] = useState(false); // 로딩 상태 추가
 
     // 모달 열릴 때마다 현재 이름으로 초기화 및 탭 리셋
     useEffect(() => {
-        if (isOpen) {
-            setNameInput(currentName);
+        if (isOpen && profileData) {
+            setNameInput(profileData.name || '');
+            setEmailInput(profileData.email || '');
+            setPhoneInput(profileData.phone || '');
+            // 프로필 이미지가 있다면 세팅 (없으면 기본 이미지 띄우게 처리)
+            setImagePreview(profileData.profileImage || '');
+            setImageFile(null);
+
             setPwInput({ oldPw: '', newPw: '', confirmPw: '' });
             setActiveTab('profile');
         }
-    }, [isOpen, currentName]);
+    }, [isOpen, profileData]);
 
     if (!isOpen) return null;
 
@@ -33,14 +48,43 @@ const SettingsModal = ({ isOpen, onClose, currentName, onSaveName }) => {
         }
     };
 
-    // 1. 프로필 변경 API
+    // 이미지 파일 선택 시 미리보기 생성
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file)); // 내 브라우저에 임시 URL 만들어서 띄움
+        }
+    };
+
+    // 1. 프로필 변경 API (FormData 활용)
     const handleSaveProfile = () => handleAction(async () => {
-        if (!nameInput.trim()) throw new Error("이름을 올바르게 입력해주세요.");
-        await api.put('/api/mypage/profile', { name: nameInput });
+        if (!nameInput.trim()) throw new Error("이름을 입력해주세요.");
+        if (!emailInput.trim()) throw new Error("이메일을 입력해주세요.");
+        if (!phoneInput.trim()) throw new Error("전화번호를 입력해주세요.");
+
+        // ★ [핵심 3] 파일과 텍스트를 같이 보내려면 무조건 FormData 써야 함
+        const formData = new FormData();
+        formData.append('name', nameInput);
+        formData.append('email', emailInput);
+        formData.append('phone', phoneInput);
+        if (imageFile) {
+            formData.append('profileImage', imageFile);
+        }
+
+        // 헤더에 multipart/form-data 안 붙여도 axios가 FormData 객체 보면 알아서 세팅해줌
+        await api.put('/api/mypage/profile', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+
         localStorage.setItem('nickNm', nameInput);
-        onSaveName(nameInput);
-        onClose();
-    }, "프로필이 성공적으로 변경되었습니다.");
+        alert("프로필이 성공적으로 변경되었습니다.");
+
+        // ★ 정보가 대규모로 바뀌었으니 사이드바나 대시보드 리렌더링을 위해 페이지 새로고침 하는 게 가장 깔끔함
+        window.location.reload();
+    }, null);
 
     // 2. 비밀번호 변경 API
     const handleSavePassword = () => handleAction(async () => {
@@ -129,33 +173,59 @@ const SettingsModal = ({ isOpen, onClose, currentName, onSaveName }) => {
 
                     {/* 1. 프로필 탭 콘텐츠 */}
                     {activeTab === 'profile' && (
-                        <div className="space-y-6 py-2 animate-fadeIn">
-                            <div>
-                                <label className={labelClasses}>이름</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={nameInput}
-                                        onChange={(e) => setNameInput(e.target.value)}
-                                        className={inputClasses}
-                                        style={{ paddingLeft: '44px' }}
-                                        placeholder="변경할 이름을 입력하세요"
-                                    />
+                        <div className="space-y-5 py-2 animate-fadeIn">
+
+                            {/* ★ 프로필 이미지 변경 UI */}
+                            <div className="flex flex-col items-center mb-6">
+                                <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
+                                    <div className="w-24 h-24 rounded-full bg-slate-200 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
+                                        {imagePreview ? (
+                                            <img src={imagePreview} alt="프로필 미리보기" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <i className="fas fa-user text-3xl text-slate-400"></i>
+                                        )}
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <i className="fas fa-camera text-white text-xl"></i>
+                                    </div>
                                 </div>
-                                <p className="text-xs text-slate-500 mt-2 ml-1">
-                                    * 법률 상담 시 변호사님에게 표시되는 이름입니다.
-                                </p>
+                                <p className="text-xs text-slate-500 mt-3 font-medium">사진을 클릭해 변경</p>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageChange}
+                                    accept="image/*"
+                                    className="hidden"
+                                />
                             </div>
+
+                            {/* 닉네임 입력 */}
+                            <div>
+                                <label className={labelClasses}>닉네임</label>
+                                <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} className={inputClasses} placeholder="닉네임 입력" />
+                            </div>
+
+                            {/* 이메일 입력 (수정 가능!) */}
+                            <div>
+                                <label className={labelClasses}>이메일</label>
+                                <input type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} className={inputClasses} placeholder="example@law.com" />
+                            </div>
+
+                            {/* 전화번호 입력 (수정 가능!) */}
+                            <div>
+                                <label className={labelClasses}>전화번호</label>
+                                <input type="text" value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} className={inputClasses} placeholder="010-1234-5678" />
+                            </div>
+
                             <button
                                 onClick={handleSaveProfile}
-                                disabled={isLoading || nameInput === currentName}
-                                className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={isLoading}
+                                className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 변경사항 저장
                             </button>
                         </div>
                     )}
-
                     {/* 2. 비밀번호 탭 콘텐츠 */}
                     {activeTab === 'password' && (
                         <div className="space-y-5 py-2 animate-fadeIn">
@@ -177,7 +247,7 @@ const SettingsModal = ({ isOpen, onClose, currentName, onSaveName }) => {
                                         value={pwInput.newPw}
                                         onChange={(e) => setPwInput({...pwInput, newPw: e.target.value})}
                                         className={inputClasses}
-                                        placeholder="변경할 비밀번호 입력 (4자 이상)"
+                                        placeholder="변경할 비밀번호 입력 (8자 이상)"
                                     />
                                 </div>
                                 <div>

@@ -2,6 +2,11 @@
 
 * { font-family: 'Noto Sans KR', sans-serif; }
 
+/* 차트 요소만 집어서 추가 */
+.recharts-text, .recharts-default-legend, .recharts-legend-item-text {
+  font-family: 'Noto Sans KR', sans-serif !important;
+}
+
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;

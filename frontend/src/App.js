@@ -98,6 +98,7 @@ function App() {
                     />
 
                     <Route path="/chatList" element={<ChatList />} />
+                    <Route path="/chatList/:roomId" element={<ChatList />} />
 
                     <Route path="/consultation" element={<ConsultationBoard />} />
                     <Route path="/consultation/:id" element={<ConsultationDetail />} />

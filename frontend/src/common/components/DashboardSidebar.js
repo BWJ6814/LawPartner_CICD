@@ -1,7 +1,8 @@
-import React, { useState } from 'react'; // ★ useState 필수 추가
+import React, { useState, useEffect } from 'react'; // ★ useState 필수 추가
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 // ★ 절대경로(/frontend...) 대신 상대경로로 수정. 경로 안 맞으면 에러 나니까 네 폴더 구조에 맞게 조절해라
 import SettingsModal from '../../KImMinSU/SettingsModal';
+import api from '../../common/api/axiosConfig';
 
 const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
     const location = useLocation();
@@ -16,16 +17,41 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
     const [userName, setUserName] = useState(localStorage.getItem('userNm') || '일반유저');
     const [nickName, setNickName] = useState(localStorage.getItem('nickNm') || localStorage.getItem('userNm') || '일반유저')
     const userId = localStorage.getItem('userId') || 'guest';
+    const [dashboardData, setDashboardData] = useState(null);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                // 너네 API 주소(GeneralMyPageController) 확인해서 쏴라
+                const res = await api.get('/api/mypage/general');
+                setDashboardData(res.data.data); // ResultVO 썼으면 res.data.data 일 확률이 높음
+
+                // (선택) 로컬 스토리지에 닉네임 동기화
+                if (res.data.data?.nickName) {
+                    setNickName(res.data.data.nickName);
+                }
+            } catch (error) {
+                console.error("대시보드 데이터 로딩 실패:", error);
+            }
+        };
+        fetchDashboardData();
+    }, []);
 
     // ★ 로그아웃 로직 추가
     const handleLogout = () => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('accessToken'); // 저장소 비우기
+        localStorage.removeItem('refreshToken'); // 리프레시 토큰도 같이 삭제
         localStorage.removeItem('userRole');
         localStorage.removeItem('userNm');
-        localStorage.removeItem('userId');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userNo');
+        localStorage.removeItem('nickNm');
+        alert("로그아웃 되었습니다.");
         navigate('/login');
     };
+
+
+
 
     // 내부 메뉴 아이템 컴포넌트
     const SidebarItem = ({ to, icon, label }) => {
@@ -161,12 +187,15 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
             <SettingsModal
                 isOpen={isSettingsModalOpen}
                 onClose={() => setIsSettingsModalOpen(false)}
-                profileImage={profileImage}
-                setProfileImage={setProfileImage}
-                currentName={userName}
+                // ★ [핵심] 객체 형태로 통째로 넘긴다
+                profileData={{
+                    name: nickName,
+                    email: dashboardData?.email || '이메일 정보 없음',
+                    phone: dashboardData?.phone || '전화번호 정보 없음'
+                }}
                 onSaveName={(newName) => {
                     setNickName(newName);
-                    localStorage.setItem('nickNm', newName); // 로컬스토리지도 바로 업데이트 쳐줌
+                    localStorage.setItem('nickNm', newName);
                 }}
             />
         </>
