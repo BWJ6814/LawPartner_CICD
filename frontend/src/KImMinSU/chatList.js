@@ -14,6 +14,7 @@ const ChatList = () => {
     const [chatLog, setChatLog] = useState([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [currentRoomStatus, setCurrentRoomStatus] = useState(null);
+    const [targetName, setTargetName] = useState('상대방');
 
 
     // ★ [추가 1] 검색 및 필터링을 위한 State
@@ -103,6 +104,7 @@ const ChatList = () => {
         const selectedRoom = rooms.find(r => String(r.roomId) === String(roomId));
         if (selectedRoom) {
             setCurrentRoomStatus(selectedRoom.progressCode);
+            setTargetName(selectedRoom.lawyerName || selectedRoom.userNm || '상대방');
         }
     }, [roomId, rooms]);
 
