@@ -146,18 +146,7 @@ const Header = ({auth, onLoginUpdate}) => {
 
     useEffect(() => {
         if (auth.isLoggedIn) {
-            const fetchAll = () => {
-                fetchNotificationCount();
-                fetchNotificationList(); // ★ 핵심: 카운트랑 리스트 둘 다 가져와라!
-            };
-
-            fetchAll(); // 처음 로딩 시 한 방 긁고
-
-            const timer = setInterval(() => {
-                fetchAll(); // 30초마다 무한 갱신
-            }, 30000);
-
-            return () => clearInterval(timer);
+            fetchNotificationCount();
         }
     }, [auth.isLoggedIn]); // auth.isLoggedIn이 바뀔 때마다 실행
 

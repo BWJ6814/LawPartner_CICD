@@ -2,45 +2,63 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import {
-    Gavel, Car, Home, Key,
-    HandCoins, CircleDollarSign, Calculator,
-    Scale, HeartCrack, Briefcase,
+    Sparkles,
+    Gavel,
+    Car,
+    Home,
+    Key,
+    HandCoins,
+    CircleDollarSign,
+    Calculator,
+    HeartCrack,
+    Briefcase,
     Copyright,
-    TrendingDown, FileText, MoreHorizontal, Sparkles
+    TrendingDown,
+    FileText,
+    MoreHorizontal,
+    Search,
+    Medal,
+    CheckCircle,
+    Star
 } from "lucide-react";
 
 const NAVY = "#0f172a";
 
+/** ✅ 카테고리 설정 */
 const CATEGORY_GRID = [
-    { key: "ALL", label: "전체", icon: <Sparkles size={24} /> },
-    { key: "형사", label: "형사", icon: <Gavel size={24} /> },
-    { key: "교통사고", label: "교통사고", icon: <Car size={24} /> },
-    { key: "부동산", label: "부동산", icon: <Home size={24} /> },
-    { key: "임대차", label: "임대차", icon: <Key size={24} /> },
-    { key: "손해배상", label: "손해배상", icon: <HandCoins size={24} /> },
-    { key: "금전/채무", label: "금전/채무", icon: <CircleDollarSign size={24} /> },
-    { key: "채권추심", label: "채권추심", icon: <Calculator size={24} /> },
-    { key: "이혼/상속", label: "이혼/상속", icon: <HeartCrack size={24} /> },
-    { key: "기업/노동", label: "기업/노동", icon: <Briefcase size={24} /> },
-    { key: "행정", label: "행정", icon: <Scale size={24} /> },
-    { key: "지식재산", label: "지식재산", icon: <Copyright size={24} /> },
-    { key: "회생/파산", label: "회생/파산", icon: <TrendingDown size={24} /> },
-    { key: "계약서 검토", label: "계약서 검토", icon: <FileText size={24} /> },
-    { key: "기타", label: "기타", icon: <MoreHorizontal size={24} /> },
+    { key: "ALL", label: "전체보기", icon: <Sparkles size={20} /> },
+    { key: "형사범죄", label: "형사범죄", icon: <Gavel size={20} /> },
+    { key: "교통사고", label: "교통사고", icon: <Car size={20} /> },
+    { key: "부동산", label: "부동산", icon: <Home size={20} /> },
+    { key: "임대차", label: "임대차", icon: <Key size={20} /> },
+    { key: "손해배상", label: "손해배상", icon: <HandCoins size={20} /> },
+    { key: "대여금", label: "대여금", icon: <CircleDollarSign size={20} /> },
+    { key: "미수금", label: "미수금", icon: <Calculator size={20} /> },
+    { key: "채권추심", label: "채권추심", icon: <Calculator size={20} /> },
+    { key: "이혼", label: "이혼", icon: <HeartCrack size={20} /> },
+    { key: "상속/가사", label: "상속/가사", icon: <HeartCrack size={20} /> },
+    { key: "노동", label: "노동", icon: <Briefcase size={20} /> },
+    { key: "기업", label: "기업", icon: <Briefcase size={20} /> },
+    { key: "지식재산권", label: "지식재산권", icon: <Copyright size={20} /> },
+    { key: "회생/파산", label: "회생/파산", icon: <TrendingDown size={20} /> },
+    { key: "계약서 검토", label: "계약서 검토", icon: <FileText size={20} /> },
+    { key: "기타", label: "기타", icon: <MoreHorizontal size={20} /> },
 ];
 
 const CATEGORY_MAP = {
-    형사: ["형사", "성범죄", "마약", "폭행", "사기", "보이스피싱", "구속영장", "형사합의", "명예훼손", "해킹"],
+    형사범죄: ["형사", "성범죄", "마약", "폭행", "사기", "보이스피싱", "구속영장", "형사합의", "명예훼손", "해킹"],
     교통사고: ["교통사고", "음주운전", "보험", "합의", "휴업손해", "벌점", "진단서"],
     부동산: ["부동산", "매매", "재개발", "분양", "등기", "명도"],
     임대차: ["임대차", "전세", "월세"],
     손해배상: ["손해배상", "위자료", "과실"],
-    "금전/채무": ["채무", "대여금", "보증", "채무불이행", "대출"],
+    대여금: ["대여금", "보증", "채무불이행", "대출"],
+    미수금: ["미수금"],
     채권추심: ["채권추심", "가압류", "가처분"],
-    "이혼/상속": ["이혼", "상속", "재산분할", "양육권", "유류분", "상속세", "협의이혼"],
-    "기업/노동": ["노동", "부당해고", "임금체불", "산재", "노동위원회", "취업규칙", "직장내괴롭힘"],
-    행정: ["행정", "행정소송", "처분취소", "행정심판", "정보공개", "운전면허", "영업정지", "이의신청"],
-    지식재산: ["특허", "저작권", "상표"],
+    이혼: ["이혼", "재산분할", "양육권", "협의이혼"],
+    "상속/가사": ["상속", "유류분", "상속세", "가사"],
+    노동: ["노동", "부당해고", "임금체불", "산재", "노동위원회", "취업규칙", "직장내괴롭힘"],
+    기업: ["기업", "법인", "스타트업", "주주총회"],
+    지식재산권: ["특허", "저작권", "상표"],
     "회생/파산": ["회생", "파산", "개인회생"],
     "계약서 검토": ["계약서", "계약검토", "합의서", "내용증명"],
     기타: []
@@ -53,6 +71,7 @@ const SORTS = [
     { key: "CAREER", label: "경력순" },
 ];
 
+/** ✅ 유틸리티 함수 */
 function containsKoreanInsensitive(haystack, needle) {
     if (!needle) return true;
     return (haystack || "").toLowerCase().includes(needle.toLowerCase());
@@ -68,11 +87,7 @@ function recommendScore(expert) {
 
 function splitTags(specialtyStr) {
     if (!specialtyStr) return [];
-    return String(specialtyStr)
-        .split(/[,/|]/g)
-        .map(s => s.trim())
-        .filter(Boolean)
-        .slice(0, 8);
+    return String(specialtyStr).split(/[,/|]/g).map(s => s.trim()).filter(Boolean).slice(0, 8);
 }
 
 function inferMainCategory(tags) {
@@ -96,11 +111,9 @@ function safeImage(url) {
     return "https://via.placeholder.com/160?text=LAWYER";
 }
 
-/** ✅ 응답이 어떤 형태든 "배열"만 뽑아내는 함수 */
 function pickArray(payload) {
     if (Array.isArray(payload)) return payload;
     if (!payload || typeof payload !== "object") return [];
-    // 흔한 래핑 키들 자동 대응
     const candidates = [payload.data, payload.result, payload.list, payload.content, payload.items];
     for (const c of candidates) {
         if (Array.isArray(c)) return c;
@@ -122,7 +135,8 @@ export default function ExpertsPage() {
     const [sortKey, setSortKey] = useState(searchParams.get("sort") || "RECOMMEND");
 
     const [experts, setExperts] = useState([]);
-    const [loadMsg, setLoadMsg] = useState(""); // ✅ 실패/원인 1줄 표시
+    const [loadMsg, setLoadMsg] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
 
     const isLoggedIn = () => !!localStorage.getItem("accessToken");
 
@@ -137,28 +151,22 @@ export default function ExpertsPage() {
 
     useEffect(() => {
         const fetchLawyers = async () => {
-            setLoadMsg("");
+            setIsLoading(true);
             try {
                 const res = await axios.get("http://localhost:8080/api/lawyers");
                 const list = pickArray(res.data);
 
-                // ✅ 여기서 0건이면 “진짜 0건”인지 “필터 때문에 0건”인지 바로 알 수 있게 메시지 표시
                 if (!Array.isArray(list) || list.length === 0) {
                     setExperts([]);
-                    setLoadMsg("서버 응답은 왔지만 목록이 0건입니다. (DB에 승인된 변호사 데이터가 없는 경우가 가장 흔함)");
+                    setLoadMsg("조회된 전문가 데이터가 없습니다.");
                     return;
                 }
 
                 const mapped = list.map((x) => {
-                    // ====== 키 이름이 다르면 여기만 바꾸면 됨 ======
                     const userNo = x.userNo ?? x.user_no ?? x.USER_NO;
                     const name = x.name ?? x.userNm ?? x.user_nm ?? x.USER_NM;
                     const specialtyStr = x.specialtyStr ?? x.specialty_str ?? x.SPECIALTY_STR;
                     const imgUrl = x.imgUrl ?? x.img_url ?? x.IMG_URL;
-                    const officeName = x.officeName ?? x.office_name ?? x.OFFICE_NAME;
-                    const officeAddr = x.officeAddr ?? x.office_addr ?? x.OFFICE_ADDR;
-                    const introText = x.introText ?? x.intro_text ?? x.INTRO_TEXT;
-
                     const rating = Number(x.rating || 0);
                     const reviewCount = Number(x.reviewCount || 0);
                     const careerYears = Number(x.careerYears || 0);
@@ -178,81 +186,49 @@ export default function ExpertsPage() {
                         careerYears,
                         responseRate,
                         image: safeImage(imgUrl),
-                        officeName: officeName || "",
-                        officeAddr: officeAddr || "",
-                        introText: introText || "",
                     };
                 });
-
-                // id가 undefined면 렌더/라우팅이 다 망가짐 → 원인 표시
-                const bad = mapped.filter(m => m.id === undefined || m.id === null);
-                if (bad.length > 0) {
-                    setLoadMsg("서버 데이터는 왔지만 id(userNo) 매핑이 실패했습니다. /api/lawyers 응답 키 이름이 다릅니다(위 매핑 키를 수정해야 함).");
-                }
-
                 setExperts(mapped);
+                console.log("=== RAW API DATA ===", res.data);
+                console.log("=== MAPPED DATA ===", mapped);
+
             } catch (e) {
-                console.error("Failed to fetch /api/lawyers", e);
-                setExperts([]);
-                setLoadMsg("API 호출 실패(CORS/포트/서버에러). F12 Console/Network에서 /api/lawyers 상태코드 확인 필요");
+                setLoadMsg("데이터를 불러오는 중 오류가 발생했습니다.");
+            } finally {
+                setIsLoading(false);
             }
         };
-
         fetchLawyers();
     }, []);
 
     const filtered = useMemo(() => {
         const roleFiltered = experts.filter((e) => e.role === selectedRole);
-
-        const categoryFiltered =
-            selectedCategory === "ALL"
-                ? roleFiltered
-                : roleFiltered.filter((e) => {
-                    const keywords = CATEGORY_MAP[selectedCategory] || [];
-                    const inMain = e.mainCategory === selectedCategory;
-                    const inTags = e.tags?.some((tag) =>
-                        keywords.some((kw) => String(tag).includes(kw))
-                    );
-                    return inMain || inTags;
-                });
+        const categoryFiltered = selectedCategory === "ALL"
+            ? roleFiltered
+            : roleFiltered.filter((e) => {
+                const keywords = CATEGORY_MAP[selectedCategory] || [];
+                return e.mainCategory === selectedCategory || e.tags?.some((tag) => keywords.some((kw) => String(tag).includes(kw)));
+            });
 
         const q = keyword.trim();
         if (!q) return categoryFiltered;
-
         return categoryFiltered.filter((e) => {
-            const hay = [
-                e.name,
-                e.mainCategory,
-                (e.tags || []).join(" "),
-                `${e.careerYears || 0}년`,
-            ].join(" ");
+            const hay = [e.name, e.mainCategory, (e.tags || []).join(" "), `${e.careerYears || 0}년`].join(" ");
             return containsKoreanInsensitive(hay, q);
         });
     }, [experts, selectedRole, selectedCategory, keyword]);
 
     const sorted = useMemo(() => {
         const arr = [...filtered];
-        switch (sortKey) {
-            case "RATING":
-                arr.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-                break;
-            case "REVIEWS":
-                arr.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
-                break;
-            case "CAREER":
-                arr.sort((a, b) => (b.careerYears || 0) - (a.careerYears || 0));
-                break;
-            case "RECOMMEND":
-            default:
-                arr.sort((a, b) => recommendScore(b) - recommendScore(a));
-                break;
-        }
+        if (sortKey === "RATING") arr.sort((a, b) => b.rating - a.rating);
+        else if (sortKey === "REVIEWS") arr.sort((a, b) => b.reviewCount - a.reviewCount);
+        else if (sortKey === "CAREER") arr.sort((a, b) => b.careerYears - a.careerYears);
+        else arr.sort((a, b) => recommendScore(b) - recommendScore(a));
         return arr;
     }, [filtered, sortKey]);
 
     const topRecommended = useMemo(() => {
-        const candidates = [...filtered].sort((a, b) => recommendScore(b) - recommendScore(a));
-        return candidates.slice(0, 3);
+        return [...filtered].sort((a, b) => recommendScore(b) - recommendScore(a)).slice(0, 3);
     }, [filtered]);
 
     const handleCategoryClick = (catKey) => {
@@ -262,157 +238,187 @@ export default function ExpertsPage() {
     };
 
     const handleProfile = (id) => navigate(`/experts/${id}`);
-
     const handleConsult = (id) => {
-        if (!isLoggedIn()) {
-            alert("로그인이 필요합니다.");
-            navigate("/login");
-            return;
-        }
+        if (!isLoggedIn()) { alert("로그인이 필요합니다."); navigate("/login"); return; }
         navigate(`/consultation?lawyerId=${id}`);
     };
 
     const resultLabel = useMemo(() => {
         const catLabel = selectedCategory === "ALL" ? "전체" : selectedCategory;
-        const q = keyword.trim();
-        if (q) return `${catLabel} · ‘${q}’ 결과 ${sorted.length}명`;
-        return `${catLabel} 결과 ${sorted.length}명`;
+        return keyword.trim() ? `${catLabel} · ‘${keyword}’ ${sorted.length}명` : `${catLabel} 전문가 ${sorted.length}명`;
     }, [selectedCategory, keyword, sorted.length]);
 
     return (
-        <div className="max-w-7xl mx-auto py-14 px-4">
-            {/* ✅ 로딩/오류 안내(1줄) */}
+        <div className="max-w-7xl mx-auto py-14 px-4 bg-slate-50/30">
             {loadMsg && (
-                <div className="mb-4 bg-white border border-red-200 rounded-2xl px-4 py-3 text-sm font-semibold text-red-600">
-                    {loadMsg}
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl px-5 py-3 text-sm font-semibold text-red-600 flex items-center gap-2 shadow-sm">
+                    <Sparkles size={16} /> {loadMsg}
                 </div>
             )}
 
-            <div className="text-center mb-10">
-                <h2 className="text-3xl font-black text-slate-900">분야별 전문가 찾기</h2>
-                <p className="mt-2 text-sm text-slate-500 font-semibold">
-                    카테고리/키워드로 전문가를 찾아보세요
-                </p>
+            <div className="text-center mb-12">
+                <h2 className="text-4xl font-black text-slate-900 tracking-tight">전문가 찾기</h2>
+                <p className="mt-3 text-slate-500 font-semibold">신뢰할 수 있는 법률 파트너를 만나보세요</p>
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-3 mb-8">
-                {CATEGORY_GRID.map((c) => {
-                    const active = selectedCategory === c.key;
-                    return (
-                        <button
-                            key={c.key}
-                            onClick={() => handleCategoryClick(c.key)}
-                            className={[
-                                "bg-white rounded-xl border px-3 py-3 text-center shadow-sm transition",
-                                active ? "border-slate-900 shadow-md" : "border-gray-200 hover:shadow-md hover:border-gray-300",
-                            ].join(" ")}
-                        >
-                            <div className="text-lg mb-1">{c.icon}</div>
-                            <div className="text-sm font-semibold">{c.label}</div>
-                        </button>
-                    );
-                })}
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center mb-8">
-                <div className="flex-1">
-                    <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3">
-                        <span className="text-slate-400">🔎</span>
-                        <input
-                            value={keyword}
-                            onChange={(e) => {
-                                const v = e.target.value;
-                                setKeyword(v);
-                                syncParams({ q: v });
-                            }}
-                            className="w-full outline-none text-slate-800 font-semibold placeholder:text-slate-400"
-                            placeholder="이름 또는 분야(예: 음주운전, 부당해고)를 검색하세요"
-                        />
-                        {keyword.trim().length > 0 && (
-                            <button
-                                onClick={() => {
-                                    setKeyword("");
-                                    syncParams({ q: "" });
-                                }}
-                                className="text-slate-400 hover:text-slate-700 font-bold"
-                                aria-label="검색어 지우기"
-                            >
-                                ✕
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm flex items-center justify-between md:w-56">
-                    <span className="text-sm font-bold text-slate-600">정렬</span>
-                    <select
-                        value={sortKey}
-                        onChange={(e) => {
-                            setSortKey(e.target.value);
-                            syncParams({ sort: e.target.value });
-                        }}
-                        className="outline-none font-bold text-slate-800 bg-transparent"
+            {/* 카테고리 그리드 */}
+            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-3 mb-10">
+                {CATEGORY_GRID.map((c) => (
+                    <button
+                        key={c.key}
+                        onClick={() => handleCategoryClick(c.key)}
+                        className={`group bg-white rounded-2xl border p-4 text-center transition-all duration-200 ${
+                            selectedCategory === c.key ? "border-slate-900 shadow-lg ring-1 ring-slate-900" : "border-slate-200 hover:border-slate-300 hover:shadow-md"
+                        }`}
                     >
-                        {SORTS.map((s) => (
-                            <option key={s.key} value={s.key}>{s.label}</option>
-                        ))}
+                        <div className={`text-2xl mb-2 transition-transform group-hover:scale-110 ${selectedCategory === c.key ? "text-slate-900" : "text-slate-400"}`}>{c.icon}</div>
+                        <div className={`text-sm font-bold ${selectedCategory === c.key ? "text-slate-900" : "text-slate-600"}`}>{c.label}</div>
+                    </button>
+                ))}
+            </div>
+
+            {/* 검색 및 정렬 */}
+            <div className="flex flex-col md:flex-row gap-4 mb-10">
+                <div className="flex-1 relative group">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={20} />
+                    <input
+                        value={keyword}
+                        onChange={(e) => { setKeyword(e.target.value); syncParams({ q: e.target.value }); }}
+                        className="w-full bg-white border border-slate-200 rounded-2xl pl-14 pr-12 py-4 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 font-semibold shadow-sm transition-all"
+                        placeholder="이름 또는 상담 키워드 검색"
+                    />
+                    {keyword && <button onClick={() => { setKeyword(""); syncParams({ q: "" }); }} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 font-bold">✕</button>}
+                </div>
+                <div className="bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm flex items-center justify-between md:w-60 focus-within:border-slate-900 transition-all">
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Sort by</span>
+                    <select value={sortKey} onChange={(e) => { setSortKey(e.target.value); syncParams({ sort: e.target.value }); }} className="outline-none font-bold text-slate-800 bg-transparent cursor-pointer">
+                        {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                     </select>
                 </div>
             </div>
 
-            <div ref={recommendRef} className="mb-10">
-                <div className="flex items-end justify-between mb-4">
-                    <div>
-                        <h3 className="text-xl font-black text-slate-900">⭐ 추천 전문가</h3>
-                        <p className="text-sm text-slate-500 font-semibold mt-1">
-                            현재는 후기·평점 기반으로 추천합니다 (상담내용 기반 추천은 준비 중)
-                        </p>
+            {/* ✅ Premium 추천 전문가 섹션 */}
+            <div
+                ref={recommendRef}
+                className="mb-16 bg-gradient-to-br from-indigo-900 via-slate-800 to-slate-900 rounded-[40px] p-10 shadow-2xl relative overflow-hidden"
+            >
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 relative z-10 gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm text-white shadow-xl rotate-3">
+                            <Medal size={28} />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-black text-white">
+                                Premium 추천 전문가
+                            </h3>
+                            <p className="text-slate-300 font-bold mt-1">
+                                평점과 응답 속도가 검증된 최고의 파트너
+                            </p>
+                        </div>
                     </div>
-                    <div className="text-sm font-bold text-slate-500">{resultLabel}</div>
+
+                    <div className="px-5 py-2 rounded-full bg-white/10 text-white text-sm font-black border border-white/20">
+                        {resultLabel}
+                    </div>
                 </div>
 
                 {topRecommended.length === 0 ? (
-                    <div className="bg-white border border-gray-200 rounded-3xl p-8 text-center text-slate-500 font-semibold">
-                        추천할 전문가가 없습니다. (필터/검색 조건을 변경해보세요)
+                    <div className="py-20 text-center text-slate-300 font-bold bg-white/5 rounded-3xl border border-white/10">
+                        조건에 맞는 추천 전문가가 없습니다.
                     </div>
                 ) : (
-                    <div className="grid grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {topRecommended.map((e) => (
-                            <div key={e.id} className="bg-white rounded-3xl shadow-lg p-7 border border-gray-100 hover:shadow-2xl transition">
-                                <div className="flex items-center space-x-4 mb-5">
-                                    <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-gray-100 shadow cursor-pointer" onClick={() => handleProfile(e.id)}>
-                                        <img src={e.image} alt={e.name} className="w-full h-full object-cover" />
+                            <div
+                                key={e.id}
+                                className="group bg-white rounded-[32px] border border-slate-100 p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:border-slate-200 flex flex-col"
+                            >
+                                <div className="flex items-center gap-5 mb-6">
+                                    <div
+                                        className="w-20 h-20 rounded-2xl overflow-hidden shadow-md cursor-pointer flex-shrink-0 group-hover:scale-105 transition-transform"
+                                        onClick={() => handleProfile(e.id)}
+                                    >
+                                        <img
+                                            src={e.image}
+                                            alt={e.name}
+                                            className="w-full h-full object-cover"
+                                        />
                                     </div>
                                     <div className="min-w-0">
-                                        <h4 className={`text-lg font-black text-slate-900 cursor-pointer hover:text-[${NAVY}] truncate`} onClick={() => handleProfile(e.id)}>
-                                            {e.name} 변호사
-                                        </h4>
-                                        <p className="text-sm text-slate-500 font-semibold">
-                                            전문분야: {e.mainCategory} · 경력 {e.careerYears || 0}년 · 응답률 {e.responseRate || 0}%
-                                        </p>
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                            <h4
+                                                className="text-xl font-black text-slate-900 truncate cursor-pointer"
+                                                onClick={() => handleProfile(e.id)}
+                                            >
+                                                {e.name}
+                                            </h4>
+                                            <CheckCircle
+                                                className="text-blue-500 flex-shrink-0"
+                                                size={18}
+                                                fill="#EFF6FF"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-slate-900 text-white uppercase tracking-tighter">
+                {e.mainCategory}
+              </span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center mb-5">
-                                    <div className="text-yellow-400 mr-2 text-lg">★★★★★</div>
-                                    <span className="font-bold text-slate-800 mr-2">{Number(e.rating || 0).toFixed(1)}</span>
-                                    <span className="text-gray-400 text-sm">(후기 {e.reviewCount || 0}건)</span>
+                                <div className="grid grid-cols-3 gap-2 bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100">
+                                    <div className="text-center">
+                                        <div className="text-[10px] text-slate-400 font-black uppercase">
+                                            Career
+                                        </div>
+                                        <div className="text-sm font-bold text-slate-900">
+                                            {e.careerYears}년
+                                        </div>
+                                    </div>
+                                    <div className="text-center border-x border-slate-200">
+                                        <div className="text-[10px] text-slate-400 font-black uppercase">
+                                            Rating
+                                        </div>
+                                        <div className="text-sm font-bold text-slate-900 flex items-center justify-center gap-0.5">
+                                            <Star
+                                                size={12}
+                                                fill="#f59e0b"
+                                                className="text-yellow-500"
+                                            />
+                                            {e.rating.toFixed(1)}
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-[10px] text-slate-400 font-black uppercase">
+                                            Reviews
+                                        </div>
+                                        <div className="text-sm font-bold text-slate-900">
+                                            {e.reviewCount}
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="flex flex-wrap gap-2 mb-6">
-                                    {(e.tags || []).slice(0, 3).map((t) => (
-                                        <span key={t} className="text-xs font-bold px-3 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-200">
-                      #{t}
-                    </span>
+                                <div className="flex flex-wrap gap-1.5 mb-8 flex-grow">
+                                    {e.tags.slice(0, 3).map((t) => (
+                                        <span
+                                            key={t}
+                                            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-50 text-slate-500 border border-slate-200"
+                                        >
+                #{t}
+              </span>
                                     ))}
                                 </div>
 
                                 <div className="flex gap-3">
-                                    <button onClick={() => handleProfile(e.id)} className={`flex-1 border border-[${NAVY}] text-[${NAVY}] py-3 rounded-xl font-bold hover:bg-gray-100 transition`}>
-                                        프로필 보기
+                                    <button
+                                        onClick={() => handleProfile(e.id)}
+                                        className="flex-1 py-3.5 rounded-2xl font-black text-xs border-2 border-slate-900 text-slate-900 hover:bg-slate-50 transition-all active:scale-95"
+                                    >
+                                        프로필
                                     </button>
-                                    <button onClick={() => handleConsult(e.id)} className={`flex-1 bg-[${NAVY}] text-white py-3 rounded-xl font-bold hover:bg-[#1e293b] transition`}>
-                                        상담 요청하기
+                                    <button
+                                        onClick={() => handleConsult(e.id)}
+                                        className="flex-1 py-3.5 rounded-2xl font-black text-xs bg-slate-900 text-white hover:bg-slate-800 transition-all active:scale-95"
+                                    >
+                                        상담신청
                                     </button>
                                 </div>
                             </div>
@@ -421,59 +427,42 @@ export default function ExpertsPage() {
                 )}
             </div>
 
-            <div className="grid grid-cols-3 gap-8">
+            {/* 일반 목록 그리드 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {sorted.map((e) => (
-                    <div key={e.id} className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100 hover:shadow-2xl transition">
-                        <div className="flex items-center space-x-5 mb-6">
-                            <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-gray-100 shadow cursor-pointer" onClick={() => handleProfile(e.id)}>
+                    <div key={e.id} className="bg-white rounded-[32px] shadow-sm border border-slate-200 p-8 hover:shadow-xl transition-all duration-300 flex flex-col">
+                        <div className="flex items-center gap-5 mb-6">
+                            <div className="w-16 h-16 rounded-xl overflow-hidden cursor-pointer flex-shrink-0" onClick={() => handleProfile(e.id)}>
                                 <img src={e.image} alt={e.name} className="w-full h-full object-cover" />
                             </div>
-
                             <div className="min-w-0">
-                                <h3 className={`text-xl font-black text-slate-900 cursor-pointer hover:text-[${NAVY}] truncate`} onClick={() => handleProfile(e.id)}>
-                                    {e.name} 변호사
-                                </h3>
-                                <p className="text-sm text-slate-500 font-semibold">전문분야: {e.mainCategory}</p>
-                                <p className="text-xs text-slate-400 font-bold mt-1">
-                                    경력 {e.careerYears || 0}년 · 응답률 {e.responseRate || 0}%
-                                </p>
+                                <h4 className="text-lg font-black text-slate-900 truncate">{e.name} 변호사</h4>
+                                <p className="text-xs font-bold text-slate-400">{e.mainCategory} · 경력 {e.careerYears}년</p>
                             </div>
                         </div>
-
-                        <div className="flex items-center mb-6">
-                            <div className="text-yellow-400 mr-2 text-lg">★★★★★</div>
-                            <span className="font-bold text-slate-800 mr-2">{Number(e.rating || 0).toFixed(1)}</span>
-                            <span className="text-gray-400 text-sm">(후기 {e.reviewCount || 0}건)</span>
+                        <div className="flex items-center gap-2 mb-6">
+                            <div className="flex text-yellow-400 text-xs">★★★★★</div>
+                            <span className="font-bold text-slate-800 text-sm">{e.rating.toFixed(1)}</span>
+                            <span className="text-slate-400 text-xs font-bold">(후기 {e.reviewCount})</span>
                         </div>
-
-                        <div className="flex flex-wrap gap-2 mb-7">
-                            {(e.tags || []).slice(0, 3).map((t) => (
-                                <span key={t} className="text-xs font-bold px-3 py-1 rounded-full bg-slate-50 text-slate-600 border border-slate-200">
-                  #{t}
-                </span>
+                        <div className="flex flex-wrap gap-1.5 mb-8 flex-grow">
+                            {e.tags.slice(0, 3).map(t => (
+                                <span key={t} className="text-[10px] font-bold px-2 py-1 rounded-md bg-slate-50 text-slate-500 border border-slate-100">#{t}</span>
                             ))}
                         </div>
-
-                        <div className="flex gap-3">
-                            <button onClick={() => handleProfile(e.id)} className={`flex-1 border border-[${NAVY}] text-[${NAVY}] py-3 rounded-xl font-bold hover:bg-gray-100 transition`}>
-                                프로필 보기
-                            </button>
-
-                            <button onClick={() => handleConsult(e.id)} className={`flex-1 bg-[${NAVY}] text-white py-3 rounded-xl font-bold hover:bg-[#1e293b] transition`}>
-                                상담 요청하기
-                            </button>
+                        <div className="flex gap-2">
+                            <button onClick={() => handleProfile(e.id)} className="flex-1 py-3 rounded-xl font-bold text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">프로필</button>
+                            <button onClick={() => handleConsult(e.id)} className="flex-1 py-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-900 hover:bg-slate-200">1:1채팅하기</button>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {sorted.length === 0 && (
-                <div className="mt-10 bg-white border border-gray-200 rounded-3xl p-10 text-center">
-                    <div className="text-2xl mb-2">😵</div>
-                    <div className="font-black text-slate-900 mb-1">검색 결과가 없습니다</div>
-                    <div className="text-sm text-slate-500 font-semibold">
-                        카테고리/키워드 조건을 바꿔서 다시 검색해보세요.
-                    </div>
+            {sorted.length === 0 && !isLoading && (
+                <div className="mt-20 py-20 bg-white border border-slate-200 rounded-[40px] text-center shadow-inner">
+                    <div className="text-4xl mb-4">😶</div>
+                    <div className="font-black text-slate-900 text-xl mb-2">검색 결과가 없습니다</div>
+                    <p className="text-slate-400 font-bold">다른 키워드나 카테고리를 선택해보세요.</p>
                 </div>
             )}
         </div>
