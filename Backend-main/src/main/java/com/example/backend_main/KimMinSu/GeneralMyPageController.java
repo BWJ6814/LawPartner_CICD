@@ -200,7 +200,7 @@ public class GeneralMyPageController {
             Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
 
             // ★ [핵심] 아까 수정한 레포지토리 메서드 사용 (안 읽은 알림 'N'만 가져오기)
-            List<Notification> notis = notificationRepository.findByUserNoAndReadYnOrderByRegDtDesc(userNo, "N");
+            List<Notification> notis = notificationRepository.findTop10ByUserNoOrderByRegDtDesc(userNo);
 
             List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
             java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
