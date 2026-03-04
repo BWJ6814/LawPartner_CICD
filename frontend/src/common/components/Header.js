@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Settings } from 'lucide-react';
 import api from '../api/axiosConfig';
+import SockJS from 'sockjs-client';
+import { Stomp } from '@stomp/stompjs';
 
 const Header = ({auth, onLoginUpdate}) => {
   const navigate = useNavigate();
@@ -145,21 +147,60 @@ const Header = ({auth, onLoginUpdate}) => {
   }, []);
 
     useEffect(() => {
+        let stompClient = null; // 웹소켓 클라이언트 변수
+        let timer = null;       // 30초 타이머 변수
+
         if (auth.isLoggedIn) {
             const fetchAll = () => {
                 fetchNotificationCount();
-                fetchNotificationList(); // ★ 핵심: 카운트랑 리스트 둘 다 가져와라!
+                fetchNotificationList();
             };
 
-            fetchAll(); // 처음 로딩 시 한 방 긁고
+            // 1. 처음 켜지면 무조건 한 번 긁어오기
+            fetchAll();
 
-            const timer = setInterval(() => {
-                fetchAll(); // 30초마다 무한 갱신
+            // 2. [보험용] 혹시 웹소켓 끊길까 봐 30초마다 긁어오는 건 유지 (필수 아님)
+            timer = setInterval(() => {
+                fetchAll();
             }, 30000);
 
-            return () => clearInterval(timer);
+            // ========================================================
+            // ★ 3. [핵심] 실시간 웹소켓 연결 (0.1초 컷의 비밀)
+            // ========================================================
+            const userNo = localStorage.getItem('userNo'); // 로그인한 내 번호
+
+            if (userNo) {
+                // 네 백엔드 웹소켓 주소 (ws-stomp)
+                const socket = new SockJS('http://localhost:8080/ws-stomp');
+                stompClient = Stomp.over(socket);
+
+                // 콘솔에 웹소켓 로그 너무 많이 찍히는 거 보기 싫으면 아래 줄 주석 해제해라
+                // stompClient.debug = null;
+
+                stompClient.connect({}, () => {
+                    console.log("알림용 웹소켓 연결 완료!");
+
+                    // 백엔드 ChatService에서 쏴주는 주소 토씨 하나 안 틀리고 구독!
+                    stompClient.subscribe(`/sub/user/${userNo}/notification`, (message) => {
+                        console.log("🔥 [실시간 알림 수신]:", message.body);
+
+                        // 알림이 도착했다는 신호를 받으면? 즉시 API 찔러서 목록 & 숫자 갱신!
+                        fetchAll();
+                    });
+                }, (error) => {
+                    console.error("알림 웹소켓 연결 에러:", error);
+                });
+            }
         }
-    }, [auth.isLoggedIn]); // auth.isLoggedIn이 바뀔 때마다 실행
+
+        // 컴포넌트(Header)가 화면에서 사라지면 연결 깔끔하게 끊어주기 (메모리 누수 방지)
+        return () => {
+            if (timer) clearInterval(timer);
+            if (stompClient && stompClient.connected) {
+                stompClient.disconnect();
+            }
+        };
+    }, [auth.isLoggedIn]); // 로그인 상태가 바뀔 때마다 실행
 
     const fetchNotificationCount = async () => {
         // 토큰이 아예 없는 비로그인 상태면 API 호출 자체를 안 함
@@ -206,13 +247,36 @@ const Header = ({auth, onLoginUpdate}) => {
     navigate('/');
   };
 
+    const handleMarkAllAsRead = async () => {
+        // 이미 숫자가 0이면 굳이 서버 찌를 필요 없음 (최적화)
+        if (notificationCount === 0) return;
 
-  // [테스트용] 알림 토글 (새 알림 추가)
-  const toggleNotification = () => {
-    const newNoti = { id: Date.now(), text: "새로운 시스템 알림입니다.", time: "방금 전", read: false };
-    setNotifications(prev => [newNoti, ...prev]);
-    setNotificationCount(prev => prev + 1);
-  };
+        try {
+            const token = localStorage.getItem('accessToken');
+            // 서버에 "나 다 읽었음" 찌르기
+            await api.put('/api/mypage/notifications/read', null, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            // 화면에서 빨간 숫자 0으로 증발시킴
+            setNotificationCount(0);
+            // 리스트에 있는 모든 알림을 회색(read: true)으로 바꿈!
+            setNotifications(prev => prev.map(n => ({...n, read: true})));
+        } catch (error) {
+            console.error("알림 읽음 처리 실패:", error);
+        }
+    };
+
+    const handleNotificationClick = (noti) => {
+        setShowNotifications(false); // 창 닫기
+        if (noti.roomId) {
+            // ★ 네 프로젝트의 진짜 채팅방 라우터 주소로 맞춰라! (예: /chat/방번호)
+            navigate(`/chat/${noti.roomId}`);
+        }
+    };
+
+
+
 
   return (
     <nav className={`sticky top-0 z-[9999] bg-white w-full transition-all duration-300 ${isScrolled ? 'border-b border-gray-200 shadow-sm' : 'border-b border-gray-100'}`}>
@@ -294,25 +358,8 @@ const Header = ({auth, onLoginUpdate}) => {
                 {/* 알림 아이콘 & 드롭다운 (핵심 구현) */}
                 <div className="relative" ref={notificationRef}>
                     <button
-                        onClick={async () => {
-                            setShowNotifications(!showNotifications);
-
-                            // 창을 여는 순간, 그리고 안 읽은 알림이 있을 때만
-                            if (!showNotifications && notificationCount > 0) {
-                                setNotificationCount(0); // 화면에서 즉시 0으로 만듦
-                                setNotifications(prev => prev.map(n => ({...n, read: true}))); // 전부 회색으로 만듦
-
-                                // ★ [핵심] 백엔드 찔러서 진짜 DB의 'N'을 'Y'로 바꿈 (좀비 부활 방지)
-                                try {
-                                    const token = localStorage.getItem('accessToken');
-                                    await api.put('/api/mypage/notifications/read', null, {
-                                        headers: { Authorization: `Bearer ${token}` }
-                                    });
-                                } catch (error) {
-                                    console.error("알림 읽음 처리 실패:", error);
-                                }
-                            }
-                        }}
+                        // ★ [수정됨] 이제 종을 눌러도 색깔이 변하지 않음. 그냥 창만 엶!
+                        onClick={() => setShowNotifications(!showNotifications)}
                         className={`relative p-2 transition rounded-full ${showNotifications ? 'bg-gray-100 text-blue-900' : 'text-gray-500 hover:text-blue-900 hover:bg-gray-50'}`}
                     >
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
@@ -326,30 +373,41 @@ const Header = ({auth, onLoginUpdate}) => {
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-fade-in-up">
                       <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                         <span className="text-xs font-black text-gray-700">알림 ({notificationCount})</span>
-                        <button className="text-[10px] text-blue-600 font-bold hover:underline">모두 읽음</button>
+                          <button
+                              onClick={handleMarkAllAsRead}
+                              className="text-[10px] text-blue-600 font-bold hover:underline"
+                          >
+                              모두 읽음
+                          </button>
                       </div>
-                      <ul className="max-h-64 overflow-y-auto">
-                        {notifications.length > 0 ? (
-                          notifications.map((noti) => (
-                            <li key={noti.id} className={`px-4 py-3 border-b border-gray-50 hover:bg-blue-50 transition cursor-pointer ${!noti.read ? 'bg-white' : 'bg-gray-50/50'}`}>
-                              <div className="flex items-start gap-3">
-                                <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${!noti.read ? 'bg-red-500' : 'bg-gray-300'}`}></div>
-                                <div>
-                                  <p className={`text-xs ${!noti.read ? 'font-bold text-gray-800' : 'text-gray-500'} line-clamp-2`}>
-                                      {noti.text}
-                                </p>
-                                  <p className="text-[10px] text-gray-400 mt-1">{noti.time}</p>
-                                </div>
-                              </div>
-                            </li>
-                          ))
-                        ) : (
-                          <li className="px-4 py-8 text-center text-xs text-gray-400">새로운 알림이 없습니다.</li>
-                        )}
-                      </ul>
-                      <div className="p-2 bg-gray-50 text-center border-t border-gray-100">
-                        <Link to="/mypage/notifications" className="text-[10px] font-bold text-gray-500 hover:text-blue-900 block w-full py-1">전체 알림 보기</Link>
-                      </div>
+                        <ul className="max-h-[400px] overflow-y-auto custom-scrollbar"> {/* 높이 좀 늘렸음 */}
+                            {notifications.length > 0 ? (
+                                notifications.map((noti) => (
+                                    <li
+                                        key={noti.id}
+                                        onClick={() => handleNotificationClick(noti)} // ★ 클릭 시 이동!
+                                        className={`px-4 py-3 border-b border-gray-50 hover:bg-blue-50 transition cursor-pointer ${!noti.read ? 'bg-white' : 'bg-gray-50/50'}`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${!noti.read ? 'bg-red-500' : 'bg-gray-300'}`}></div>
+                                            <div className="flex-1 overflow-hidden">
+                                                {/* ★ 보낸 사람 이름 표시 (진한 색상) */}
+                                                <p className="text-xs font-black text-blue-900 mb-0.5 truncate">
+                                                    {noti.title}
+                                                </p>
+                                                {/* ★ 내용 2줄 말줄임 처리 */}
+                                                <p className={`text-xs ${!noti.read ? 'font-bold text-gray-800' : 'text-gray-500'} line-clamp-2 leading-relaxed`}>
+                                                    {noti.text}
+                                                </p>
+                                                <p className="text-[10px] text-gray-400 mt-1.5">{noti.time}</p>
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))
+                            ) : (
+                                <li className="px-4 py-8 text-center text-xs text-gray-400">새로운 알림이 없습니다.</li>
+                            )}
+                        </ul>
                     </div>
                   )}
                 </div>
@@ -434,26 +492,3 @@ const Header = ({auth, onLoginUpdate}) => {
 
 export default Header;
 
-// {/* [개발자용 테스트 도구] */}
-//       <div className="fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-xl shadow-2xl z-[100] opacity-90 hover:opacity-100 transition">
-//         <p className="text-xs font-bold mb-2 text-gray-400 uppercase">Dev Tools (Auth Check)</p>
-//         <div className="flex flex-col gap-2">
-//           <div className="flex items-center gap-2">
-//             <span className="text-xs w-16">로그인:</span>
-//             {!auth.isLoggedIn ? (
-//               <>
-//                 <button onClick={() => simulateLogin('GENERAL')} className="px-2 py-1 bg-blue-600 rounded text-[10px] font-bold hover:bg-blue-500">일반회원</button>
-//                 <button onClick={() => simulateLogin('LAWYER')} className="px-2 py-1 bg-navy-dark border border-slate-600 rounded text-[10px] font-bold hover:bg-slate-700">변호사</button>
-//               </>
-//             ) : (
-//               <button onClick={handleLogout} className="px-2 py-1 bg-red-600 rounded text-[10px] font-bold hover:bg-red-500 w-full">로그아웃</button>
-//             )}
-//           </div>
-//           <div className="flex items-center gap-2">
-//             <span className="text-xs w-16">알림({notificationCount}):</span>
-//             <button onClick={toggleNotification} className="px-2 py-1 bg-gray-600 rounded text-[10px] font-bold hover:bg-gray-500 w-full">
-//               새 알림 추가
-//             </button>
-//           </div>
-//         </div>
-//       </div>
