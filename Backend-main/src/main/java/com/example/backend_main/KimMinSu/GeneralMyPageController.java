@@ -103,16 +103,22 @@ public class GeneralMyPageController {
     }
 
     // 1. 프로필 이름 수정
-    @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResultVO<String> updateProfile(
-            @ModelAttribute ProfileUpdateDTO dto, // ★ @RequestPart 대신 @ModelAttribute 사용
-            @AuthenticationPrincipal CustomUserDetails userDetails // ★ 이미 토큰 검증 끝난 객체
+            @ModelAttribute ProfileUpdateDTO dto,
+            @RequestHeader(value = "Authorization", required = false) String token // ★ 헤더에서 직접 토큰 받기!
     ) throws Exception {
 
-        // 1. 중복된 토큰 파싱 로직 제거! userDetails에서 바로 꺼낸다.
-        Long userNo = userDetails.getUserNo();
+        // 1. 토큰이 없으면 입구컷
+        if (token == null || !token.startsWith("Bearer ")) {
+            throw new RuntimeException("로그인이 필요한 서비스입니다.");
+        }
 
-        // 2. 서비스 호출 (DTO에서 데이터 꺼내서 전달)
+        // 2. 신분증(Token) 직접 까서 진짜 유저 번호 추출
+        String actualToken = token.substring(7);
+        Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
+
+        // 3. 서비스 호출 (내가 직접 찾은 userNo 넘겨줌)
         myPageService.updateProfileData(
                 userNo,
                 dto.getName(),
