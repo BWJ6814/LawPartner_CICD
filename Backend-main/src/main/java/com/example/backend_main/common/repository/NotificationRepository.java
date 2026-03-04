@@ -11,7 +11,7 @@ import java.util.List;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     // 1. 알림 리스트 가져오기 (네가 짠 거)
-    List<Notification> findByUserNoAndReadYnOrderByRegDtDesc(Long userNo, String readYn);
+    List<Notification> findTop10ByUserNoOrderByRegDtDesc(Long userNo);
 
     // ★ 2. 안 읽은 알림 개수 세기 (추가!)
     long countByUserNoAndReadYn(Long userNo, String readYn);
