@@ -73,12 +73,18 @@ public class LogingAspect {
         if (attributes != null) {
             // ==========================================
             // [A] 일반 HTTP (REST API) 요청일 경우
+            // attributes : 범용 상자에 요청 정보를 담은 객체
+            // ServletRequestAttributes : 웹 요청인지 확인했으니, 해당 상자를 열어
+            // HttpServletRequest : HTTP 편지의 원본을 꺼내달라!
+            // 그것을 request 라는 변수명으로 활용하겠다는 뜻
             // ==========================================
             HttpServletRequest request = ((ServletRequestAttributes) attributes).getRequest();
 
             // 헤더가 없을 경우(NULL 방지)
+            // 헤더 머리말 부분에 적힌 User-Agent 라는 값을 읽어오기
             userAgent = request.getHeader("User-Agent");
             if (userAgent != null && userAgent.length() > 200) {
+                //
                 userAgent = userAgent.substring(0, 200);
             }
             ip = getClientIp(request); // 헬퍼 메서드로 변경
