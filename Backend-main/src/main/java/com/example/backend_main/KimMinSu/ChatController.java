@@ -75,4 +75,25 @@ public class ChatController {
         List<ChatMessageDTO> history = chatService.getChatHistory(roomId, userNo);
         return ResultVO.ok("과거 채팅 내역 조회 성공", history);
     }
+
+    // [초심자 핵심] 채팅 파일 업로드는 소켓이 아니라 무조건 HTTP POST로 처리해야 서버가 안 뻗는다.
+    @PostMapping("/files")
+    public ResultVO<String> uploadChatFile(
+            @RequestHeader("Authorization") String token,
+            @RequestParam("roomId") String roomId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file
+    ) {
+        Long senderNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+
+        // 서비스 단에서 파일 저장 + DB 인서트 + 소켓 브로드캐스팅까지 원큐에 조질 거임
+        chatService.uploadChatFile(roomId, senderNo, file);
+
+        return ResultVO.ok("파일 업로드 및 전송 완료", null);
+    }
+
+    // [초심자 핵심] 프론트에서 넘어오는 URL 경로를 통해 파일을 다운로드하게 해주는 HTTP GET API
+    @GetMapping("/files/download/{fileName}")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadChatFile(@PathVariable String fileName) {
+        return chatService.downloadChatFile(fileName);
+    }
 }

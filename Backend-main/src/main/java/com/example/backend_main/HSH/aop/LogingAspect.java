@@ -41,6 +41,13 @@ public class LogingAspect {
     1. [기본 접속 로그] 모든 컨트롤러 요청 시 작동
     누가 - 언제 - 어디로 - 접속했는가?
     변경: 프로젝트 내의 모든 Controller 하위 메서드 감시
+
+    누구를 타겟으로 하는가?
+    모든 컨트롤러와 채팅(STOMP) 통신의 입출력을 감시
+
+    @Around : 메서드의 시작 전과 끝난 후 모두를 감싸서 통제하겠다는 뜻
+    execution(...) : 감시할 타겟 정하기
+    물리적주소.*Controller.*(..) : 이름이 Controller로 끝나는 모든 클래스의 모든 메서드(일반 API와 채팅 컨트롤러 포함)
     */
     @Around("execution(* com.example.backend_main..*Controller.*(..))")
     public Object logAccess(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -55,23 +62,32 @@ public class LogingAspect {
 
         // 2. HTTP/WebSocket 분기 처리를 위한 Attributes 안전하게 가져오기
         // ★ currentRequestAttributes() 대신 getRequestAttributes()를 사용하여 에러 방지!
+        // currentRequestAttributes() : 웹 소켓처럼 HTTP 요청이 없을 때 에러를 발생시킴
+        // getRequestAttributes() : HTTP 요청이 없으면 NULL을 반환
         RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
 
-        String ip = "Unknown IP";
-        String uri = "";
-        String userAgent = "Unknown Agent";
+        String ip;
+        String uri;
+        String userAgent;
 
         if (attributes != null) {
             // ==========================================
             // [A] 일반 HTTP (REST API) 요청일 경우
+            // attributes : 범용 상자에 요청 정보를 담은 객체
+            // ServletRequestAttributes : 웹 요청인지 확인했으니, 해당 상자를 열어
+            // HttpServletRequest : HTTP 편지의 원본을 꺼내달라!
+            // 그것을 request 라는 변수명으로 활용하겠다는 뜻
             // ==========================================
             HttpServletRequest request = ((ServletRequestAttributes) attributes).getRequest();
 
+            // 헤더가 없을 경우(NULL 방지)
+            // 헤더 머리말 부분에 적힌 User-Agent 라는 값을 읽어오기
             userAgent = request.getHeader("User-Agent");
             if (userAgent != null && userAgent.length() > 200) {
+                //
                 userAgent = userAgent.substring(0, 200);
             }
-            ip = request.getRemoteAddr();
+            ip = getClientIp(request); // 헬퍼 메서드로 변경
             uri = request.getRequestURI();
         } else {
             // ==========================================
@@ -128,6 +144,11 @@ public class LogingAspect {
     /*
      2. [커스텀 행위 로그] @ActionLog가 붙은 메소드만 골라서 작동
      "관리자가 엑셀을 다운로드했다", "승인했다" 등 중요 행위 추적용
+     
+     누구를 감시하는가?
+     @ActionLog 어노테이션이 붙은 메서드만 골라서 감시하기
+     
+     해당 어노테이션에 적어둔 acton이나 target 같은 글자들을 쏙쏙 뽑아오기..
      */
     @Around("@annotation(com.example.backend_main.common.annotation.ActionLog)")
     public Object logAdminAction(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -154,7 +175,7 @@ public class LogingAspect {
 
         if (attributes != null) {
             HttpServletRequest request = ((ServletRequestAttributes) attributes).getRequest();
-            ip = request.getRemoteAddr();
+            ip = getClientIp(request); // 헬퍼 메서드 사용!
             userAgent = request.getHeader("User-Agent");
             if (userAgent != null && userAgent.length() > 200) userAgent = userAgent.substring(0, 200);
         }
@@ -164,6 +185,8 @@ public class LogingAspect {
 
         // ⭐ 파라미터에서 사유(Reason) 낚아채기!
         String reason = "사유 미입력"; // 기본값
+        // joinPoint.getArgs() : 이 호출을 통해 전달되는 모든 파라미터를 싹 다 뒤져서 
+        // 어떤 방식으로 보냈던 "reason"이라는 이름의 데이터를 무조건 낚사채서 추출하기
         Object[] args = joinPoint.getArgs();
         String[] parameterNames = signature.getParameterNames();
 
@@ -275,6 +298,33 @@ public class LogingAspect {
             log.warn("⚠️ 사용자 번호 조회 중 오류 발생: {}", e.getMessage());
             return null;
         }
+    }
+
+
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty()  || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty()  || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+
+        // 다중 프록시를 거쳤을 경우, 첫 번째 IP가 진짜 클라이언트 IP임
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+
+        // ★ 대망의 IPv6 로컬호스트 변환!
+        if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
+            ip = "127.0.0.1";
+        }
+
+        return ip;
     }
 
 }
