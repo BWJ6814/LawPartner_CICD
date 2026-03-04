@@ -775,3 +775,9 @@ commit ;
 
 
 select * from tb_user;
+
+delete from tb_user where user_no = 20003;
+
+select * From TB_BOARD;
+
+

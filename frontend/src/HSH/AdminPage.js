@@ -17,22 +17,12 @@ import {
   ResponsiveContainer, 
   Legend 
 } from 'recharts';
-import axios from 'axios';
+// axisoConfig에서 jwt 토큰 발급, 재발급 처리
+import api from '../common/api/axiosConfig';
 
-// =================================================================
-// 🔗 Axios 기본 설정 (JWT 토큰 자동 포함)
-// =================================================================
-const api = axios.create({
-  baseURL: 'http://localhost:8080',
-});
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// 만일 타 페이지에서 토큰 관련으로 30분을 막고 싶다! 이럴 경우
+// import api from '../common/api/axiosConfig'; 를 통해 해당 jwt 토큰 재발급 시키기.
 
 // =================================================================
 // 🎨 공통 UI 컴포넌트
