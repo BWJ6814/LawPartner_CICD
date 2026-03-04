@@ -146,7 +146,18 @@ const Header = ({auth, onLoginUpdate}) => {
 
     useEffect(() => {
         if (auth.isLoggedIn) {
-            fetchNotificationCount();
+            const fetchAll = () => {
+                fetchNotificationCount();
+                fetchNotificationList(); // ★ 핵심: 카운트랑 리스트 둘 다 가져와라!
+            };
+
+            fetchAll(); // 처음 로딩 시 한 방 긁고
+
+            const timer = setInterval(() => {
+                fetchAll(); // 30초마다 무한 갱신
+            }, 30000);
+
+            return () => clearInterval(timer);
         }
     }, [auth.isLoggedIn]); // auth.isLoggedIn이 바뀔 때마다 실행
 
@@ -283,14 +294,23 @@ const Header = ({auth, onLoginUpdate}) => {
                 {/* 알림 아이콘 & 드롭다운 (핵심 구현) */}
                 <div className="relative" ref={notificationRef}>
                     <button
-                        onClick={() => {
+                        onClick={async () => {
                             setShowNotifications(!showNotifications);
-                            // ★ [핵심] 창을 열 때 숫자를 0으로 만들어버림 (UX 디테일)
-                            if (!showNotifications && notificationCount > 0) {
-                                setNotificationCount(0);
 
-                                // 나중에 백엔드 쪽에 "이 유저 알림 다 읽었음" 처리하는 API 뚫리면 여기서 쏴주면 됨
-                                // api.post('/api/mypage/notifications/read-all');
+                            // 창을 여는 순간, 그리고 안 읽은 알림이 있을 때만
+                            if (!showNotifications && notificationCount > 0) {
+                                setNotificationCount(0); // 화면에서 즉시 0으로 만듦
+                                setNotifications(prev => prev.map(n => ({...n, read: true}))); // 전부 회색으로 만듦
+
+                                // ★ [핵심] 백엔드 찔러서 진짜 DB의 'N'을 'Y'로 바꿈 (좀비 부활 방지)
+                                try {
+                                    const token = localStorage.getItem('accessToken');
+                                    await api.put('/api/mypage/notifications/read', null, {
+                                        headers: { Authorization: `Bearer ${token}` }
+                                    });
+                                } catch (error) {
+                                    console.error("알림 읽음 처리 실패:", error);
+                                }
                             }
                         }}
                         className={`relative p-2 transition rounded-full ${showNotifications ? 'bg-gray-100 text-blue-900' : 'text-gray-500 hover:text-blue-900 hover:bg-gray-50'}`}
@@ -315,7 +335,9 @@ const Header = ({auth, onLoginUpdate}) => {
                               <div className="flex items-start gap-3">
                                 <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${!noti.read ? 'bg-red-500' : 'bg-gray-300'}`}></div>
                                 <div>
-                                  <p className={`text-xs ${!noti.read ? 'font-bold text-gray-800' : 'text-gray-500'}`}>{noti.text}</p>
+                                  <p className={`text-xs ${!noti.read ? 'font-bold text-gray-800' : 'text-gray-500'} line-clamp-2`}>
+                                      {noti.text}
+                                </p>
                                   <p className="text-[10px] text-gray-400 mt-1">{noti.time}</p>
                                 </div>
                               </div>
@@ -343,7 +365,7 @@ const Header = ({auth, onLoginUpdate}) => {
                   /* 2. 변호사 */
                   <Link to="/lawyer-dashboard" style={noUnderlineStyle} className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-indigo-500 transition shadow-sm whitespace-nowrap no-underline flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-white rounded-full opacity-70"></span>
-                    변호사 페이지
+                    마이페이지
                   </Link>
                 ) : (
                   /* 3. 일반 회원 */
