@@ -66,6 +66,7 @@ public class ChatService {
                 .userNo(lawyerNo) // 타겟: 변호사
                 .msgTitle(lawyerTitle)
                 .msgContent(lawyerContent)
+                .roomId(roomId)
                 .readYn("N")
                 .build();
         notificationRepository.save(lawyerNoti);
@@ -122,10 +123,15 @@ public class ChatService {
             String title = "새 메시지";
             String content = dto.getMessage();
 
+            String senderName = userRepository.findById(dto.getSenderNo())
+                    .map(com.example.backend_main.common.entity.User::getUserNm)
+                    .orElse("알 수 없는 유저");
+
             Notification noti = Notification.builder()
                     .userNo(targetUserNo)
-                    .msgTitle(title)
-                    .msgContent(content)
+                    .msgTitle(senderName) // "홍길동" 이라고 들어감
+                    .msgContent(dto.getMessage()) // 채팅 내용
+                    .roomId(dto.getRoomId()) // ★ 이거 꽂아줘야 프론트에서 이동 가능!
                     .readYn("N")
                     .build();
             notificationRepository.save(noti);

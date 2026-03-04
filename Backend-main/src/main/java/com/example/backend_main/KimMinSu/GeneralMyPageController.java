@@ -208,8 +208,9 @@ public class GeneralMyPageController {
             for(Notification n : notis) {
                 java.util.Map<String, Object> map = new java.util.HashMap<>();
                 map.put("id", n.getAlarmNo());
-                // 프론트에서 line-clamp-2로 자를 거니까 원본 그대로 보냄
-                map.put("text", n.getMsgContent() != null ? n.getMsgContent() : "새로운 알림이 도착했습니다.");
+                map.put("title", n.getMsgTitle()); // ★ 보낸 사람 이름
+                map.put("text", n.getMsgContent()); // 채팅 내용
+                map.put("roomId", n.getRoomId()); // ★ 이동할 방 번호
                 map.put("time", n.getRegDt() != null ? n.getRegDt().format(formatter) : "방금 전");
                 map.put("read", "Y".equals(n.getReadYn()));
                 result.add(map);
