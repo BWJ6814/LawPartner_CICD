@@ -35,7 +35,7 @@ public class ChatService {
     private final NotificationRepository notificationRepository;
 
     // ------------------------------------------------------------------
-    // 1. 의뢰인이 상담 요청 (방은 생기지만 대기 상태) + [변호사에게 알림]
+    // 1. 의뢰인이 상담 요청 (방은 생기지만 대기 상태) + [양측에 알림]
     // ------------------------------------------------------------------
     @Transactional
     public String requestChat(Long userNo, Long lawyerNo){
@@ -48,39 +48,64 @@ public class ChatService {
                 .build();
         chatRoomRepository.save(room);
 
-        // =========================================================
-        // ★ [알림 로직 1] 변호사에게 상담 요청 알림 쏘기
-        // =========================================================
-        String title = "새로운 상담 요청";
-        String content = "새로운 1:1 상담 요청이 접수되었습니다.";
+        // ★ [핵심 1] DB에서 진짜 이름들 꺼내오기
+        String clientName = userRepository.findById(userNo)
+                .map(com.example.backend_main.common.entity.User::getUserNm)
+                .orElse("의뢰인");
+        String lawyerName = userRepository.findById(lawyerNo)
+                .map(com.example.backend_main.common.entity.User::getUserNm)
+                .orElse("담당");
 
-        // ① DB 저장 (주석 풀고 엔티티 만들어서 써라)
-        Notification noti = Notification.builder()
+        // =========================================================
+        // ★ [알림 로직 1] 변호사에게 쏘는 알림 ("의뢰인님이 요청했습니다")
+        // =========================================================
+        String lawyerTitle = "상담 요청";
+        String lawyerContent = clientName + "님이 1:1 채팅을 요청하였습니다.";
+
+        Notification lawyerNoti = Notification.builder()
                 .userNo(lawyerNo) // 타겟: 변호사
-                .msgTitle(title)
-                .msgContent(content)
+                .msgTitle(lawyerTitle)
+                .msgContent(lawyerContent)
+                .roomId(roomId)
                 .readYn("N")
                 .build();
-        notificationRepository.save(noti);
+        notificationRepository.save(lawyerNoti);
 
+        // 변호사 웹소켓 발사
+        Map<String, String> lawyerNotiData = new HashMap<>();
+        lawyerNotiData.put("title", lawyerTitle);
+        lawyerNotiData.put("content", lawyerContent);
+        messagingTemplate.convertAndSend("/sub/user/" + lawyerNo + "/notification", lawyerNotiData);
 
-        // ② 글로벌 웹소켓으로 프론트(Header)에 실시간 발사!
-        Map<String, String> notiData = new HashMap<>();
-        notiData.put("title", title);
-        notiData.put("content", content);
-        // /sub/user/{변호사번호}/notification 으로 쏜다!
-        messagingTemplate.convertAndSend("/sub/user/" + lawyerNo + "/notification", notiData);
         // =========================================================
+        // ★ [알림 로직 2] 일반 유저(본인)에게 남기는 기록용 알림
+        // =========================================================
+        String clientTitle = "요청 완료";
+        String clientContent = lawyerName + " 변호사에게 1:1 채팅을 요청하였습니다.";
+
+        Notification clientNoti = Notification.builder()
+                .userNo(userNo) // 타겟: 일반 유저
+                .msgTitle(clientTitle)
+                .msgContent(clientContent)
+                .readYn("N")
+                .build();
+        notificationRepository.save(clientNoti);
+
+        // 일반 유저 웹소켓 발사
+        Map<String, String> clientNotiData = new HashMap<>();
+        clientNotiData.put("title", clientTitle);
+        clientNotiData.put("content", clientContent);
+        messagingTemplate.convertAndSend("/sub/user/" + userNo + "/notification", clientNotiData);
 
         return roomId;
     }
 
     // ------------------------------------------------------------------
-    // 2. 메시지 저장 로직 + [상대방에게 알림]
+    // 2. 메시지 저장 로직 + [상대방에게 알림] (이게 빠져서 터진 거임)
     // ------------------------------------------------------------------
     @Transactional
     public void saveMessage(ChatMessageDTO dto){
-        // ① 메시지 DB에 저장 (기존 로직)
+        // ① 메시지 DB에 저장
         ChatMessage msg = ChatMessage.builder()
                 .roomId(dto.getRoomId())
                 .senderNo(dto.getSenderNo())
@@ -90,34 +115,32 @@ public class ChatService {
                 .build();
         chatMessageRepository.save(msg);
 
-        // =========================================================
-        // ★ [알림 로직 2] 상대방 번호 찾아서 채팅 알림 쏘기
-        // =========================================================
+        // ② 알림 로직 (상대방 번호 찾아서 쏘기)
         ChatRoom room = chatRoomRepository.findById(dto.getRoomId()).orElse(null);
         if (room != null) {
-            // 내가 보낸 거면 변호사가 타겟, 변호사가 보낸 거면 내가 타겟
             Long targetUserNo = dto.getSenderNo().equals(room.getUserNo()) ? room.getLawyerNo() : room.getUserNo();
 
             String title = "새 메시지";
-            String content = dto.getMessage(); // 파일이면 "파일이 도착했습니다" 등으로 분기 처리 가능
+            String content = dto.getMessage();
 
-            // ① DB 저장
+            String senderName = userRepository.findById(dto.getSenderNo())
+                    .map(com.example.backend_main.common.entity.User::getUserNm)
+                    .orElse("알 수 없는 유저");
+
             Notification noti = Notification.builder()
                     .userNo(targetUserNo)
-                    .msgTitle(title)
-                    .msgContent(content)
+                    .msgTitle(senderName) // "홍길동" 이라고 들어감
+                    .msgContent(dto.getMessage()) // 채팅 내용
+                    .roomId(dto.getRoomId()) // ★ 이거 꽂아줘야 프론트에서 이동 가능!
                     .readYn("N")
                     .build();
             notificationRepository.save(noti);
 
-
-            // ② 글로벌 웹소켓으로 프론트(Header)에 실시간 발사!
             Map<String, String> notiData = new HashMap<>();
             notiData.put("title", title);
             notiData.put("content", content);
             messagingTemplate.convertAndSend("/sub/user/" + targetUserNo + "/notification", notiData);
         }
-        // =========================================================
     }
 
     // ------------------------------------------------------------------

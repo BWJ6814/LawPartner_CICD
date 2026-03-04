@@ -32,6 +32,9 @@ const ConsultationDetail = () => {
     const [rating, setRating] = useState(0);
     const [reviewContent, setReviewContent] = useState('');
 
+    // 토큰입니다.
+    const token = localStorage.getItem('accessToken');
+
     // [로그인 정보] 로컬스토리지(브라우저 저장소)에서 로그인한 유저 정보를 가져옵니다.
     const currentUser = {
         userNo: localStorage.getItem('userNo'),
@@ -203,6 +206,8 @@ const ConsultationDetail = () => {
             const response = await axios.post(`http://localhost:8080/api/boards/chat/room`, {
                 userNo: currentUser.userNo,
                 lawyerNo: lawyerNo
+            }, {
+                headers: { Authorization: `Bearer ${token}` } // 토큰 필수!
             });
 
             if (response.status === 200) {
@@ -210,7 +215,7 @@ const ConsultationDetail = () => {
 
                 // ★ 주목! response.data.roomId에는 이제 "550e8400-e29b-..." 같은 문자열 UUID가 들어있습니다.
                 // 만약 바로 채팅방으로 넘어가고 싶다면 아래 주석을 풀고 사용하세요.
-                // navigate(`/chat/${response.data.roomId}`);
+                navigate(`/chatList/${response.data}`);
             }
         } catch (err) {
             console.error("채팅방 생성 중 오류:", err);

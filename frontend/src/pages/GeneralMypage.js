@@ -4,7 +4,8 @@ import FullCalendar from '@fullcalendar/react';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import DashboardSidebar from '../common/components/DashboardSidebar';
-import axios from 'axios'; // ★ axios import 필수
+import axios from 'axios';
+import api from "../common/api/axiosConfig"; // ★ axios import 필수
 
 const GeneralMyPage = () => {
     const navigate = useNavigate();
@@ -207,6 +208,24 @@ const GeneralMyPage = () => {
 
     };
 
+    const handleCancelConsult = async (roomId) => {
+        if (!window.confirm("상담 요청을 취소하시겠습니까?")) return;
+
+        try {
+            // ★ api 객체(axiosConfig)를 믿어라. headers 수동 추가 금지.
+            await api.delete(`/api/mypage/chat/room/${roomId}`);
+
+            setDashboardData(prev => ({
+                ...prev,
+                recentConsultations: prev.recentConsultations.filter(item => item.roomId !== roomId)
+            }));
+            alert("상담 요청이 취소되었습니다.");
+        } catch (error) {
+            console.error("삭제 실패:", error);
+            alert("삭제 실패! 서버 로그를 확인하세요.");
+        }
+    };
+
 
     // ★ 로딩 중일 때 보여줄 화면
     if (loading) {
@@ -250,6 +269,7 @@ const GeneralMyPage = () => {
                                     <th className="px-6 py-3">카테고리</th>
                                     <th className="px-6 py-3">진행 상태</th>
                                     <th className="px-6 py-3">접수 날짜</th>
+                                    <th className="px-6 py-3">관리</th>
                                 </tr>
                                 </thead>
                                 <tbody className="text-sm divide-y divide-slate-100 font-medium">
@@ -263,6 +283,14 @@ const GeneralMyPage = () => {
                                                 <span className="text-orange-500 font-bold">{item.status}</span>
                                             </td>
                                             <td className="px-6 py-4 text-slate-500">{item.regDate}</td>
+                                            <td className="px-6 py-4">
+                                                <button
+                                                    onClick={() => handleCancelConsult(item.roomId)} // DTO에 roomId가 있어야 함
+                                                    className="text-red-500 hover:text-red-700 font-bold text-xs"
+                                                >
+                                                    취소
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (
@@ -429,6 +457,7 @@ const GeneralMyPage = () => {
                                     <th className="px-6 py-3">카테고리</th>
                                     <th className="px-6 py-3">진행 상태</th>
                                     <th className="px-6 py-3">접수 날짜</th>
+                                    <th className="px-6 py-3">상담</th>
                                 </tr>
                                 </thead>
                                 <tbody className="text-sm divide-y divide-slate-100 font-medium">
@@ -444,6 +473,14 @@ const GeneralMyPage = () => {
                                         </span>
                                             </td>
                                             <td className="px-6 py-4 text-slate-500">{item.regDate}</td>
+                                            <td className="px-6 py-4">
+                                                <button
+                                                    onClick={() => handleCancelConsult(item.roomId)} // DTO에 roomId가 있어야 함
+                                                    className="text-red-500 hover:text-red-700 font-bold text-xs"
+                                                >
+                                                    취소
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (

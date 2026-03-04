@@ -61,6 +61,8 @@ public class GeneralMyPageService {
         List<GeneralMyPageDTO.ConsultationItemDTO> consultList = myChatRooms.stream().map(room -> {
             GeneralMyPageDTO.ConsultationItemDTO item = new GeneralMyPageDTO.ConsultationItemDTO();
 
+            item.setRoomId(room.getRoomId());
+
             String lawyerName = "매칭 대기중";
 
             if (room.getLawyerNo() != null) {
@@ -242,5 +244,25 @@ public class GeneralMyPageService {
         user.setPhone(user.getPhoneHash());
         user.setEmailHash(dummyEmail);
         user.setPhoneHash(dummyPhone);
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteChatRoom(String roomId, Long userNo) {
+        // 1. 해당 채팅방이 존재하는지 팩트 체크
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("해당 상담 내역을 찾을 수 없습니다."));
+
+        // 2. 권한 검증: 로그인한 유저가 이 채팅방의 주인인지 확인 (보안의 핵심)
+        if (!room.getUserNo().equals(userNo)) {
+            throw new RuntimeException("삭제 권한이 없습니다. 본인의 상담만 취소할 수 있습니다.");
+        }
+
+        // 3. 실제 DB에서 삭제 (또는 상태값을 'CANCEL'로 바꾸는 Soft Delete 권장하지만 일단 삭제로 간다)
+        chatRoomRepository.delete(room);
+    }
+
+    public User getUserById(Long userNo) {
+        return userRepository.findById(userNo)
+                .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
     }
 }

@@ -33,4 +33,7 @@ public class Notification {
     @Column(name = "REG_DT", updatable = false)
     @Builder.Default
     private LocalDateTime regDt = LocalDateTime.now();
+
+    @Column(name = "ROOM_ID", length = 100)
+    private String roomId;
 }

@@ -6,6 +6,7 @@ import com.example.backend_main.dto.ChatMessageDTO;
 import com.example.backend_main.dto.ChatRequestDTO;
 import com.example.backend_main.dto.ChatRoomDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -21,15 +22,19 @@ public class ChatController {
     private final JwtTokenProvider jwtTokenProvider; // 토큰에서 번호 뽑기
 
     // 1. 의뢰인이 상담 요청 (POST)
-    @PostMapping("/room/request")
-    public ResultVO<String> requestChat(
+    @PostMapping("/request")
+    public ResponseEntity<String> requestChat(
             @RequestHeader("Authorization") String token,
-            @RequestBody ChatRequestDTO dto // lawyerNo를 담은 DTO
-    ){
-        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
-        String roomId = chatService.requestChat(userNo, dto.getLawyerNo());
-        return ResultVO.ok("상담 요청 완료! 변호사 수락을 기다려주세요.", roomId);
+            @RequestBody ChatRequestDTO dto) { // DTO 안에 userNo, lawyerNo 있음
+
+        // 1. 토큰 까서 유저 번호 확인 (생략)
+
+        // 2. ChatService의 방 생성 로직 호출 (여기에 알림 쏘는 로직이 들어있음!)
+        String roomId = chatService.requestChat(dto.getUserNo(), dto.getLawyerNo());
+
+        return ResponseEntity.ok(roomId);
     }
+
 
     // 2. 변호사가 상담 수락 (Put)
     @PutMapping("/room/accept/{roomId}")

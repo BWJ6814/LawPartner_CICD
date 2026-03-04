@@ -19,6 +19,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -52,20 +53,39 @@ public class LogingAspect {
         // 1.2 요청 시작 시간 기록
         long startTime = System.currentTimeMillis();
 
-        // 2-1. Request 객체 가져오기
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+        // 2. HTTP/WebSocket 분기 처리를 위한 Attributes 안전하게 가져오기
+        // ★ currentRequestAttributes() 대신 getRequestAttributes()를 사용하여 에러 방지!
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
 
-        // 2-2. [USER_AGENT] 접속 환경 정보 (최대 200자 제한으로 안전하게 처리)
-        // request.getHeader("User-Agent") : 사용자 브라우저, 운영체제, 기기 정보를 낚아챔..
-        String userAgent = request.getHeader("User-Agent");
-        if (userAgent != null && userAgent.length() > 200) {
-            userAgent = userAgent.substring(0, 200); // DB 컬럼 길이 제한 방어
+        String ip = "Unknown IP";
+        String uri = "";
+        String userAgent = "Unknown Agent";
+
+        if (attributes != null) {
+            // ==========================================
+            // [A] 일반 HTTP (REST API) 요청일 경우
+            // ==========================================
+            HttpServletRequest request = ((ServletRequestAttributes) attributes).getRequest();
+
+            userAgent = request.getHeader("User-Agent");
+            if (userAgent != null && userAgent.length() > 200) {
+                userAgent = userAgent.substring(0, 200);
+            }
+            ip = request.getRemoteAddr();
+            uri = request.getRequestURI();
+        } else {
+            // ==========================================
+            // [B] 웹소켓 (STOMP 채팅 등) 통신일 경우
+            // ==========================================
+            String className = joinPoint.getSignature().getDeclaringType().getSimpleName();
+            String methodName = joinPoint.getSignature().getName();
+
+            uri = "[STOMP] /" + className + "/" + methodName;
+            ip = "WebSocket Client";
+            userAgent = "WebSocket Session";
         }
 
-        String ip = request.getRemoteAddr();
-        String uri = request.getRequestURI();
-
-        // 4. [USER_NO] 현재 로그인한 사용자 번호 가져오기
+        // 3. 사용자 번호 가져오기
         Long userNo = getCurrentUserNo();
 
         Object result;
@@ -73,44 +93,38 @@ public class LogingAspect {
         int status = 200; // 기본 성공
 
         try {
-            // ★ 핵심: 실제 컨트롤러 메서드 실행
+            // ★ 비즈니스 로직(API 또는 채팅 전송) 실행
             result = joinPoint.proceed();
         } catch (Exception e) {
-            // 예외 발생 시 정보 캡처
-            status = 500; // 에러 코드 설정
-            errorMsg = e.getMessage(); // 에러 메시지 캡처
-
-            // DB 컬럼 길이(500자) 넘치지 않게 자르기
+            status = 500;
+            errorMsg = e.getMessage();
             if (errorMsg != null && errorMsg.length() > 500) {
                 errorMsg = errorMsg.substring(0, 500);
             }
-            throw e; // 예외는 다시 던져서 GlobalExceptionHandler가 처리하게 함
+            throw e;
         } finally {
-            // 5. 종료 시간 계산 및 로그 저장 (성공이든 실패든 무조건 실행)
+            // 4. 종료 시간 계산 및 DB 저장
             long duration = System.currentTimeMillis() - startTime;
 
             log.info("📢 [Audit] TraceID: {}, URI: {}, Status: {}, Time: {}ms", traceId, uri, status, duration);
 
-            // [최종 저장] 수정된 AccessLog 엔티티에 맞춰 데이터 삽입
-            // 비동기 처리(@Async)를 고려해볼 수 있으나, 데이터 무결성을 위해 동기로 저장
             accessLogRepository.save(AccessLog.builder()
                     .traceId(traceId)
                     .reqIp(ip)
                     .reqUri(uri)
                     .userAgent(userAgent)
                     .userNo(userNo)
-                    .statusCode(status)   // 상태 코드
-                    .execTime(duration)   // 실행 시간
-                    .errorMsg(errorMsg)   // 에러 메시지 (성공 시 null)
-                    .regDt(LocalDateTime.now()) // AOP에서 현재 시간을 못박기! (이중 보안)
+                    .statusCode(status)
+                    .execTime(duration)
+                    .errorMsg(errorMsg)
+                    .regDt(LocalDateTime.now())
                     .build());
 
-            MDC.clear();                  // 퇴근할 땐 명찰 반납하세요! (메모리 누스 방지)
+            MDC.clear(); // 퇴근 시 명찰 반납
         }
 
         return result;
     }
-
     /*
      2. [커스텀 행위 로그] @ActionLog가 붙은 메소드만 골라서 작동
      "관리자가 엑셀을 다운로드했다", "승인했다" 등 중요 행위 추적용
@@ -134,10 +148,16 @@ public class LogingAspect {
         }
 
         // 2. 환경 정보 및 TraceID
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
-        String ip = request.getRemoteAddr();
-        String userAgent = request.getHeader("User-Agent");
-        if (userAgent != null && userAgent.length() > 200) userAgent = userAgent.substring(0, 200);
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        String ip = "Unknown IP";
+        String userAgent = "Unknown Agent";
+
+        if (attributes != null) {
+            HttpServletRequest request = ((ServletRequestAttributes) attributes).getRequest();
+            ip = request.getRemoteAddr();
+            userAgent = request.getHeader("User-Agent");
+            if (userAgent != null && userAgent.length() > 200) userAgent = userAgent.substring(0, 200);
+        }
 
         String traceId = MDC.get("TRACE_ID");
         if (traceId == null) traceId = "SYSTEM";

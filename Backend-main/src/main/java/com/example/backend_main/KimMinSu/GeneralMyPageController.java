@@ -98,20 +98,25 @@ public class GeneralMyPageController {
         return ResultVO.ok("일정 삭제 성공", null);
     }
 
-    // 1. 프로필 수정 (JSON)
-    @PutMapping("/profile")
+    // 1. 프로필 이름 수정
+    @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResultVO<String> updateProfile(
-            @RequestBody java.util.Map<String, String> body,
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @ModelAttribute ProfileUpdateDTO dto, // ★ @RequestPart 대신 @ModelAttribute 사용
+            @AuthenticationPrincipal CustomUserDetails userDetails // ★ 이미 토큰 검증 끝난 객체
     ) throws Exception {
+
+        // 1. 중복된 토큰 파싱 로직 제거! userDetails에서 바로 꺼낸다.
         Long userNo = userDetails.getUserNo();
+
+        // 2. 서비스 호출 (DTO에서 데이터 꺼내서 전달)
         myPageService.updateProfileData(
                 userNo,
-                body.get("name"),
-                body.get("email"),
-                body.get("phone"),
-                null
+                dto.getName(),
+                dto.getEmail(),
+                dto.getPhone(),
+                dto.getProfileImage()
         );
+
         return ResultVO.ok("프로필 수정 성공", null);
     }
 
