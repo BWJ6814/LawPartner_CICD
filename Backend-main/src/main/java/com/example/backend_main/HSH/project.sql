@@ -790,4 +790,4 @@ delete from tb_user where user_no = 20003;
 
 select * From TB_BOARD;
 
-
+SELECT * FROM TB_ACCESS_LOG;
