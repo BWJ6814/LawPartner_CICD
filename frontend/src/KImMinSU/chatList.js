@@ -23,6 +23,14 @@ const ChatList = () => {
     const chatContainerRef = useRef(null);
     const userNo = Number(localStorage.getItem('userNo'));
 
+    const fileInputRef = useRef(null); // ★ 파일 선택창 띄우기용
+    const [isUploading, setIsUploading] = useState(false); // ★ 업로드 중 로딩 표시용
+
+    // ★ [기능 2] STT(음성 인식)용 상태 추가
+    const [isRecording, setIsRecording] = useState(false);
+    const recognitionRef = useRef(null);
+    const initialMessageRef = useRef('');
+
     // ========================================================
     // 1. [진짜 API] 내 채팅방 목록 가져오기 (더미 완전 제거)
     // ========================================================
@@ -87,6 +95,8 @@ const ChatList = () => {
 
         return () => {
             if (stompClient.current) stompClient.current.disconnect();
+
+            if (recognitionRef.current) recognitionRef.current.stop();
         };
     }, [roomId]);
 
@@ -101,6 +111,120 @@ const ChatList = () => {
         };
         stompClient.current.send("/pub/chat/message", {}, JSON.stringify(chatDTO));
         setMessage('');
+    };
+
+    // ★ [기능 1] 파일 업로드 핸들러
+    const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // 용량 제한 (예: 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert("10MB 이하의 파일만 업로드 가능합니다.");
+            return;
+        }
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            // 1. 조원이 만들어둔 파일 업로드 API 찌르기 (주소는 너네 프로젝트에 맞게 수정!)
+            const token = localStorage.getItem('accessToken');
+            const response = await api.post('/api/files/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const fileUrl = response.data.fileUrl || response.data; // 서버가 주는 URL 구조에 맞게
+
+            // 2. 업로드 성공하면 웹소켓으로 'FILE' 타입 메시지 쏘기
+            const chatDTO = {
+                roomId: roomId,
+                senderNo: userNo,
+                message: file.name, // 메시지 내용에는 파일 이름을 넣음
+                msgType: 'FILE',    // ★ 타입은 FILE로!
+                fileUrl: fileUrl    // 다운로드할 URL
+            };
+            stompClient.current.send("/pub/chat/message", {}, JSON.stringify(chatDTO));
+
+        } catch (error) {
+            console.error("파일 업로드 실패:", error);
+            alert("파일 업로드에 실패했습니다.");
+        } finally {
+            setIsUploading(false);
+            // 같은 파일을 또 올릴 수 있게 input 초기화
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    // ★ [기능 2] 음성 인식(STT) 핸들러
+    // ★ [기능 2] 음성 인식(STT) 핸들러 (실무형 무한 동력 버전)
+    const toggleRecording = () => {
+        if (isRecording) {
+            // 이미 켜져 있으면 수동으로 끄기
+            recognitionRef.current?.stop();
+            setIsRecording(false);
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("현재 브라우저는 음성 인식을 지원하지 않습니다. 크롬(Chrome)을 이용해주세요.");
+            return;
+        }
+
+        // ★ 마이크 켜기 직전에, 이미 입력창에 적혀있던 텍스트를 백업해둔다!
+        initialMessageRef.current = message;
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ko-KR';
+        recognition.interimResults = true;
+
+        // ★ [핵심 픽스] 숨 쉬어도 안 꺼짐! 사용자가 직접 버튼 눌러서 끌 때까지 무한 대기!
+        recognition.continuous = true;
+
+        recognition.onresult = (event) => {
+            // 인식된 모든 문장을 띄어쓰기로 예쁘게 이어 붙임
+            const transcript = Array.from(event.results)
+                .map(result => result[0].transcript)
+                .join(' ');
+
+            // ★ 기존 텍스트 + 마이크로 말한 텍스트 자연스럽게 합체
+            const baseText = initialMessageRef.current ? initialMessageRef.current + ' ' : '';
+            setMessage(baseText + transcript);
+        };
+
+        recognition.onerror = (event) => {
+            console.error("음성 인식 에러 발생:", event.error);
+
+            // ★ [디버깅 & 방어막 추가] 에러 종류에 따라 유저에게 알려주기
+            if (event.error === 'no-speech') {
+                // 이건 단순히 "말 소리가 안 들린다"는 뜻이니까 끄지 마! (방어막)
+                return;
+            }
+            if (event.error === 'audio-capture') {
+                alert("마이크를 찾을 수 없습니다. 마이크가 연결되어 있는지 확인해주세요.");
+            } else if (event.error === 'not-allowed') {
+                alert("마이크 사용 권한이 차단되었습니다. 브라우저 설정에서 권한을 허용해주세요.");
+            } else {
+                alert(`음성 인식 오류: ${event.error}`);
+            }
+
+            // 치명적인 에러일 때만 마이크 끄기 상태로 변경
+            setIsRecording(false);
+        };
+
+        recognition.onend = () => {
+            // 엔진이 멈추면 UI 상태도 꺼짐으로 변경
+            setIsRecording(false);
+        };
+
+        recognition.start();
+        setIsRecording(true);
+        recognitionRef.current = recognition;
     };
 
     // 스크롤 맨 아래로
@@ -236,7 +360,19 @@ const ChatList = () => {
                                                         {isMyMessage ? '나' : (msg.senderName || targetName)}
                                                     </p>
                                                     <div className={`p-4 rounded-2xl text-sm font-medium max-w-md shadow-sm border leading-relaxed ${isMyMessage ? 'bg-navy-main text-white rounded-tr-none border-navy-main' : 'bg-white text-slate-800 rounded-tl-none border-slate-100'}`}>
-                                                        {msg.message}
+                                                        {msg.msgType === 'FILE' ? (
+                                                            <a
+                                                                href={msg.fileUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 hover:underline font-bold"
+                                                            >
+                                                                <i className="fas fa-download text-lg"></i>
+                                                                <span className="truncate">{msg.message}</span> {/* 파일명 */}
+                                                            </a>
+                                                        ) : (
+                                                            msg.message
+                                                        )}
                                                     </div>
                                                 </div>
                                                 {isMyMessage && <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xs font-black shadow-lg flex-shrink-0">나</div>}
@@ -247,6 +383,17 @@ const ChatList = () => {
 
                                 <div className="p-6 border-t border-slate-100 bg-white z-10">
                                     <div className="relative bg-slate-50 rounded-2xl p-4 border border-slate-200">
+
+                                        {isRecording && (
+                                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-500 text-white px-5 py-2 rounded-full shadow-lg flex items-center space-x-3 z-50 animate-bounce">
+                                                <span className="relative flex h-3 w-3">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                                                </span>
+                                                <span className="font-bold text-xs">음성을 듣고 있습니다...</span>
+                                            </div>
+                                        )}
+
                                         <textarea
                                             placeholder={currentRoomStatus === 'ST03' ? "상담이 종료되었습니다." : "채팅을 입력해주세요.."}
                                             disabled={currentRoomStatus === 'ST03'}
@@ -258,8 +405,29 @@ const ChatList = () => {
                                         ></textarea>
                                         <div className="flex justify-between items-center mt-3 border-t border-slate-200 pt-3">
                                             <div className="flex space-x-5 text-slate-400">
-                                                <button className="hover:text-blue-600 transition"><i className="fas fa-paperclip"></i></button>
-                                                <button className="hover:text-blue-600 transition"><i className="fa-solid fa-microphone"></i></button>
+                                                {/* 숨겨진 파일 인풋 */}
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    onChange={handleFileUpload}
+                                                    className="hidden"
+                                                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" // 허용 확장자
+                                                />
+                                                <button
+                                                    onClick={() => fileInputRef.current.click()}
+                                                    disabled={currentRoomStatus === 'ST03' || isUploading}
+                                                    className={`transition ${isUploading ? 'text-gray-300 cursor-wait' : 'hover:text-blue-600'}`}
+                                                >
+                                                    <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-paperclip'}`}></i>
+                                                </button>
+                                                <button
+                                                    onClick={toggleRecording}
+                                                    disabled={currentRoomStatus === 'ST03'} // 완료된 방이면 마이크도 막음
+                                                    className={`transition ${isRecording ? 'text-red-500 animate-pulse' : 'hover:text-blue-600 text-slate-400'}`}
+                                                    title="마이크를 눌러 음성으로 입력하세요"
+                                                >
+                                                    <i className="fa-solid fa-microphone"></i>
+                                                </button>
                                             </div>
                                             <button
                                                 onClick={handleSendMessage}

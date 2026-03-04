@@ -73,9 +73,10 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
         }
 
         // 헤더에 multipart/form-data 안 붙여도 axios가 FormData 객체 보면 알아서 세팅해줌
-        await api.put('/api/mypage/profile', formData, {
+        await api.post('/api/mypage/profile', formData, {
             headers: {
-                'Content-Type': 'multipart/form-data'
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
             }
         });
 

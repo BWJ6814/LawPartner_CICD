@@ -26,6 +26,61 @@ api.interceptors.request.use(
     }
 );
 
+// =================================================================
+// 3. 🚀 응답 인터셉터 (Response Interceptor) 설정 [이번에 추가하는 핵심 기능!]
+// -> 에러가 났을 때 가로채서 토큰 재발급 후 몰래 다시 요청하는 역할
+// =================================================================
+api.interceptors.response.use(
+  (response) => {
+    // 정상적인 응답은 건드리지 않고 그대로 화면에 전달합니다.
+    return response;
+  },
+  async (error) => {
+    // 에러가 발생한 원래의 통신 요청 정보
+    const originalRequest = error.config;
 
+    // 만약 에러 상태가 401(토큰 만료)이고, 아직 재시도를 안 한 요청이라면 작동!
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true; // 무한 반복 방지용 도장
+
+      try {
+        // 서랍에서 7일짜리 리프레시 토큰 꺼내기
+        const refreshToken = localStorage.getItem('refreshToken');
+        
+        if (!refreshToken) {
+          throw new Error("리프레시 토큰이 없습니다.");
+        }
+
+        // 백엔드에 새 액세스 토큰 달라고 요청
+        const res = await axios.post('http://localhost:8080/api/auth/refresh', {
+          refreshToken: refreshToken
+        });
+
+        // 성공적으로 새 토큰을 받았다면?
+        if (res.data && res.data.success) {
+          const newAccessToken = res.data.data.accessToken; 
+          
+          // 새로 받은 토큰을 저장소에 업데이트
+          localStorage.setItem('accessToken', newAccessToken);
+
+          // 방금 실패했던 요청의 헤더를 '새 토큰'으로 교체
+          originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+
+          // 실패했던 요청을 서버로 다시 발사!
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        // 리프레시 토큰마저 만료되었을 때 (찐 로그아웃 처리)
+        console.warn("세션이 만료되었습니다. 다시 로그인해 주세요.");
+        localStorage.clear(); 
+        window.location.href = '/login'; 
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // 401 에러가 아닌 일반 에러(404, 500 등)는 그대로 던집니다.
+    return Promise.reject(error);
+  }
+);
 
 export default api;

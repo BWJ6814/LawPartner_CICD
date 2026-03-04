@@ -457,6 +457,7 @@ const GeneralMyPage = () => {
                                     <th className="px-6 py-3">카테고리</th>
                                     <th className="px-6 py-3">진행 상태</th>
                                     <th className="px-6 py-3">접수 날짜</th>
+                                    <th className="px-6 py-3">상담</th>
                                 </tr>
                                 </thead>
                                 <tbody className="text-sm divide-y divide-slate-100 font-medium">
@@ -472,6 +473,14 @@ const GeneralMyPage = () => {
                                         </span>
                                             </td>
                                             <td className="px-6 py-4 text-slate-500">{item.regDate}</td>
+                                            <td className="px-6 py-4">
+                                                <button
+                                                    onClick={() => handleCancelConsult(item.roomId)} // DTO에 roomId가 있어야 함
+                                                    className="text-red-500 hover:text-red-700 font-bold text-xs"
+                                                >
+                                                    취소
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (
