@@ -40,7 +40,10 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // 만약 에러 상태가 401(토큰 만료)이고, 아직 재시도를 안 한 요청이라면 작동!
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+    // 코드 (401 뿐만 아니라 403, 500일 때도 일단 재발급을 시도해 본다!)
+    if (error.response && 
+   (error.response.status === 401 || error.response.status === 403 || error.response.status === 500) && 
+   !originalRequest._retry) {
       originalRequest._retry = true; // 무한 반복 방지용 도장
 
       try {
