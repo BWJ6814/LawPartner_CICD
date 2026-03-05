@@ -82,17 +82,38 @@ export function Calendar({ events = [], onDayClick }) {
    일정 관리 모달 (CRUD - API 연동)
    props: isOpen, onClose, onRefresh
 ─────────────────────────────────────────────── */
-export function ScheduleModal({ isOpen, onClose, onRefresh }) {
+export function ScheduleModal({ isOpen, onClose, onRefresh, initialDate }) {
     const now = new Date();
     const [year,           setYear]          = useState(now.getFullYear());
     const [month,          setMonth]         = useState(now.getMonth());
     const [selectedDate,   setSelectedDate]  = useState(null);
+
+    // 날짜 클릭해서 열었을 때 해당 날짜 자동 선택
+    useEffect(() => {
+        if (!isOpen) return;
+        if (initialDate) {
+            setYear(initialDate.year);
+            setMonth(initialDate.month);
+            setSelectedDate(initialDate.day);
+        } else {
+            setSelectedDate(null);
+        }
+    }, [isOpen, initialDate]);
     const [newTitle,       setNewTitle]      = useState("");
     const [events,         setEvents]        = useState([]);
     const [loading,        setLoading]       = useState(false);
     const [editingEventNo, setEditingEventNo] = useState(null);
-    const [editTitle,      setEditTitle]     = useState("");
-    const [editDate,       setEditDate]      = useState("");
+
+    // 월이 바뀌면 선택 날짜 + 이번달 일정 페이지 초기화
+    useEffect(() => {
+        setSelectedDate(null);
+        setEditingEventNo(null);
+        setMonthEventPage(0);
+    }, [year, month]);
+    const [editTitle,       setEditTitle]      = useState("");
+    const [editDate,        setEditDate]       = useState("");
+    const [monthEventPage,  setMonthEventPage] = useState(0);
+    const MONTH_PAGE_SIZE = 10;
 
     useEffect(() => {
         if (!isOpen) return;
@@ -173,15 +194,15 @@ export function ScheduleModal({ isOpen, onClose, onRefresh }) {
             position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
             display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, fontFamily: FONT,
         }}>
-            <div style={{ background: "#fff", borderRadius: 16, width: 720, maxHeight: "85vh", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
+            <div style={{ background: "#fff", borderRadius: 16, width: 720, height: "80vh", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.15)", display: "flex", flexDirection: "column" }}>
 
                 {/* 헤더 */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid #f3f4f6", flexShrink: 0 }}>
                     <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#111827" }}>재판 일정 관리</h2>
                     <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#9ca3af" }}>✕</button>
                 </div>
 
-                <div style={{ display: "flex", height: "calc(85vh - 60px)" }}>
+                <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
                     {/* 왼쪽: 캘린더 */}
                     <div style={{ width: 320, padding: 20, borderRight: "1px solid #f3f4f6", overflowY: "auto" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -229,29 +250,55 @@ export function ScheduleModal({ isOpen, onClose, onRefresh }) {
                         </div>
 
                         {/* 이번 달 일정 요약 */}
-                        <div style={{ marginTop: 16, fontSize: 12, color: "#6b7280" }}>
-                            <div style={{ fontWeight: 700, color: "#111827", marginBottom: 6 }}>이번 달 일정</div>
-                            {events
+                        {(() => {
+                            const monthEvents = events
                                 .filter(e => e.startDate && e.startDate.startsWith(toKey(year, month, 1).slice(0, 7)))
-                                .sort((a, b) => a.startDate.localeCompare(b.startDate))
-                                .map(e => (
-                                    <div
-                                        key={e.eventNo}
-                                        onClick={() => setSelectedDate(Number(e.startDate.slice(8, 10)))}
-                                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb", cursor: "pointer", borderRadius: 4 }}
-                                        onMouseEnter={ev => ev.currentTarget.style.background = "#f0f4ff"}
-                                        onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}
-                                    >
-                                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: e.colorCode || BLUE, flexShrink: 0 }} />
-                                        <span style={{ color: "#374151", fontWeight: 600 }}>{e.startDate.slice(8)}일</span>
-                                        <span style={{ color: "#6b7280" }}>{e.title}</span>
+                                .sort((a, b) => a.startDate.localeCompare(b.startDate));
+                            const totalMonthPages = Math.ceil(monthEvents.length / MONTH_PAGE_SIZE) || 1;
+                            const pagedMonthEvents = monthEvents.slice(monthEventPage * MONTH_PAGE_SIZE, monthEventPage * MONTH_PAGE_SIZE + MONTH_PAGE_SIZE);
+                            return (
+                                <div style={{ marginTop: 16, fontSize: 12, color: "#6b7280" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                        <span style={{ fontWeight: 700, color: "#111827" }}>이번 달 일정</span>
+                                        <span style={{ color: "#9ca3af" }}>{monthEvents.length}건</span>
                                     </div>
-                                ))
-                            }
-                            {events.filter(e => e.startDate && e.startDate.startsWith(toKey(year, month, 1).slice(0, 7))).length === 0 && (
-                                <div style={{ color: "#9ca3af", padding: "8px 0" }}>등록된 일정이 없습니다.</div>
-                            )}
-                        </div>
+                                    {monthEvents.length === 0 ? (
+                                        <div style={{ color: "#9ca3af", padding: "8px 0" }}>등록된 일정이 없습니다.</div>
+                                    ) : (
+                                        <>
+                                            {pagedMonthEvents.map(e => (
+                                                <div
+                                                    key={e.eventNo}
+                                                    onClick={() => setSelectedDate(Number(e.startDate.slice(8, 10)))}
+                                                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb", cursor: "pointer", borderRadius: 4 }}
+                                                    onMouseEnter={ev => ev.currentTarget.style.background = "#f0f4ff"}
+                                                    onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}
+                                                >
+                                                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: e.colorCode || BLUE, flexShrink: 0 }} />
+                                                    <span style={{ color: "#374151", fontWeight: 600 }}>{e.startDate.slice(8)}일</span>
+                                                    <span style={{ color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.title}</span>
+                                                </div>
+                                            ))}
+                                            {totalMonthPages > 1 && (
+                                                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 4, marginTop: 8 }}>
+                                                    <button
+                                                        onClick={() => setMonthEventPage(p => Math.max(0, p - 1))}
+                                                        disabled={monthEventPage === 0}
+                                                        style={{ border: "1px solid #e5e7eb", borderRadius: 4, padding: "2px 8px", fontSize: 11, cursor: monthEventPage === 0 ? "not-allowed" : "pointer", background: monthEventPage === 0 ? "#f9fafb" : "#fff", color: monthEventPage === 0 ? "#d1d5db" : "#374151" }}
+                                                    >‹</button>
+                                                    <span style={{ fontSize: 11, color: "#6b7280" }}>{monthEventPage + 1} / {totalMonthPages}</span>
+                                                    <button
+                                                        onClick={() => setMonthEventPage(p => Math.min(totalMonthPages - 1, p + 1))}
+                                                        disabled={monthEventPage >= totalMonthPages - 1}
+                                                        style={{ border: "1px solid #e5e7eb", borderRadius: 4, padding: "2px 8px", fontSize: 11, cursor: monthEventPage >= totalMonthPages - 1 ? "not-allowed" : "pointer", background: monthEventPage >= totalMonthPages - 1 ? "#f9fafb" : "#fff", color: monthEventPage >= totalMonthPages - 1 ? "#d1d5db" : "#374151" }}
+                                                    >›</button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* 오른쪽: 입력 & 목록 */}

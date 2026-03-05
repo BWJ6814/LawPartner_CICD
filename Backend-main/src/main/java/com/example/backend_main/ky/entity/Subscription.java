@@ -1,4 +1,4 @@
-package com.example.backend_main.KY.entity;
+package com.example.backend_main.ky.entity;
 
 import com.example.backend_main.common.entity.User;
 import jakarta.persistence.*;

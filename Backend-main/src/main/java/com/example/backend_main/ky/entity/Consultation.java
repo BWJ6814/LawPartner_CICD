@@ -1,4 +1,4 @@
-package com.example.backend_main.KY.entity;
+package com.example.backend_main.ky.entity;
 
 /*
  * [Deprecated] KY/entity/Consultation

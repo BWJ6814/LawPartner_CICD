@@ -15,7 +15,8 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
 
         // 🔥 포트원 V2 결제
         if (!window.PortOne) {
-            alert('포트원 SDK를 불러올 수 없습니다.\nindex.html을 확인해주세요.');
+            alert('포트원 SDK를 불러올 수 없습니다.\nindex.html을 확인해주세요.'
+            );
             return;
         }
 
@@ -62,7 +63,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col" style={{ height: '80vh' }}>
                 {/* 헤더 */}
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 text-white">
                     <div className="flex items-center justify-between">
@@ -78,7 +79,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                     </div>
                 </div>
 
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <div className="p-6 overflow-y-auto flex-1">
                     {/* 요금 플랜 */}
                     <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-6">
                         <div className="flex items-center justify-between mb-4">

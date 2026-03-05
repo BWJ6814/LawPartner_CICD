@@ -52,13 +52,14 @@ export default function ReviewsModal({ isOpen, onClose, reviews }) {
             display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, fontFamily: FONT,
         }}>
             <div style={{
-                background: "#fff", borderRadius: 16, width: 640, maxHeight: "85vh",
+                background: "#fff", borderRadius: 16, width: 640, height: "80vh",
                 overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+                display: "flex", flexDirection: "column",
             }}>
                 {/* 헤더 */}
                 <div style={{
                     display: "flex", justifyContent: "space-between", alignItems: "center",
-                    padding: "16px 24px", borderBottom: "1px solid #f3f4f6",
+                    padding: "16px 24px", borderBottom: "1px solid #f3f4f6", flexShrink: 0,
                 }}>
                     <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#111827" }}>의뢰인 후기</h2>
                     <button onClick={onClose} style={{
@@ -66,7 +67,7 @@ export default function ReviewsModal({ isOpen, onClose, reviews }) {
                     }}>✕</button>
                 </div>
 
-                <div style={{ padding: 24, overflowY: "auto", maxHeight: "calc(85vh - 60px)" }}>
+                <div style={{ padding: 24, overflowY: "auto", flex: 1 }}>
                     {/* 평점 요약 */}
                     <div style={{
                         display: "flex", gap: 24, padding: 20, borderRadius: 12,
@@ -142,11 +143,6 @@ export default function ReviewsModal({ isOpen, onClose, reviews }) {
                                         <Stars count={r.stars} />
                                     </div>
                                     <p style={{ margin: 0, fontSize: 13, color: "#4b5563", lineHeight: 1.7 }}>{r.content}</p>
-                                    {r.boardNo && (
-                                        <div style={{ marginTop: 8, fontSize: 11, color: BLUE, fontWeight: 600 }}>
-                                            📄 연결된 게시글 보기 →
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                             {/* 페이징 */}

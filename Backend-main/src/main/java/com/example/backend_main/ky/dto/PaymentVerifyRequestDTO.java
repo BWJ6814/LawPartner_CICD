@@ -1,4 +1,4 @@
-package com.example.backend_main.KY.dto;
+package com.example.backend_main.ky.dto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

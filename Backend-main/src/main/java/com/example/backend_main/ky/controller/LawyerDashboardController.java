@@ -1,7 +1,7 @@
-package com.example.backend_main.KY.controller;
+package com.example.backend_main.ky.controller;
 
-import com.example.backend_main.KY.dto.LawyerDashboardDTO;
-import com.example.backend_main.KY.service.LawyerDashboardService;
+import com.example.backend_main.ky.dto.LawyerDashboardDTO;
+import com.example.backend_main.ky.service.LawyerDashboardService;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
 import lombok.RequiredArgsConstructor;

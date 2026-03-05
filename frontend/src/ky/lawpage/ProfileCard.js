@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import SettingsModal from './SettingsModal';
+import SettingsModal from '../modal/SettingsModal';
 import api from '../../common/api/axiosConfig';
 
 const ProfileCard = () => {
@@ -19,7 +19,7 @@ const ProfileCard = () => {
 
     // 변호사인 경우 초기 프로필 이미지 로드
     useEffect(() => {
-        if (userRole !== 'ROLE_LAWYER') return;
+        if (!userRole?.includes('ROLE_LAWYER')) return;
         api.get('/api/ky/profile')
             .then(res => {
                 const imgUrl = res.data?.data?.imgUrl;
@@ -34,6 +34,7 @@ const ProfileCard = () => {
         localStorage.removeItem('userRole');
         localStorage.removeItem('userNm');
         localStorage.removeItem('userId');
+
         navigate('/login');
     };
 

@@ -1,12 +1,13 @@
-package com.example.backend_main.KY.service;
+package com.example.backend_main.ky.service;
 
 import com.example.backend_main.BWJ.BoardReplyRepository;
-import com.example.backend_main.KY.dto.LawyerDashboardDTO;
-import com.example.backend_main.KY.repository.ConsultationRepository;
-import com.example.backend_main.KY.repository.ReviewRepository;
-import com.example.backend_main.KY.repository.CalendarRepository;
+import com.example.backend_main.ky.dto.LawyerDashboardDTO;
+import com.example.backend_main.ky.repository.ConsultationRepository;
+import com.example.backend_main.ky.repository.ReviewRepository;
+import com.example.backend_main.ky.repository.CalendarRepository;
 import com.example.backend_main.common.entity.CalendarEvent;
 import com.example.backend_main.common.entity.ChatRoom;
+import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,11 +20,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LawyerDashboardService {
 
-    private final ReviewRepository       reviewRepository;
-    private final ConsultationRepository consultationRepository;
-    private final CalendarRepository     calendarRepository;
-    private final UserRepository         userRepository;
-    private final BoardReplyRepository   boardReplyRepository;
+    private final ReviewRepository        reviewRepository;
+    private final ConsultationRepository  consultationRepository;
+    private final CalendarRepository      calendarRepository;
+    private final UserRepository          userRepository;
+    private final BoardReplyRepository    boardReplyRepository;
+    private final NotificationRepository  notificationRepository;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -57,6 +59,8 @@ public class LawyerDashboardService {
                 if (c.getRegDt() != null) dto.setRegDate(c.getRegDt().format(DATE_FMT));
                 userRepository.findById(c.getUserNo())
                     .ifPresent(u -> dto.setClientNm(u.getUserNm()));
+                dto.setUnreadCount(notificationRepository
+                    .countByUserNoAndRoomIdAndReadYn(lawyerNo, c.getRoomId(), "N"));
                 return dto;
             }).collect(Collectors.toList());
     }
@@ -138,14 +142,12 @@ public class LawyerDashboardService {
 
     // ── CASE_STEP 코드 → 한글 변환 ───────────────────────────
     private String convertProgress(String code) {
-        if (code == null) return "접수 대기";
+        if (code == null) return "상담 대기";
         switch (code) {
-            case "ST01": return "접수 대기";
-            case "ST02": return "상담 진행중";
-            case "ST03": return "소장 작성중";
-            case "ST04": return "소송 진행중";
-            case "ST05": return "사건 종료";
-            default:     return "접수 대기";
+            case "ST01": return "상담 대기";
+            case "ST02": return "상담 진행";
+            case "ST05": return "상담 종료";
+            default:     return "상담 대기";
         }
     }
 }

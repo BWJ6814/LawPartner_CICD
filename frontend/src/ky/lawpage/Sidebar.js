@@ -9,7 +9,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     const menuItems = [
         {
             icon: 'fas fa-home',
-            label: '홈',
+            label: '마이페이지',
             path: '/lawyer-dashboard'
         },
         {
@@ -81,11 +81,16 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
 
     return (
         <aside
-            style={{ background: '#111827', fontFamily: "'Pretendard', sans-serif" }}
-            className={`
-                relative flex flex-col shadow-lg transition-all duration-300 ease-in-out flex-shrink-0 self-stretch
-                ${isCollapsed ? 'w-20' : 'w-64'}
-            `}
+            style={{
+                background: '#111827',
+                fontFamily: "'Pretendard', sans-serif",
+                width: isCollapsed ? 80 : 256,
+                minWidth: isCollapsed ? 80 : 256,
+                maxWidth: isCollapsed ? 80 : 256,
+                transition: 'width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease',
+                flexShrink: 0,
+            }}
+            className="relative flex flex-col shadow-lg self-stretch"
         >
             {/* 중앙 토글 버튼 */}
             <button
@@ -105,7 +110,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                         ${isCollapsed ? 'opacity-0 scale-90' : 'opacity-100 scale-100'}
                     `}
                 >
-                    법률 플랫폼
+                    LawPartner
                 </h1>
                 <span
                     className={`

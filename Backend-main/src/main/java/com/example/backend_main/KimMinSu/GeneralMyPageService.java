@@ -49,6 +49,10 @@ public class GeneralMyPageService {
                 .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
         dto.setUserName(user.getUserNm());
         dto.setNickName(user.getNickNm() != null ? user.getNickNm() : user.getUserNm());
+        try {
+            if (user.getEmail() != null) dto.setEmail(aes256Util.decrypt(user.getEmail()));
+            if (user.getPhone() != null) dto.setPhone(aes256Util.decrypt(user.getPhone()));
+        } catch (Exception ignored) {}
 
         // 2. 통계 카드 (아직 관련 테이블이 미완성이면 일단 0으로 세팅)
         dto.setRecentReplyCount(0);

@@ -48,10 +48,12 @@ const LayoutManager = ({ auth, onLoginUpdate, children }) => {
     );
 };
 
-// JWT 만료 여부 확인 (라이브러리 없이 base64 디코딩)
+// JWT 만료 여부 확인 (base64url → base64 변환 후 디코딩)
 function isTokenExpired(token) {
     try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const base64url = token.split('.')[1];
+        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
         return payload.exp * 1000 < Date.now();
     } catch {
         return true;

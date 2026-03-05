@@ -26,7 +26,9 @@ const LawyerChatList = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
 
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
+        () => localStorage.getItem('lawyerSidebarCollapsed') === 'true'
+    );
     const [rooms, setRooms] = useState([]);
     const [message, setMessage] = useState('');
     const [chatLog, setChatLog] = useState([]);
@@ -34,10 +36,14 @@ const LawyerChatList = () => {
     const [targetName, setTargetName] = useState('의뢰인');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('ALL');
+    const [roomPage, setRoomPage] = useState(0);
+    const PAGE_SIZE = 7;
 
     const stompClient = useRef(null);
     const chatContainerRef = useRef(null);
+    const fileInputRef = useRef(null);
     const userNo = Number(localStorage.getItem('userNo'));
+    const [isUploading, setIsUploading] = useState(false);
 
     // 채팅방 목록 불러오기
     useEffect(() => {
@@ -62,6 +68,9 @@ const LawyerChatList = () => {
         if (!roomId) return;
         setChatLog([]);
 
+        // 메시지 읽음 처리 (unreadCount 초기화)
+        api.post(`/api/chat/room/${roomId}/read`).catch(() => {});
+
         api.get(`/api/chat/history/${roomId}`)
             .then(res => setChatLog(res.data.data || []))
             .catch(() => setChatLog([]));
@@ -74,6 +83,16 @@ const LawyerChatList = () => {
             client.subscribe(`/sub/chat/room/${roomId}`, (response) => {
                 const newMsg = JSON.parse(response.body);
                 setChatLog(prev => [...prev, newMsg]);
+
+                // SYS 메시지로 수락 신호 오면 즉시 상태 업데이트
+                if (newMsg.msgType === 'SYS' && newMsg.progressCode) {
+                    setCurrentRoomStatus(newMsg.progressCode);
+                    setRooms(prev =>
+                        prev.map(r => r.roomId === newMsg.roomId
+                            ? { ...r, progressCode: newMsg.progressCode }
+                            : r)
+                    );
+                }
             });
         }, (err) => console.error('웹소켓 연결 실패:', err));
 
@@ -89,6 +108,41 @@ const LawyerChatList = () => {
         }
     }, [chatLog]);
 
+    const handleAccept = async () => {
+        try {
+            await api.put(`/api/chat/room/accept/${roomId}`);
+            setCurrentRoomStatus('ST02');
+            setRooms(prev =>
+                prev.map(r => r.roomId === roomId ? { ...r, progressCode: 'ST02' } : r)
+            );
+        } catch (e) {
+            alert('수락 처리 중 오류가 발생했습니다.');
+        }
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) { alert('10MB 이하 파일만 업로드 가능합니다.'); return; }
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('roomId', roomId);
+        try {
+            const res = await api.post('/api/chat/files', formData);
+            const fileUrl = res.data.fileUrl || res.data;
+            stompClient.current.send('/pub/chat/message', {}, JSON.stringify({
+                roomId, senderNo: userNo, message: file.name, msgType: 'FILE', fileUrl,
+            }));
+        } catch {
+            alert('파일 업로드에 실패했습니다.');
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
     const handleSendMessage = () => {
         if (!message.trim() || !stompClient.current) return;
         stompClient.current.send('/pub/chat/message', {}, JSON.stringify({
@@ -99,6 +153,7 @@ const LawyerChatList = () => {
 
     const filteredRooms = rooms.filter(room => {
         const matchStatus = filterStatus === 'ALL' || room.progressCode === filterStatus;
+
         // 변호사 입장: 상대방은 의뢰인(userNm)
         const opponentName = Number(room.userNo) === Number(userNo) ? (room.lawyerName || '') : (room.userNm || '');
         const matchSearch = opponentName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -106,10 +161,14 @@ const LawyerChatList = () => {
     });
 
     return (
-        <div style={{ display: 'flex', minHeight: '100%', fontFamily: FONT }}>
+        <div style={{ display: 'flex', height: 'calc(100vh - 80px)', overflow: 'hidden', fontFamily: FONT }}>
             <Sidebar
                 isCollapsed={isSidebarCollapsed}
-                toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                toggleSidebar={() => {
+                    const next = !isSidebarCollapsed;
+                    setIsSidebarCollapsed(next);
+                    localStorage.setItem('lawyerSidebarCollapsed', next);
+                }}
             />
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#f1f5f9', minWidth: 0 }}>
@@ -133,14 +192,14 @@ const LawyerChatList = () => {
                                 type="text"
                                 placeholder="의뢰인 이름 검색..."
                                 value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
+                                onChange={e => { setSearchTerm(e.target.value); setRoomPage(0); }}
                                 style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: FONT }}
                             />
                             <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
                                 {['ALL', 'ST01', 'ST02', 'ST05'].map(code => (
                                     <button
                                         key={code}
-                                        onClick={() => setFilterStatus(code)}
+                                        onClick={() => { setFilterStatus(code); setRoomPage(0); }}
                                         style={{
                                             flex: 1, padding: '5px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
                                             fontSize: 11, fontWeight: 700, fontFamily: FONT,
@@ -160,7 +219,7 @@ const LawyerChatList = () => {
                                 <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
                                     채팅방이 없습니다.
                                 </div>
-                            ) : filteredRooms.map(room => {
+                            ) : filteredRooms.slice(roomPage * PAGE_SIZE, roomPage * PAGE_SIZE + PAGE_SIZE).map(room => {
                                 const opponentName = Number(room.userNo) === Number(userNo)
                                     ? (room.lawyerName || '변호사') : (room.userNm || '의뢰인');
                                 const isSelected = String(roomId) === String(room.roomId);
@@ -193,6 +252,29 @@ const LawyerChatList = () => {
                                 );
                             })}
                         </div>
+
+                        {/* 페이징 */}
+                        {filteredRooms.length > PAGE_SIZE && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, padding: '10px 8px', borderTop: '1px solid #f1f5f9', flexShrink: 0 }}>
+                                <button
+                                    onClick={() => setRoomPage(p => Math.max(0, p - 1))}
+                                    disabled={roomPage === 0}
+                                    style={{ border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: roomPage === 0 ? 'not-allowed' : 'pointer', background: roomPage === 0 ? '#f8fafc' : '#fff', color: roomPage === 0 ? '#cbd5e1' : '#374151' }}
+                                >‹</button>
+                                {Array.from({ length: Math.ceil(filteredRooms.length / PAGE_SIZE) }, (_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setRoomPage(i)}
+                                        style={{ border: '1px solid', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', borderColor: roomPage === i ? '#1D4ED8' : '#e2e8f0', background: roomPage === i ? '#1D4ED8' : '#fff', color: roomPage === i ? '#fff' : '#374151', fontWeight: roomPage === i ? 700 : 400 }}
+                                    >{i + 1}</button>
+                                ))}
+                                <button
+                                    onClick={() => setRoomPage(p => Math.min(Math.ceil(filteredRooms.length / PAGE_SIZE) - 1, p + 1))}
+                                    disabled={roomPage >= Math.ceil(filteredRooms.length / PAGE_SIZE) - 1}
+                                    style={{ border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: roomPage >= Math.ceil(filteredRooms.length / PAGE_SIZE) - 1 ? 'not-allowed' : 'pointer', background: roomPage >= Math.ceil(filteredRooms.length / PAGE_SIZE) - 1 ? '#f8fafc' : '#fff', color: roomPage >= Math.ceil(filteredRooms.length / PAGE_SIZE) - 1 ? '#cbd5e1' : '#374151' }}
+                                >›</button>
+                            </div>
+                        )}
                     </div>
 
                     {/* 채팅창 */}
@@ -208,8 +290,19 @@ const LawyerChatList = () => {
                             <>
                                 {/* 채팅 상태 배너 */}
                                 {currentRoomStatus === 'ST01' && (
-                                    <div style={{ background: '#fff7ed', padding: '10px 24px', textAlign: 'center', borderBottom: '1px solid #fed7aa', color: '#f97316', fontSize: 13, fontWeight: 700 }}>
-                                        ⚠ 아직 수락하지 않은 상담입니다. 의뢰인의 사전 질문을 확인하세요.
+                                    <div style={{ background: '#fff7ed', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, borderBottom: '1px solid #fed7aa', color: '#f97316', fontSize: 13, fontWeight: 700 }}>
+                                        <span>⚠ 아직 수락하지 않은 상담입니다. 의뢰인의 사전 질문을 확인하세요.</span>
+                                        <button
+                                            onClick={handleAccept}
+                                            style={{
+                                                background: '#f97316', color: '#fff', border: 'none',
+                                                borderRadius: 8, padding: '6px 18px', fontSize: 13,
+                                                fontWeight: 700, cursor: 'pointer', fontFamily: FONT,
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            수락하기
+                                        </button>
                                     </div>
                                 )}
 
@@ -236,7 +329,16 @@ const LawyerChatList = () => {
                                                         boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
                                                         border: isMine ? 'none' : '1px solid #e2e8f0',
                                                     }}>
-                                                        {msg.message}
+                                                        {msg.msgType === 'FILE' ? (
+                                                            <a
+                                                                href={msg.fileUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                style={{ color: isMine ? '#fff' : '#1D4ED8', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, textDecoration: 'underline' }}
+                                                            >
+                                                                📎 {msg.message}
+                                                            </a>
+                                                        ) : msg.message}
                                                     </div>
                                                 </div>
                                                 {isMine && (
@@ -252,6 +354,24 @@ const LawyerChatList = () => {
                                 {/* 입력창 */}
                                 <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', background: '#fff' }}>
                                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', background: '#f8fafc', borderRadius: 12, padding: '12px 16px', border: '1px solid #e2e8f0' }}>
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            onChange={handleFileUpload}
+                                            style={{ display: 'none' }}
+                                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                                        />
+                                        <button
+                                            onClick={() => fileInputRef.current.click()}
+                                            disabled={currentRoomStatus === 'ST05' || isUploading}
+                                            title="파일 첨부"
+                                            style={{
+                                                background: 'none', border: 'none', cursor: currentRoomStatus === 'ST05' ? 'not-allowed' : 'pointer',
+                                                color: isUploading ? '#cbd5e1' : '#94a3b8', fontSize: 18, padding: '4px', flexShrink: 0,
+                                            }}
+                                        >
+                                            {isUploading ? '⏳' : '📎'}
+                                        </button>
                                         <textarea
                                             placeholder={currentRoomStatus === 'ST05' ? '종료된 상담입니다.' : '메시지를 입력하세요...'}
                                             disabled={currentRoomStatus === 'ST05'}
