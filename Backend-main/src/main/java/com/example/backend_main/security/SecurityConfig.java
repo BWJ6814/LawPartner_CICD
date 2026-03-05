@@ -85,7 +85,7 @@ public class SecurityConfig {
                 // .requestMatchers("/api/auth/**").permitAll() : 로그인이나 회원가입 주소로 오는 사람들은
                 // 신분증이 없어도 무조건 들어오도록  처리..!
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // 로그인/회원가입은 프리패스!
+                        .requestMatchers("/api/auth/**", "/images/profiles/**").permitAll() // 로그인/회원가입은 프리패스!
                         // 2. [개발 기간용] 그 외의 모든 요청도 일단은 다 통과!
                         .anyRequest().permitAll()
                         // 그 외 모든 요청은 신분증(JWT) 검사! - 개발 중간 중간 확인할 예정..
