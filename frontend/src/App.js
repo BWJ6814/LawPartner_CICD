@@ -13,6 +13,7 @@ import AIChatPage from "./BWJ/AIChatPage";
 import GeneralMyPage from './pages/GeneralMypage';
 import ChatList from './KImMinSU/chatList';
 import Lawmainpage from './ky/Lawmainpage';
+import LawyerChatList from './ky/lawpage/LawyerChatList';
 import LoginPage from './HSH/LoginPage';
 import SignupPage from './HSH/SignupPage';
 import ExpertsPage from './pages/ExpertsPage';
@@ -36,18 +37,36 @@ const LayoutManager = ({ auth, onLoginUpdate, children }) => {
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 text-slate-900 font-sans">
-            {/* 관리자 페이지가 아닐 때만 기존 헤더 렌더링 */}
             {!isAdminRoute && <Header auth={auth} onLoginUpdate={onLoginUpdate} />}
-            
+
             <main className="flex-grow">
                 {children}
             </main>
 
-            {/* 관리자 페이지가 아닐 때만 기존 푸터 렌더링 */}
             {!isAdminRoute && <Footer />}
         </div>
     );
 };
+
+// JWT 만료 여부 확인 (base64url → base64 변환 후 디코딩)
+function isTokenExpired(token) {
+    try {
+        const base64url = token.split('.')[1];
+        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
+        return payload.exp * 1000 < Date.now();
+    } catch {
+        return true;
+    }
+}
+
+// 앱 시작 시 만료된 토큰이면 즉시 정리
+(function clearExpiredToken() {
+    const token = localStorage.getItem('accessToken');
+    if (token && isTokenExpired(token)) {
+        localStorage.clear();
+    }
+})();
 
 function App() {
     const [auth, setAuth] = useState({
@@ -109,6 +128,8 @@ function App() {
                     <Route path="/signup" element={<SignupPage />} />
 
                     <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
+                    <Route path="/lawyer-chat" element={<LawyerChatList />} />
+                    <Route path="/lawyer-chat/:roomId" element={<LawyerChatList />} />
                     <Route path="/ai-chat" element={<div className="text-center p-20 text-xl text-gray-500">AI 상담 준비 중입니다.</div>} />
 
                     <Route path="/experts" element={<ExpertsPage />} />

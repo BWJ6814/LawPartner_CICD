@@ -9,24 +9,20 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     const menuItems = [
         {
             icon: 'fas fa-home',
-            label: '홈',
+            label: '마이페이지',
             path: '/lawyer-dashboard'
         },
         {
-            icon: 'fas fa-robot',
-            label: 'AI 상담',
-            path: '/ai-chat'
+            icon: 'fas fa-comments',
+            label: '1:1 채팅',
+            path: '/lawyer-chat'
         },
         {
-            icon: 'fas fa-comments',
+            icon: 'fas fa-clipboard-list',
             label: '상담게시판',
             path: '/consultation'
         },
-        {
-            icon: 'fas fa-user-tie',
-            label: '전문가 찾기',
-            path: '/experts'
-        },
+
         {
             icon: 'fas fa-headset',
             label: '고객센터',
@@ -85,11 +81,16 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
 
     return (
         <aside
-            style={{ background: '#111827', fontFamily: "'Pretendard', sans-serif" }}
-            className={`
-                relative h-screen flex flex-col shadow-lg transition-all duration-300 ease-in-out flex-shrink-0
-                ${isCollapsed ? 'w-20' : 'w-64'}
-            `}
+            style={{
+                background: '#111827',
+                fontFamily: "'Pretendard', sans-serif",
+                width: isCollapsed ? 80 : 256,
+                minWidth: isCollapsed ? 80 : 256,
+                maxWidth: isCollapsed ? 80 : 256,
+                transition: 'width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease',
+                flexShrink: 0,
+            }}
+            className="relative flex flex-col shadow-lg self-stretch"
         >
             {/* 중앙 토글 버튼 */}
             <button
@@ -109,7 +110,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                         ${isCollapsed ? 'opacity-0 scale-90' : 'opacity-100 scale-100'}
                     `}
                 >
-                    법률 플랫폼
+                    LawPartner
                 </h1>
                 <span
                     className={`
@@ -152,7 +153,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                 <div className="p-4 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold mx-auto cursor-pointer transition-colors"
                          style={{ background: '#1D4ED8' }}>
-                        김
+                        {(localStorage.getItem('userNm') || '?').charAt(0)}
                     </div>
                 </div>
             )}

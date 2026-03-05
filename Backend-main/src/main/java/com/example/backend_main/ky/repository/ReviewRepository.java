@@ -1,6 +1,6 @@
-package com.example.backend_main.KY.repository;
+package com.example.backend_main.ky.repository;
 
-import com.example.backend_main.KY.entity.Review;
+import com.example.backend_main.ky.entity.Review;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

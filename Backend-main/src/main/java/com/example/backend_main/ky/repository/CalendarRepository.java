@@ -1,4 +1,4 @@
-package com.example.backend_main.KY.repository;
+package com.example.backend_main.ky.repository;
 
 import com.example.backend_main.common.entity.CalendarEvent;
 import org.springframework.data.jpa.repository.JpaRepository;

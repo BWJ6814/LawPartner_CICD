@@ -14,10 +14,14 @@ api.interceptors.request.use(
     (config) => {
         // 로컬 스토리지에서 토큰 꺼내기
         const token = localStorage.getItem('accessToken');
-        
+
         // 토큰이 있으면 헤더에 "Bearer [토큰]" 형식으로 추가
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        // FormData 전송 시 Content-Type을 삭제해야 axios가 boundary를 자동으로 설정함
+        if (config.data instanceof FormData) {
+            delete config.headers['Content-Type'];
         }
         return config;
     },
@@ -41,8 +45,8 @@ api.interceptors.response.use(
 
     // 만약 에러 상태가 401(토큰 만료)이고, 아직 재시도를 안 한 요청이라면 작동!
     // 코드 (401 뿐만 아니라 403, 500일 때도 일단 재발급을 시도해 본다!)
-    if (error.response && 
-   (error.response.status === 401 || error.response.status === 403 || error.response.status === 500) && 
+    if (error.response &&
+   error.response.status === 401 &&
    !originalRequest._retry) {
       originalRequest._retry = true; // 무한 반복 방지용 도장
 
@@ -73,10 +77,12 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // 리프레시 토큰마저 만료되었을 때 (찐 로그아웃 처리)
-        console.warn("세션이 만료되었습니다. 다시 로그인해 주세요.");
-        localStorage.clear(); 
-        window.location.href = '/login'; 
+        // 리프레시 서버가 401을 반환한 경우만 진짜 세션 만료로 처리
+        if (refreshError.response && refreshError.response.status === 401) {
+          console.warn("세션이 만료되었습니다. 다시 로그인해 주세요.");
+          localStorage.clear();
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       }
     }

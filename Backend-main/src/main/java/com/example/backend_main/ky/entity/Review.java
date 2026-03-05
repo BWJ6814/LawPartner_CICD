@@ -1,4 +1,4 @@
-package com.example.backend_main.KY.entity;
+package com.example.backend_main.ky.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,6 +34,9 @@ public class Review {
 
     @Column(name = "CONTENT", length = 1000)
     private String content;
+
+    @Column(name = "REPLY_NO")
+    private Long replyNo;
 
     @Column(name = "REG_DT", updatable = false)
     private LocalDateTime regDt;

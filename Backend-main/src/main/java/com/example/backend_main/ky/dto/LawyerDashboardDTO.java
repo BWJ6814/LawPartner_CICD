@@ -1,4 +1,4 @@
-package com.example.backend_main.KY.dto;
+package com.example.backend_main.ky.dto;
 
 import lombok.Data;
 
@@ -17,16 +17,18 @@ public class LawyerDashboardDTO {
         private Double  stars;  // NUMBER(2,1) → 소수점 지원
         private String content;
         private String regDate;   // yyyy-MM-dd
+        private Long   boardNo;  // 연결된 게시글 번호 (클릭 시 이동용)
     }
 
     // ── 상담(채팅방) 응답 ──────────────────────
     @Data
     public static class ConsultationDTO {
-        private String roomId;      // UUID
-        private String clientNm;   // TB_USER 에서 JOIN
+        private String roomId;       // UUID
+        private String clientNm;     // TB_USER 에서 JOIN
         private String progressCode; // ST01~ST05
         private String statusLabel;  // 한글 변환
         private String regDate;      // yyyy-MM-dd
+        private long   unreadCount;  // 미읽음 메시지 수 (뱃지 표시용)
     }
 
     // ── 통계 응답 ──────────────────────────────

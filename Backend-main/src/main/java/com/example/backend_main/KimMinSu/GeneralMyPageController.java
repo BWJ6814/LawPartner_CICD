@@ -4,7 +4,6 @@ import com.example.backend_main.common.entity.CalendarEvent;
 import com.example.backend_main.common.entity.ChatRoom;
 import com.example.backend_main.common.entity.Notification;
 import com.example.backend_main.common.repository.ChatRoomRepository;
-import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
@@ -30,7 +29,6 @@ public class GeneralMyPageController {
     private final GeneralMyPageService myPageService;
     private final JwtTokenProvider jwtTokenProvider; // ★ 신분증 해독기 추가
     private final ChatRoomRepository chatRoomRepository;
-    private final NotificationRepository notificationRepository;
 
     @GetMapping("/general")
     // ★ 리턴 타입을 팀 표준인 ResultVO로 변경

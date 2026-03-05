@@ -1,5 +1,6 @@
 package com.example.backend_main.KimMinSu;
 
+import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.ChatMessageDTO;
@@ -19,7 +20,8 @@ import java.util.List;
 public class ChatController {
     private final ChatService chatService;
     private final SimpMessagingTemplate messagingTemplate;
-    private final JwtTokenProvider jwtTokenProvider; // 토큰에서 번호 뽑기
+    private final JwtTokenProvider jwtTokenProvider;
+    private final NotificationRepository notificationRepository;
 
 
     // 1. 의뢰인이 상담 요청 (POST)
@@ -46,6 +48,16 @@ public class ChatController {
         Long lawyerNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
         chatService.acceptChat(roomId, lawyerNo);
         return ResultVO.ok("상담 수락 완료!", null);
+    }
+
+    // 채팅방 읽음 처리 (unreadCount 초기화)
+    @PostMapping("/room/{roomId}/read")
+    public ResultVO<Void> markRoomAsRead(
+            @PathVariable String roomId,
+            @RequestHeader("Authorization") String token) {
+        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        notificationRepository.markAllReadByUserNoAndRoomId(userNo, roomId);
+        return ResultVO.ok("읽음 처리 완료", null);
     }
 
     // @MessageMapping("/chat/message")은 /pub/chat/message로 온 메시지를 가로챔

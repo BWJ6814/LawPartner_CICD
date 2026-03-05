@@ -1,7 +1,7 @@
-package com.example.backend_main.KY.controller;
+package com.example.backend_main.ky.controller;
 
-import com.example.backend_main.KY.dto.LawyerDashboardDTO;
-import com.example.backend_main.KY.service.LawyerDashboardService;
+import com.example.backend_main.ky.dto.LawyerDashboardDTO;
+import com.example.backend_main.ky.service.LawyerDashboardService;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
 import lombok.RequiredArgsConstructor;
@@ -59,6 +59,17 @@ public class LawyerDashboardController {
         return ResultVO.ok("일정 추가 성공", dashboardService.addCalendar(extractUserNo(token), req));
     }
 
+    // ── 일정 수정 ──────────────────────────────────────────────
+    // PATCH /api/lawyer/dashboard/calendars/{eventNo}
+    @PatchMapping("/calendars/{eventNo}")
+    public ResultVO<Void> updateCalendar(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long eventNo,
+            @RequestBody java.util.Map<String, String> body) {
+        dashboardService.updateCalendar(extractUserNo(token), eventNo, body.get("title"), body.get("startDate"));
+        return ResultVO.ok("일정 수정 성공", null);
+    }
+
     // ── 일정 삭제 ──────────────────────────────────────────────
     // DELETE /api/lawyer/dashboard/calendars/{eventNo}
     @DeleteMapping("/calendars/{eventNo}")
@@ -67,6 +78,17 @@ public class LawyerDashboardController {
             @PathVariable Long eventNo) {
         dashboardService.deleteCalendar(extractUserNo(token), eventNo);
         return ResultVO.ok("일정 삭제 성공", null);
+    }
+
+    // ── 상담 진행 상태 변경 ─────────────────────────────────────
+    // PATCH /api/lawyer/dashboard/consultations/{roomId}/status
+    @PatchMapping("/consultations/{roomId}/status")
+    public ResultVO<Void> updateConsultationStatus(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String roomId,
+            @RequestBody java.util.Map<String, String> body) {
+        dashboardService.updateConsultationStatus(extractUserNo(token), roomId, body.get("progressCode"));
+        return ResultVO.ok("상태 변경 성공", null);
     }
 
     // ── 토큰에서 userNo 추출 ────────────────────────────────────

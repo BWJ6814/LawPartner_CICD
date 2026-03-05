@@ -1,6 +1,6 @@
-package com.example.backend_main.KY.repository;
+package com.example.backend_main.ky.repository;
 
-import com.example.backend_main.KY.entity.Subscription;
+import com.example.backend_main.ky.entity.Subscription;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {

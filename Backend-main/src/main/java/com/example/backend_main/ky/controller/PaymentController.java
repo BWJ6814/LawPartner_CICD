@@ -1,7 +1,7 @@
-package com.example.backend_main.KY.controller;
+package com.example.backend_main.ky.controller;
 
-import com.example.backend_main.KY.dto.PaymentVerifyRequestDTO;
-import com.example.backend_main.KY.service.PaymentService;
+import com.example.backend_main.ky.dto.PaymentVerifyRequestDTO;
+import com.example.backend_main.ky.service.PaymentService;
 import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.vo.ResultVO;
 import lombok.RequiredArgsConstructor;

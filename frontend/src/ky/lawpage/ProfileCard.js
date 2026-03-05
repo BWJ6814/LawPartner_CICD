@@ -1,18 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import SettingsModal from './SettingsModal';
+import SettingsModal from '../modal/SettingsModal';
+import api from '../../common/api/axiosConfig';
 
 const ProfileCard = () => {
     const navigate = useNavigate();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
-    const [isSubscribed, setIsSubscribed] = useState(true);
+    const [isSubscribed, setIsSubscribed] = useState(
+        () => localStorage.getItem('isSubscribed') === 'true'
+    );
+
+    useEffect(() => {
+        localStorage.setItem('isSubscribed', isSubscribed);
+    }, [isSubscribed]);
+
+    const userRole = localStorage.getItem('userRole');
 
     const user = {
         name: localStorage.getItem('userNm') || '변호사',
         username: '@' + (localStorage.getItem('userId') || ''),
     };
+
+    // 변호사인 경우 초기 프로필 이미지 로드
+    useEffect(() => {
+        if (!userRole?.includes('ROLE_LAWYER')) return;
+        api.get('/api/ky/profile')
+            .then(res => {
+                const imgUrl = res.data?.data?.imgUrl;
+                if (imgUrl) setProfileImage(`http://localhost:8080${imgUrl}`);
+            })
+            .catch(() => {});
+    }, [userRole]);
 
     const handleLogout = () => {
         localStorage.removeItem('accessToken');
@@ -20,7 +40,13 @@ const ProfileCard = () => {
         localStorage.removeItem('userRole');
         localStorage.removeItem('userNm');
         localStorage.removeItem('userId');
+
         navigate('/login');
+    };
+
+    // 구독하기 버튼: 설정 모달의 결제탭으로 이동
+    const handleSubscribeClick = () => {
+        setIsSettingsModalOpen(true);
     };
 
     return (
@@ -83,14 +109,14 @@ const ProfileCard = () => {
                 )}
             </div>
 
-            {/* 구독 버튼 */}
+            {/* 구독 버튼: 설정 모달 구독관리 탭으로 이동 */}
             <button
-                onClick={() => setIsSubscribed(!isSubscribed)}
+                onClick={handleSubscribeClick}
                 className={`w-full mt-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                     isSubscribed ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                 }`}
             >
-                {isSubscribed ? '구독중' : '구독하기'}
+                {isSubscribed ? '✓ 구독중' : '구독하기'}
             </button>
 
             <SettingsModal

@@ -82,17 +82,44 @@ export function Calendar({ events = [], onDayClick }) {
    일정 관리 모달 (CRUD - API 연동)
    props: isOpen, onClose, onRefresh
 ─────────────────────────────────────────────── */
-export function ScheduleModal({ isOpen, onClose, onRefresh }) {
+export function ScheduleModal({ isOpen, onClose, onRefresh, initialDate }) {
     const now = new Date();
-    const [year,         setYear]        = useState(now.getFullYear());
-    const [month,        setMonth]       = useState(now.getMonth());
-    const [selectedDate, setSelectedDate] = useState(null);
-    const [newTitle,     setNewTitle]    = useState("");
-    const [events,       setEvents]      = useState([]);
-    const [loading,      setLoading]     = useState(false);
+    const [year,           setYear]          = useState(now.getFullYear());
+    const [month,          setMonth]         = useState(now.getMonth());
+    const [selectedDate,   setSelectedDate]  = useState(null);
+
+    // 날짜 클릭해서 열었을 때 해당 날짜 자동 선택
+    useEffect(() => {
+        if (!isOpen) return;
+        if (initialDate) {
+            setYear(initialDate.year);
+            setMonth(initialDate.month);
+            setSelectedDate(initialDate.day);
+        } else {
+            setSelectedDate(null);
+        }
+    }, [isOpen, initialDate]);
+    const [newTitle,       setNewTitle]      = useState("");
+    const [events,         setEvents]        = useState([]);
+    const [loading,        setLoading]       = useState(false);
+    const [editingEventNo, setEditingEventNo] = useState(null);
+
+    // 월이 바뀌면 선택 날짜 + 이번달 일정 페이지 초기화
+    useEffect(() => {
+        setSelectedDate(null);
+        setEditingEventNo(null);
+        setMonthEventPage(0);
+    }, [year, month]);
+    const [editTitle,       setEditTitle]      = useState("");
+    const [editDate,        setEditDate]       = useState("");
+    const [monthEventPage,  setMonthEventPage] = useState(0);
+    const MONTH_PAGE_SIZE = 10;
 
     useEffect(() => {
-        if (isOpen) fetchEvents();
+        if (!isOpen) return;
+        api.get('/api/lawyer/dashboard/calendars')
+            .then(res => setEvents(res.data.data || []))
+            .catch(() => setEvents([]));
     }, [isOpen]);
 
     const fetchEvents = () => {
@@ -145,20 +172,37 @@ export function ScheduleModal({ isOpen, onClose, onRefresh }) {
         }
     };
 
+    const handleUpdate = async (eventNo) => {
+        if (!editTitle.trim()) { alert("제목을 입력해주세요."); return; }
+        try {
+            await api.patch(`/api/lawyer/dashboard/calendars/${eventNo}`, {
+                title: editTitle,
+                startDate: editDate,
+            });
+            setEditingEventNo(null);
+            fetchEvents();
+            if (onRefresh) onRefresh();
+            // 날짜가 바뀌면 선택 날짜도 업데이트
+            if (editDate) setSelectedDate(Number(editDate.slice(8, 10)));
+        } catch {
+            alert("일정 수정에 실패했습니다.");
+        }
+    };
+
     return (
         <div style={{
             position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
             display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, fontFamily: FONT,
         }}>
-            <div style={{ background: "#fff", borderRadius: 16, width: 720, maxHeight: "85vh", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
+            <div style={{ background: "#fff", borderRadius: 16, width: 720, height: "80vh", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.15)", display: "flex", flexDirection: "column" }}>
 
                 {/* 헤더 */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid #f3f4f6", flexShrink: 0 }}>
                     <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#111827" }}>재판 일정 관리</h2>
                     <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#9ca3af" }}>✕</button>
                 </div>
 
-                <div style={{ display: "flex", height: "calc(85vh - 60px)" }}>
+                <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
                     {/* 왼쪽: 캘린더 */}
                     <div style={{ width: 320, padding: 20, borderRight: "1px solid #f3f4f6", overflowY: "auto" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -206,23 +250,55 @@ export function ScheduleModal({ isOpen, onClose, onRefresh }) {
                         </div>
 
                         {/* 이번 달 일정 요약 */}
-                        <div style={{ marginTop: 16, fontSize: 12, color: "#6b7280" }}>
-                            <div style={{ fontWeight: 700, color: "#111827", marginBottom: 6 }}>이번 달 일정</div>
-                            {events
+                        {(() => {
+                            const monthEvents = events
                                 .filter(e => e.startDate && e.startDate.startsWith(toKey(year, month, 1).slice(0, 7)))
-                                .sort((a, b) => a.startDate.localeCompare(b.startDate))
-                                .map(e => (
-                                    <div key={e.eventNo} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb" }}>
-                                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: e.colorCode || BLUE, flexShrink: 0 }} />
-                                        <span style={{ color: "#374151", fontWeight: 600 }}>{e.startDate.slice(8)}일</span>
-                                        <span style={{ color: "#6b7280" }}>{e.title}</span>
+                                .sort((a, b) => a.startDate.localeCompare(b.startDate));
+                            const totalMonthPages = Math.ceil(monthEvents.length / MONTH_PAGE_SIZE) || 1;
+                            const pagedMonthEvents = monthEvents.slice(monthEventPage * MONTH_PAGE_SIZE, monthEventPage * MONTH_PAGE_SIZE + MONTH_PAGE_SIZE);
+                            return (
+                                <div style={{ marginTop: 16, fontSize: 12, color: "#6b7280" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                        <span style={{ fontWeight: 700, color: "#111827" }}>이번 달 일정</span>
+                                        <span style={{ color: "#9ca3af" }}>{monthEvents.length}건</span>
                                     </div>
-                                ))
-                            }
-                            {events.filter(e => e.startDate && e.startDate.startsWith(toKey(year, month, 1).slice(0, 7))).length === 0 && (
-                                <div style={{ color: "#9ca3af", padding: "8px 0" }}>등록된 일정이 없습니다.</div>
-                            )}
-                        </div>
+                                    {monthEvents.length === 0 ? (
+                                        <div style={{ color: "#9ca3af", padding: "8px 0" }}>등록된 일정이 없습니다.</div>
+                                    ) : (
+                                        <>
+                                            {pagedMonthEvents.map(e => (
+                                                <div
+                                                    key={e.eventNo}
+                                                    onClick={() => setSelectedDate(Number(e.startDate.slice(8, 10)))}
+                                                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f9fafb", cursor: "pointer", borderRadius: 4 }}
+                                                    onMouseEnter={ev => ev.currentTarget.style.background = "#f0f4ff"}
+                                                    onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}
+                                                >
+                                                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: e.colorCode || BLUE, flexShrink: 0 }} />
+                                                    <span style={{ color: "#374151", fontWeight: 600 }}>{e.startDate.slice(8)}일</span>
+                                                    <span style={{ color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.title}</span>
+                                                </div>
+                                            ))}
+                                            {totalMonthPages > 1 && (
+                                                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 4, marginTop: 8 }}>
+                                                    <button
+                                                        onClick={() => setMonthEventPage(p => Math.max(0, p - 1))}
+                                                        disabled={monthEventPage === 0}
+                                                        style={{ border: "1px solid #e5e7eb", borderRadius: 4, padding: "2px 8px", fontSize: 11, cursor: monthEventPage === 0 ? "not-allowed" : "pointer", background: monthEventPage === 0 ? "#f9fafb" : "#fff", color: monthEventPage === 0 ? "#d1d5db" : "#374151" }}
+                                                    >‹</button>
+                                                    <span style={{ fontSize: 11, color: "#6b7280" }}>{monthEventPage + 1} / {totalMonthPages}</span>
+                                                    <button
+                                                        onClick={() => setMonthEventPage(p => Math.min(totalMonthPages - 1, p + 1))}
+                                                        disabled={monthEventPage >= totalMonthPages - 1}
+                                                        style={{ border: "1px solid #e5e7eb", borderRadius: 4, padding: "2px 8px", fontSize: 11, cursor: monthEventPage >= totalMonthPages - 1 ? "not-allowed" : "pointer", background: monthEventPage >= totalMonthPages - 1 ? "#f9fafb" : "#fff", color: monthEventPage >= totalMonthPages - 1 ? "#d1d5db" : "#374151" }}
+                                                    >›</button>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* 오른쪽: 입력 & 목록 */}
@@ -242,16 +318,62 @@ export function ScheduleModal({ isOpen, onClose, onRefresh }) {
                                 {selectedEvents.length > 0 ? (
                                     <div style={{ marginBottom: 20 }}>
                                         {selectedEvents.map(e => (
-                                            <div key={e.eventNo} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", marginBottom: 8, borderRadius: 10, background: "#F9FAFB", border: "1px solid #f3f4f6" }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{e.title}</div>
-                                                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{e.startDate}</div>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleDelete(e.eventNo)}
-                                                    style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 13, fontWeight: 700 }}>
-                                                    삭제
-                                                </button>
+                                             <div key={e.eventNo} style={{ padding: "12px 14px", marginBottom: 8, borderRadius: 10, background: "#F9FAFB", border: "1px solid #f3f4f6" }}>
+                                                {editingEventNo === e.eventNo ? (
+                                                    /* 수정 폼 */
+                                                    <div>
+                                                        <div style={{ marginBottom: 8 }}>
+                                                            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 3 }}>제목</label>
+                                                            <input
+                                                                value={editTitle}
+                                                                onChange={ev => setEditTitle(ev.target.value)}
+                                                                style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: `1px solid ${BLUE}`, fontSize: 13, fontFamily: FONT, boxSizing: "border-box", outline: "none" }}
+                                                                onKeyDown={ev => ev.key === 'Enter' && handleUpdate(e.eventNo)}
+                                                            />
+                                                        </div>
+                                                        <div style={{ marginBottom: 10 }}>
+                                                            <label style={{ fontSize: 11, fontWeight: 600, color: "#374151", display: "block", marginBottom: 3 }}>날짜</label>
+                                                            <input
+                                                                type="date"
+                                                                value={editDate}
+                                                                onChange={ev => setEditDate(ev.target.value)}
+                                                                style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: `1px solid ${BLUE}`, fontSize: 13, fontFamily: FONT, boxSizing: "border-box", outline: "none" }}
+                                                            />
+                                                        </div>
+                                                        <div style={{ display: "flex", gap: 6 }}>
+                                                            <button
+                                                                onClick={() => handleUpdate(e.eventNo)}
+                                                                style={{ flex: 1, padding: "7px 0", borderRadius: 6, background: BLUE, color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>
+                                                                저장
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setEditingEventNo(null)}
+                                                                style={{ flex: 1, padding: "7px 0", borderRadius: 6, background: "#f3f4f6", color: "#374151", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}>
+                                                                취소
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    /* 일반 보기 */
+                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                                        <div>
+                                                            <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{e.title}</div>
+                                                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{e.startDate}</div>
+                                                        </div>
+                                                        <div style={{ display: "flex", gap: 8 }}>
+                                                            <button
+                                                                onClick={() => { setEditingEventNo(e.eventNo); setEditTitle(e.title); setEditDate(e.startDate); }}
+                                                                style={{ background: "none", border: "none", cursor: "pointer", color: BLUE, fontSize: 13, fontWeight: 700 }}>
+                                                                수정
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(e.eventNo)}
+                                                                style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 13, fontWeight: 700 }}>
+                                                                삭제
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

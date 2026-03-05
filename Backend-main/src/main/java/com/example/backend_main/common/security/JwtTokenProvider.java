@@ -80,7 +80,7 @@ public class JwtTokenProvider {
                 .refreshToken(refreshToken)
                 .userNm(userNm)
                 .nickNm(nickNm)
-                .role(authentication.getAuthorities().toString())
+                .role(authorities)
                 .build();
     }
 

@@ -1,7 +1,7 @@
-package com.example.backend_main.KY.service;
+package com.example.backend_main.ky.service;
 
-import com.example.backend_main.KY.entity.Subscription;
-import com.example.backend_main.KY.repository.SubscriptionRepository;
+import com.example.backend_main.ky.entity.Subscription;
+import com.example.backend_main.ky.repository.SubscriptionRepository;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

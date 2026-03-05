@@ -34,6 +34,7 @@ public class GeneralMyPageService {
     private final CalendarEventRepository calendarEventRepository;
     private final BoardReplyRepository boardReplyRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     private final Aes256Util aes256Util;
     private final HashUtil hashUtil;
 
