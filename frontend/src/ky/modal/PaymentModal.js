@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import api from '../../common/api/axiosConfig';
 
-const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
+const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, email = '', phone = '' }) => {
     const [paymentMethod, setPaymentMethod] = useState('card');
     const [agreeTerms, setAgreeTerms] = useState(false);
 
@@ -15,7 +15,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
 
         // 🔥 포트원 V2 결제
         if (!window.PortOne) {
-            alert('포트원 SDK를 불러올 수 없습니다.\nindex.html을 확인해주세요.'
+            alert('포트원 SDK를 불러올 수 없습니다.\n index.html을 확인해주세요.'
             );
             return;
         }
@@ -31,8 +31,8 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                 payMethod: 'CARD',
                 customer: {
                     fullName: localStorage.getItem('userNm') || '사용자',
-                    phoneNumber: '01000000000',
-                    email: 'test@example.com',
+                    phoneNumber: phone || '',
+                    email: email || '',
                 },
             });
 

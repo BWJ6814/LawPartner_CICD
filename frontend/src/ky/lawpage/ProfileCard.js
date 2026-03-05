@@ -8,7 +8,13 @@ const ProfileCard = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
-    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [isSubscribed, setIsSubscribed] = useState(
+        () => localStorage.getItem('isSubscribed') === 'true'
+    );
+
+    useEffect(() => {
+        localStorage.setItem('isSubscribed', isSubscribed);
+    }, [isSubscribed]);
 
     const userRole = localStorage.getItem('userRole');
 
@@ -103,14 +109,14 @@ const ProfileCard = () => {
                 )}
             </div>
 
-            {/* 구독 버튼: 테스트용 토글 (클릭 시 구독 상태 전환) */}
+            {/* 구독 버튼: 설정 모달 구독관리 탭으로 이동 */}
             <button
-                onClick={() => setIsSubscribed(prev => !prev)}
+                onClick={handleSubscribeClick}
                 className={`w-full mt-2 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                     isSubscribed ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                 }`}
             >
-                {isSubscribed ? '✓ 구독중 (클릭 시 해제)' : '구독하기'}
+                {isSubscribed ? '✓ 구독중' : '구독하기'}
             </button>
 
             <SettingsModal

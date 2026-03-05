@@ -141,6 +141,8 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
                             <PaymentTab
                                 isSubscribed={isSubscribed}
                                 setIsSubscribed={setIsSubscribed}
+                                email={profileData.email}
+                                phone={profileData.phone}
                             />
                         )}
                         {activeTab === 'withdraw' && <WithdrawTab />}

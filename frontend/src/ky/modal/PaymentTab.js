@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PaymentModal from './PaymentModal';
 
-const PaymentTab = ({ isSubscribed, setIsSubscribed }) => {
+const PaymentTab = ({ isSubscribed, setIsSubscribed, email, phone }) => {
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
     const handleSubscriptionToggle = () => {
@@ -87,6 +87,8 @@ const PaymentTab = ({ isSubscribed, setIsSubscribed }) => {
                 isOpen={isPaymentModalOpen}
                 onClose={() => setIsPaymentModalOpen(false)}
                 onPaymentSuccess={handlePaymentSuccess}
+                email={email}
+                phone={phone}
             />
         </>
     );

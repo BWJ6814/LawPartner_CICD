@@ -120,9 +120,23 @@ const LawyerChatList = () => {
         }
     };
 
+    const ALLOWED_TYPES = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
+
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            alert('지원하지 않는 파일 형식입니다.\n이미지(JPG/PNG/GIF), PDF, Word, Excel 파일만 업로드 가능합니다.');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            return;
+        }
         if (file.size > 10 * 1024 * 1024) { alert('10MB 이하 파일만 업로드 가능합니다.'); return; }
 
         setIsUploading(true);

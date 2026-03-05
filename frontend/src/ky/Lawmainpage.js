@@ -47,25 +47,25 @@ export default function LawyerDashboard() {
     const fetchCalendar = () => {
         api.get('/api/lawyer/dashboard/calendars')
             .then(res => setCalendarEvents(res.data.data || []))
-            .catch(() => {});
+            .catch(err => console.error('캘린더 로딩 실패:', err));
     };
 
     const fetchConsultations = () => {
         api.get('/api/lawyer/dashboard/consultations')
             .then(res => setConsultations(res.data.data || []))
-            .catch(() => {});
+            .catch(err => console.error('상담 목록 로딩 실패:', err));
     };
 
     useEffect(() => {
         api.get('/api/lawyer/dashboard/stats')
             .then(res => setStats(res.data.data))
-            .catch(() => {});
+            .catch(err => console.error('통계 로딩 실패:', err));
 
         fetchConsultations();
 
         api.get('/api/lawyer/dashboard/reviews')
             .then(res => setReviews(res.data.data || []))
-            .catch(() => {});
+            .catch(err => console.error('후기 로딩 실패:', err));
 
         fetchCalendar();
     }, []);
