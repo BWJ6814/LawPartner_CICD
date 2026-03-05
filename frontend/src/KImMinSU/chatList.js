@@ -127,11 +127,12 @@ const ChatList = () => {
         setIsUploading(true);
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("roomId", roomId);
 
         try {
             // 1. 조원이 만들어둔 파일 업로드 API 찌르기 (주소는 너네 프로젝트에 맞게 수정!)
             const token = localStorage.getItem('accessToken');
-            const response = await api.post('/api/files/upload', formData, {
+            const response = await api.post('/api/chat/files', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}`

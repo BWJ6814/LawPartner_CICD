@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../../common/api/axiosConfig';
 
 const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
     const [paymentMethod, setPaymentMethod] = useState('card');
@@ -28,7 +29,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                 currency: 'CURRENCY_KRW',
                 payMethod: 'CARD',
                 customer: {
-                    fullName: '테스트',
+                    fullName: localStorage.getItem('userNm') || '사용자',
                     phoneNumber: '01000000000',
                     email: 'test@example.com',
                 },
@@ -40,11 +41,18 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                 return;
             }
 
-            // ✅ 결제 성공
-            console.log('결제 성공:', response);
-            alert('✅ 결제가 완료되었습니다!');
-            onPaymentSuccess();
-            onClose();
+            // ✅ 포트원 결제 성공 → 백엔드에 검증 요청
+            const verifyResponse = await api.post('/api/payment/verify', {
+                paymentId: response.paymentId,
+            });
+
+            if (verifyResponse.data.success) {
+                alert('✅ 결제가 완료되었습니다!');
+                onPaymentSuccess();
+                onClose();
+            } else {
+                alert(`결제 검증 실패: ${verifyResponse.data.message}`);
+            }
 
         } catch (error) {
             console.error('결제 에러:', error);
@@ -79,7 +87,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                                 <p className="text-sm text-gray-600 mt-1">무제한 법률 상담 + 프리미엄 기능</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-3xl font-bold text-blue-600">₩10,000</p>
+                                <p className="text-3xl font-bold text-blue-600">₩20,000</p>
                                 <p className="text-sm text-gray-500">/ 월</p>
                             </div>
                         </div>
@@ -119,7 +127,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                             <div>
                                 <p className="font-bold text-green-900 mb-1">🧪 테스트 모드</p>
                                 <p className="text-sm text-green-700">
-                                    테스트 결제입니다. 실제 금액(10,000원)이 결제되지만  포트원에서 결제 취소함
+                                    테스트 결제입니다. 실제 금액(10,000원)이 결제됩니다. 테스트 후 포트원 대시보드에서 수동으로 취소해주세요.
                                 </p>
                             </div>
                         </div>
@@ -144,10 +152,10 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                     <div className="bg-gray-50 rounded-lg p-4 mb-6">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-600">상품 금액</span>
-                            <span className="font-semibold text-gray-900">₩10,000</span>
+                            <span className="font-semibold text-gray-900">₩20,000</span>
                         </div>
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-gray-600">테스트 할인</span>
+                            <span className="text-gray-600">할인</span>
                             <span className="font-semibold text-red-600">-₩10,000</span>
                         </div>
                         <div className="border-t border-gray-300 my-3"></div>
@@ -155,7 +163,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                             <span className="text-lg font-bold text-gray-900">최종 결제 금액</span>
                             <span className="text-2xl font-bold text-blue-600">₩10,000</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">* 테스트 결제는 자동 취소됩니다</p>
+                        <p className="text-xs text-gray-500 mt-2">* 테스트 결제는 자동 취소되지 않습니다. 포트원 대시보드에서 수동 취소 필요</p>
                     </div>
 
                     {/* 결제 버튼 */}
@@ -163,7 +171,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess }) => {
                         onClick={handlePayment}
                         className="w-full bg-blue-600 text-white py-4 rounded-xl text-lg font-bold hover:bg-blue-700 transition-colors shadow-lg"
                     >
-                        ₩10,000 테스트 결제하기
+                        ₩10,000 결제하기
                     </button>
 
                     <p className="text-xs text-gray-500 text-center mt-4">
