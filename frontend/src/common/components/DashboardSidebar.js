@@ -22,13 +22,15 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // 너네 API 주소(GeneralMyPageController) 확인해서 쏴라
                 const res = await api.get('/api/mypage/general');
-                setDashboardData(res.data.data); // ResultVO 썼으면 res.data.data 일 확률이 높음
+                setDashboardData(res.data.data);
 
-                // (선택) 로컬 스토리지에 닉네임 동기화
                 if (res.data.data?.nickName) {
                     setNickName(res.data.data.nickName);
+                }
+                // ★ [핵심] 백엔드가 DTO에 profileImage를 담아 보내면 여기서 받아서 세팅!
+                if (res.data.data?.profileImage) {
+                    setProfileImage(res.data.data.profileImage);
                 }
             } catch (error) {
                 console.error("대시보드 데이터 로딩 실패:", error);
@@ -48,6 +50,21 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
         localStorage.removeItem('nickNm');
         alert("로그아웃 되었습니다.");
         navigate('/login');
+    };
+
+    // 이름 기반으로 고정된 랜덤 배경색을 만들어주는 팩트 함수
+    const getRandomColor = (name) => {
+        if (!name) return 'bg-blue-600'; // 이름 없으면 기본 파란색
+        const colors = [
+            'bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-green-500',
+            'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500', 'bg-blue-500',
+            'bg-indigo-500', 'bg-violet-500', 'bg-purple-500', 'bg-rose-500'
+        ];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
     };
 
 
@@ -160,11 +177,13 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         className={`flex items-center w-full transition-all duration-300 rounded-xl hover:bg-slate-800 ${isSidebarOpen ? 'p-2 gap-3' : 'p-2 justify-center'}`}
                     >
-                        <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-black shadow-lg flex-shrink-0 cursor-pointer">
+                        {/* ★ 배경색을 profileImage가 없을 때만 랜덤 함수로 지정 */}
+                        <div className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-white font-black shadow-lg flex-shrink-0 cursor-pointer ${profileImage ? '' : getRandomColor(nickName || userName)}`}>
                             {profileImage ? (
                                 <img src={profileImage} alt="프로필" className="w-full h-full object-cover rounded-xl" />
                             ) : (
-                                userName.charAt(0)
+                                /* ★ 이미지가 없으면 닉네임이나 이름의 무조건 첫 번째 글자 1개만 추출 */
+                                (nickName || userName).charAt(0)
                             )}
                             <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-[#0f172a] rounded-full"></span>
                         </div>
@@ -183,19 +202,26 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
                 </div>
             </aside>
 
-            {/* 5. 모달창 렌더링 */}
+            {/* 5. 모달창 렌더링 (사이드바 하단에 있는 거) */}
             <SettingsModal
                 isOpen={isSettingsModalOpen}
                 onClose={() => setIsSettingsModalOpen(false)}
-                // ★ [핵심] 객체 형태로 통째로 넘긴다
+                // ★ [전문가 실무 팩트] 부모가 가진 '최신 상태'를 그대로 꽂아줘야 모달을 다시 열어도 갱신된 게 뜬다.
                 profileData={{
-                    name: nickName,
+                    name: nickName, // 이건 네가 잘 해놨음 (최신 상태)
                     email: dashboardData?.email || '이메일 정보 없음',
-                    phone: dashboardData?.phone || '전화번호 정보 없음'
+                    phone: dashboardData?.phone || '전화번호 정보 없음',
+                    // ★ [핵심] 여기에 최신 프사 상태(profileImage)를 꽂아줘야 모달이 열릴 때 이 값을 물고 렌더링함!
+                    profileImage: profileImage
                 }}
-                onSaveName={(newName) => {
+                // ★ 모달에서 저장 버튼 누르면 실행되는 짬처리 콜백 함수
+                onSaveName={(newName, newImage) => {
                     setNickName(newName);
                     localStorage.setItem('nickNm', newName);
+                    // ★ 모달이 보내준 새 이미지 URL이 있으면 부모의 profileImage 상태도 갱신!
+                    if (newImage) {
+                        setProfileImage(newImage);
+                    }
                 }}
             />
         </>

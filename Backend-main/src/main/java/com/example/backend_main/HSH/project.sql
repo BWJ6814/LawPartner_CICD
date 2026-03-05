@@ -791,3 +791,7 @@ delete from tb_user where user_no = 20003;
 select * From TB_BOARD;
 
 SELECT * FROM TB_ACCESS_LOG;
+
+ALTER TABLE TB_USER ADD PROFILE_IMG VARCHAR2(500);
+
+

@@ -118,45 +118,35 @@ const ChatList = () => {
         const file = event.target.files[0];
         if (!file) return;
 
-        // 용량 제한 (예: 10MB)
         if (file.size > 10 * 1024 * 1024) {
             alert("10MB 이하의 파일만 업로드 가능합니다.");
             return;
         }
 
         setIsUploading(true);
+
+        // [초심자 핵심] 파일 데이터는 무조건 JSON이 아니라 FormData 객체에 담아야 백엔드 MultipartFile이 인식함.
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("roomId", roomId);
+        formData.append("roomId", roomId); // 백엔드 파라미터에 맞게 roomId 추가 전송
 
         try {
-            // 1. 조원이 만들어둔 파일 업로드 API 찌르기 (주소는 너네 프로젝트에 맞게 수정!)
             const token = localStorage.getItem('accessToken');
-            const response = await api.post('/api/chat/files', formData, {
+
+            // [초심자 핵심] HTTP POST로 서버에 던지기만 하면 끝.
+            // 서버(ChatService)에서 알아서 Z드라이브에 저장하고 웹소켓으로 방에 뿌려주기 때문에 프론트에서 stompClient.send를 또 할 필요 없음! (하면 파일 2개씩 뜸)
+            await api.post('/api/chat/files', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}`
                 }
             });
 
-            const fileUrl = response.data.fileUrl || response.data; // 서버가 주는 URL 구조에 맞게
-
-            // 2. 업로드 성공하면 웹소켓으로 'FILE' 타입 메시지 쏘기
-            const chatDTO = {
-                roomId: roomId,
-                senderNo: userNo,
-                message: file.name, // 메시지 내용에는 파일 이름을 넣음
-                msgType: 'FILE',    // ★ 타입은 FILE로!
-                fileUrl: fileUrl    // 다운로드할 URL
-            };
-            stompClient.current.send("/pub/chat/message", {}, JSON.stringify(chatDTO));
-
         } catch (error) {
             console.error("파일 업로드 실패:", error);
             alert("파일 업로드에 실패했습니다.");
         } finally {
             setIsUploading(false);
-            // 같은 파일을 또 올릴 수 있게 input 초기화
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
@@ -362,15 +352,33 @@ const ChatList = () => {
                                                     </p>
                                                     <div className={`p-4 rounded-2xl text-sm font-medium max-w-md shadow-sm border leading-relaxed ${isMyMessage ? 'bg-navy-main text-white rounded-tr-none border-navy-main' : 'bg-white text-slate-800 rounded-tl-none border-slate-100'}`}>
                                                         {msg.msgType === 'FILE' ? (
-                                                            <a
-                                                                href={msg.fileUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="flex items-center gap-2 hover:underline font-bold"
-                                                            >
-                                                                <i className="fas fa-download text-lg"></i>
-                                                                <span className="truncate">{msg.message}</span> {/* 파일명 */}
-                                                            </a>
+                                                            <div className="flex flex-col space-y-2">
+                                                                {/* [초심자 핵심 1] 파일명 문자열 끝을 잘라서 정규식으로 이미지인지 검사하는 로직 */}
+                                                                {msg.message && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.message) ? (
+                                                                    // [초심자 핵심 2] 이미지면 img 태그로 렌더링. 화면 안 깨지게 max-w-xs (최대너비) 걸어두는 게 팩트 필수!
+                                                                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
+                                                                        <img
+                                                                            src={msg.fileUrl}
+                                                                            alt={msg.message}
+                                                                            className="max-w-xs rounded-lg shadow-sm border border-slate-200 cursor-pointer hover:opacity-80 transition"
+                                                                        />
+                                                                    </a>
+                                                                ) : (
+                                                                    // 일반 파일(PDF 등)은 기존처럼 아이콘이랑 이름만 띄움
+                                                                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline font-bold text-blue-100">
+                                                                        <i className="fas fa-file-alt text-lg"></i>
+                                                                        <span className="truncate">{msg.message}</span>
+                                                                    </a>
+                                                                )}
+
+                                                                {/* [초심자 핵심 3] 강제 다운로드 버튼! 백엔드에 만들어둔 isDownload=true 파라미터를 쿼리스트링으로 쏴줌 */}
+                                                                <a
+                                                                    href={`${msg.fileUrl}?isDownload=true`}
+                                                                    className="text-[11px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md w-max hover:bg-slate-200 transition font-black flex items-center gap-1.5 shadow-sm mt-1"
+                                                                >
+                                                                    <i className="fas fa-download"></i> 저장하기
+                                                                </a>
+                                                            </div>
                                                         ) : (
                                                             msg.message
                                                         )}

@@ -69,6 +69,9 @@ public class User {
     @Column(name = "JOIN_DT", updatable = false)
     private LocalDateTime joinDt; // 가입 일시
 
+    @Column(name = "PROFILE_IMG", length = 500)
+    private String profileImg;
+
     // 엔티티가 저장되기 직전(PrePersist)에 실행되는 자동화 메서드
     @PrePersist
     public void prePersist() {

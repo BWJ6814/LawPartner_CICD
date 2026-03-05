@@ -46,6 +46,7 @@ public class GeneralMyPageService {
                 .orElseThrow(() -> new RuntimeException("해당 유저를 찾을 수 없습니다."));
         dto.setUserName(user.getUserNm());
         dto.setNickName(user.getNickNm() != null ? user.getNickNm() : user.getUserNm());
+        dto.setProfileImage(user.getProfileImg());
 
 
         // 3. [DB 연동] 내 상담 요청 내역 진짜로 가져오기
@@ -228,10 +229,38 @@ public class GeneralMyPageService {
         }
 
         // 4. 프로필 이미지 저장 로직 (너네 FileController 쪽에 있는 저장 로직 활용해라)
+        // 4. 프로필 이미지 저장 로직 (Z드라이브 연동 완료)
         if (profileImage != null && !profileImage.isEmpty()) {
-            // TODO: 너네 팀의 파일 저장 방식(S3 or 로컬 경로)에 맞춰서 파일 저장하고,
-            // DB에 이미지 URL 또는 파일명을 꽂아넣는 코드를 여기에 추가해라!
-            System.out.println("프론트에서 넘어온 이미지 이름: " + profileImage.getOriginalFilename());
+            try {
+                // ★ 네가 만든 Z드라이브 경로 (역슬래시 2개 쳐야 자바가 인식함)
+                String uploadDir = "Z:\\profile_images\\";
+
+                // 폴더 없으면 자동으로 만들어줌 (친절함 ㅆㅅㅌㅊ)
+                java.io.File dir = new java.io.File(uploadDir);
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+
+                // 파일명 중복되면 기존 이미지 날아가니까 UUID로 개명시킴
+                String originalFilename = profileImage.getOriginalFilename();
+                String extension = "";
+                if(originalFilename != null && originalFilename.contains(".")) {
+                    extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                }
+                String savedFilename = java.util.UUID.randomUUID().toString() + extension;
+
+                // Z드라이브에 물리적으로 쾅! 저장
+                java.nio.file.Path filePath = java.nio.file.Paths.get(uploadDir + savedFilename);
+                java.nio.file.Files.write(filePath, profileImage.getBytes());
+
+                // DB에는 웹에서 볼 수 있는 '/images/profiles/어쩌고.jpg' 형태의 가상 URL을 저장
+                String imageUrl = "/images/profiles/" + savedFilename;
+                user.setProfileImg(imageUrl);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException("프로필 이미지 저장 중 오류가 났습니다..");
+            }
         }
     }
 

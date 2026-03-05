@@ -10,9 +10,11 @@ import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.dto.ChatMessageDTO;
 import com.example.backend_main.dto.ChatRoomDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate; // ★ 추가됨
 import org.springframework.stereotype.Service;
@@ -49,6 +51,12 @@ public class ChatService {
     // 파일을 저장할 서버 하드디스크 절대 경로 (리눅스면 /var/uploads/chat/ 같은 걸로 바꿔라)
     private final String CHAT_UPLOAD_DIR = "C:/LP_uploads/chat/";
     private final org.apache.tika.Tika tika = new org.apache.tika.Tika();
+
+    @Value("${chat.file.upload-dir}")
+    private String uploadDir;
+
+    @Value("${chat.file.server-url}")
+    private String serverUrl;
 
     // ------------------------------------------------------------------
     // 1. 의뢰인이 상담 요청 (방은 생기지만 대기 상태) + [양측에 알림]
@@ -225,69 +233,63 @@ public class ChatService {
         try {
             if (file.isEmpty()) throw new RuntimeException("파일이 비어있습니다.");
 
-            File dir = new File(CHAT_UPLOAD_DIR);
-            // [초심자 핵심] 디렉토리 없으면 서버가 에러 뿜으니까 mkdirs()로 폴더부터 만들어준다.
+            File dir = new File(uploadDir);
             if (!dir.exists()) dir.mkdirs();
 
             String originName = file.getOriginalFilename();
-            // 해킹 방지 및 이름 꼬임 방지를 위해 UUID 무조건 붙여라
             String savedName = UUID.randomUUID().toString() + "_" + originName;
-            File dest = new File(CHAT_UPLOAD_DIR, savedName);
 
-            // 실제 디스크에 파일 저장
+            File dest = new File(uploadDir, savedName);
             file.transferTo(dest);
 
-            // [초심자 핵심] DB에 넣을 정보 세팅. msgType을 FILE로 박고 다운로드 API 경로를 넣어줌
+            String fileUrl = serverUrl + "/api/chat/files/download/" + savedName;
+
             ChatMessageDTO msgDto = ChatMessageDTO.builder()
                     .roomId(roomId)
                     .senderNo(senderNo)
-                    .message(originName) // 화면에 보여줄 원본 파일명
+                    .message(originName)
                     .msgType("FILE")
-                    .fileUrl("/api/chat/files/download/" + savedName)
+                    .fileUrl(fileUrl)
                     .build();
 
-            // 1. 기존에 만들어둔 saveMessage() 재활용 (DB 저장 + 1:1 알림 전송)
             saveMessage(msgDto);
-
-            // 2. [중요] 해당 방에 있는 사람들에게 "파일 올라왔다!" 하고 채팅방 웹소켓으로 쏴줌
             messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, msgDto);
 
         } catch (IOException e) {
-            throw new RuntimeException("파일 저장 중 서버 터짐: " + e.getMessage());
+            throw new RuntimeException("Z드라이브 파일 저장 실패: " + e.getMessage());
         }
     }
 
-    public ResponseEntity<org.springframework.core.io.Resource> downloadChatFile(String fileName) {
+    // 파라미터에 boolean isDownload 추가됨!
+    public ResponseEntity<Resource> downloadChatFile(String fileName, boolean isDownload) {
         try {
-            java.nio.file.Path filePath = java.nio.file.Paths.get(CHAT_UPLOAD_DIR).resolve(fileName).normalize();
-            org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(filePath.toUri());
+            Path filePath = Paths.get(uploadDir).resolve(fileName).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
 
             if (!resource.exists() || !resource.isReadable()) {
                 return ResponseEntity.notFound().build();
             }
 
-            // [초심자 핵심 1] Tika로 파일의 진짜 정체(MIME 타입)를 캐냄
             String contentType;
             try {
                 contentType = tika.detect(filePath);
-            } catch (java.io.IOException e) {
-                // 분석 실패하거나 뭔지 모를 파일이면 기본값 세팅 (알아서 다운로드 됨)
+            } catch (IOException e) {
                 contentType = "application/octet-stream";
             }
 
-            // UUID 떼고 예쁜 원본 이름만 추출
             String originName = fileName.substring(fileName.indexOf("_") + 1);
-            String encodedUploadFileName = org.springframework.web.util.UriUtils.encode(originName, java.nio.charset.StandardCharsets.UTF_8);
+            String encodedName = UriUtils.encode(originName, StandardCharsets.UTF_8);
 
-            // [초심자 핵심 2] attachment 대신 inline으로 바꿈! + contentType 세팅
-            // 이렇게 하면 브라우저가 지원하는 형식(jpg, pdf 등)은 탭에서 열리고, zip 같은 건 알아서 다운로드 됨
+            // ★ [핵심] isDownload가 true면 강제 다운로드(attachment), false면 미리보기(inline)
+            String dispositionType = isDownload ? "attachment" : "inline";
+
             return ResponseEntity.ok()
-                    .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
-                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + encodedUploadFileName + "\"")
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, dispositionType + "; filename=\"" + encodedName + "\"")
                     .body(resource);
-
-        } catch (java.net.MalformedURLException e) {
+        } catch (MalformedURLException e) {
             return ResponseEntity.badRequest().build();
         }
     }
+
 }

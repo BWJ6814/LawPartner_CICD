@@ -21,6 +21,7 @@ public class ChatController {
     private final SimpMessagingTemplate messagingTemplate;
     private final JwtTokenProvider jwtTokenProvider; // 토큰에서 번호 뽑기
 
+
     // 1. 의뢰인이 상담 요청 (POST)
     @PostMapping("/request")
     public ResponseEntity<String> requestChat(
@@ -84,16 +85,14 @@ public class ChatController {
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file
     ) {
         Long senderNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
-
-        // 서비스 단에서 파일 저장 + DB 인서트 + 소켓 브로드캐스팅까지 원큐에 조질 거임
         chatService.uploadChatFile(roomId, senderNo, file);
-
-        return ResultVO.ok("파일 업로드 및 전송 완료", null);
+        return ResultVO.ok("파일 업로드 완료", null);
     }
 
-    // [초심자 핵심] 프론트에서 넘어오는 URL 경로를 통해 파일을 다운로드하게 해주는 HTTP GET API
     @GetMapping("/files/download/{fileName}")
-    public ResponseEntity<org.springframework.core.io.Resource> downloadChatFile(@PathVariable String fileName) {
-        return chatService.downloadChatFile(fileName);
+    public ResponseEntity<org.springframework.core.io.Resource> downloadChatFile(
+            @PathVariable String fileName,
+            @RequestParam(defaultValue = "false") boolean isDownload) {
+        return chatService.downloadChatFile(fileName, isDownload);
     }
 }

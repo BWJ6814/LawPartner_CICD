@@ -103,7 +103,7 @@ public class GeneralMyPageController {
     }
 
     // 1. 프로필 이름 수정
-    @PostMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/profile/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResultVO<String> updateProfile(
             @ModelAttribute ProfileUpdateDTO dto,
             @RequestHeader(value = "Authorization", required = false) String token // ★ 헤더에서 직접 토큰 받기!
