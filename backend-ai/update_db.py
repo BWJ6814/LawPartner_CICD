@@ -31,7 +31,7 @@ def add_more_data_to_db():
     # ✨ 변경된 부분: 이전에는 split="train[:10]" 이었지만,
     # 이제 유료 결제를 하셨으니 범위를 늘립니다! (예: 10번부터 1000번까지 가져오기)
     # 전체를 다 가져오려면 split="train" 이라고 쓰면 되지만, 처음엔 1000개 정도만 테스트해 보세요.
-    ds = load_dataset("lawcompany/KLAID", split="train[10000:20000]")
+    ds = load_dataset("lawcompany/KLAID", split="train[90000:100000]")
 
     print("⚙️ 다운받은 데이터를 800자 크기로 쪼개는 중...")
 

@@ -4,13 +4,9 @@ import com.example.backend_main.common.entity.BlacklistIp;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
-
 @Repository
-public interface BlacklistIpRepository extends JpaRepository<BlacklistIp, Long> {
-    // 해당 IP가 블랙리스트에 존재하는지 (차단 대상인지) 0.001초 만에 확인하는 쿼리
-    boolean existsByIpAddress(String ipAddress);
-
-    // IP 주소로 엔티티 찾기 (나중에 차단 해제할 때 사용)
-    Optional<BlacklistIp> findByIpAddress(String ipAddress);
+public interface BlacklistIpRepository extends JpaRepository<BlacklistIp, String> {
+    // PK가 String(IP)이라서 JpaRepository가 제공하는
+    // existsById(), findById(), deleteById()를 그냥 쓰면 됩니다!
+    // 커스텀 메서드를 작성할 필요가 싹 사라졌습니다.
 }

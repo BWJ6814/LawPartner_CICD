@@ -425,14 +425,15 @@ public class AdminService {
 
 
     // ==========================================
-// 🚨 IP 블랙리스트 관리 (비즈니스 로직)
-// ==========================================
+    // 🚨 IP 블랙리스트 관리 (비즈니스 로직)
+    // ==========================================
 
     // 1. 블랙리스트 추가 로직
     @Transactional // ★ S급 필수: DB에 INSERT/UPDATE/DELETE 할 때는 무조건 트랜잭션을 걸어줍니다.
-    public void addBlacklist(String ip, String reason) {
-        // 1-1. 검증 로직도 서비스가 담당합니다.
-        if (blacklistIpRepository.existsByIpAddress(ip)) {
+    public void addBlacklist(String ip, String reason, Long adminNo) { // 👈 인수 3개로 완벽 수정!
+
+        // 1-1. 검증 로직 (PK가 IP 문자열 자체가 되었으므로 existsById로 초고속 검사!)
+        if (blacklistIpRepository.existsById(ip)) {
             throw new IllegalArgumentException("이미 차단된 IP입니다.");
         }
 
@@ -440,7 +441,8 @@ public class AdminService {
         BlacklistIp blacklistIp = BlacklistIp.builder()
                 .ipAddress(ip)
                 .reason(reason)
-                .regDt(LocalDateTime.now())
+                .adminNo(adminNo) // ★ 컨트롤러에서 받아온 '차단한 관리자 번호' 쏙 집어넣기!
+                .blockDt(LocalDateTime.now()) // ★ 파트너님 설계도에 맞춘 컬럼명(BLOCK_DT) 적용!
                 .build();
 
         blacklistIpRepository.save(blacklistIp);
@@ -449,8 +451,8 @@ public class AdminService {
     // 2. 블랙리스트 삭제(해제) 로직
     @Transactional
     public void removeBlacklist(String ip) {
-        // Optional 처리를 람다식(orElseThrow)으로 아주 우아하게 처리합니다.
-        BlacklistIp target = blacklistIpRepository.findByIpAddress(ip)
+        // PK가 String(IP)이 되었으므로, JpaRepository 기본 메서드인 findById를 사용합니다!
+        BlacklistIp target = blacklistIpRepository.findById(ip)
                 .orElseThrow(() -> new IllegalArgumentException("차단 목록에 없는 IP입니다."));
 
         blacklistIpRepository.delete(target);
