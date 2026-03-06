@@ -34,10 +34,8 @@ import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.dto.AccessLogResponseDTO;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /*
 
@@ -61,11 +59,11 @@ public class AdminController {
     // ResultVO<List<User>> : ResultVO라는 큰 상자 안에, 유저 여러 명의 정보가 담긴 List를 넣어서 보내겠다!
     // 리액트에서는 이 상자를 받아 success가 true인지 확인하고, 안에 든 유저 리스트를 화면의 표(Table)에 뿌려주기..!
     @GetMapping("/users")
-    public ResultVO<List<User>> getAllUsers(){
+    public ResultVO<List<User>> getAllUsers() {
         // 서비스에게 "암호 해독해서 회원 목록 가져와!" 라고 명령하기
         List<User> usersList = adminService.getAllUsers();
         // 가공된 데이터를 표준 객체(ResultVO)에 담아서 보내기..
-        return ResultVO.ok("전체 회원 목록을 성공적으로 불러왔습니다.",usersList);
+        return ResultVO.ok("전체 회원 목록을 성공적으로 불러왔습니다.", usersList);
     }
 
     /*
@@ -123,7 +121,7 @@ public class AdminController {
             // 서비스 호출
             adminService.createSubAdmin(joinDto, currentAdminNo);
 
-            return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.",null);
+            return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.", null);
 
         } catch (SecurityException e) {
             log.warn("🚨 권한 없는 관리자 생성 시도: AdminID={}", userDetails.getUsername());
@@ -150,14 +148,14 @@ public class AdminController {
             @RequestParam(required = false) String endDate,
             @RequestParam(required = false) String keywordType,
             @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "ALL") String statusType){
+            @RequestParam(defaultValue = "ALL") String statusType) {
 
         //  컨트롤러가 직접 레포지토리를 만지지 않고, 서비스에게 요청합니다.
         Page<AccessLogResponseDTO> logs = adminService.searchAccessLogs(page, size, startDate, endDate, keywordType, keyword, statusType);
 
         return ResultVO.ok("로그 조회 성공", logs);
     }
-    
+
     // 그래프(차트)용 데이터를 만드는 전용 창구
     @GetMapping("/summary")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN','ROLE_OPERATOR')")
@@ -205,16 +203,19 @@ public class AdminController {
     }
 
     // ==========================================
-    // 🚨 IP 블랙리스트 관리 API (ResultVO 표준 적용)
+    // 🚨 IP 블랙리스트 관리 API
     // ==========================================
 
     // 1. 블랙리스트 전체 조회
+    // - HTTP 상태 코드: 200 OK
+    // - 권한: 운영자(OPERATOR) 이상 열람 가능
     @GetMapping("/blacklist")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
     public ResponseEntity<ResultVO<List<BlacklistIp>>> getBlacklist() {
+        // 단순 전체 조회는 컨트롤러에서 Repository를 직접 호출해도 무방합니다.
         List<BlacklistIp> list = blacklistIpRepository.findAll();
 
-        // 🟢 데이터만 쏙 넣어서 ok() 호출!
+        // 🟢 성공 응답: HTTP 200 + 비즈니스 성공 데이터
         return ResponseEntity.ok(ResultVO.ok(list));
     }
 
@@ -248,5 +249,4 @@ public class AdminController {
             return ResponseEntity.badRequest().body(ResultVO.fail("BL-404", e.getMessage()));
         }
     }
-
 }
