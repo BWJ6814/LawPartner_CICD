@@ -4,7 +4,9 @@ package com.example.backend_main.HSH.controller;
 import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.common.annotation.ActionLog;
 
+import com.example.backend_main.common.entity.BlacklistIp;
 import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.repository.BlacklistIpRepository;
 import com.example.backend_main.common.security.CustomUserDetails; // ★ 최적화용
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.AccessLogResponseDTO;
@@ -13,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize; // ★ 권한 체크
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +49,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class AdminController {
-
+    // 블랙리스트 의존성 추가
+    private final BlacklistIpRepository blacklistIpRepository;
     private final AdminService adminService;
 
 
@@ -55,11 +59,11 @@ public class AdminController {
     // ResultVO<List<User>> : ResultVO라는 큰 상자 안에, 유저 여러 명의 정보가 담긴 List를 넣어서 보내겠다!
     // 리액트에서는 이 상자를 받아 success가 true인지 확인하고, 안에 든 유저 리스트를 화면의 표(Table)에 뿌려주기..!
     @GetMapping("/users")
-    public ResultVO<List<User>> getAllUsers(){
+    public ResultVO<List<User>> getAllUsers() {
         // 서비스에게 "암호 해독해서 회원 목록 가져와!" 라고 명령하기
         List<User> usersList = adminService.getAllUsers();
         // 가공된 데이터를 표준 객체(ResultVO)에 담아서 보내기..
-        return ResultVO.ok("전체 회원 목록을 성공적으로 불러왔습니다.",usersList);
+        return ResultVO.ok("전체 회원 목록을 성공적으로 불러왔습니다.", usersList);
     }
 
     /*
@@ -117,7 +121,7 @@ public class AdminController {
             // 서비스 호출
             adminService.createSubAdmin(joinDto, currentAdminNo);
 
-            return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.",null);
+            return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.", null);
 
         } catch (SecurityException e) {
             log.warn("🚨 권한 없는 관리자 생성 시도: AdminID={}", userDetails.getUsername());
@@ -144,14 +148,14 @@ public class AdminController {
             @RequestParam(required = false) String endDate,
             @RequestParam(required = false) String keywordType,
             @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "ALL") String statusType){
+            @RequestParam(defaultValue = "ALL") String statusType) {
 
         //  컨트롤러가 직접 레포지토리를 만지지 않고, 서비스에게 요청합니다.
         Page<AccessLogResponseDTO> logs = adminService.searchAccessLogs(page, size, startDate, endDate, keywordType, keyword, statusType);
 
         return ResultVO.ok("로그 조회 성공", logs);
     }
-    
+
     // 그래프(차트)용 데이터를 만드는 전용 창구
     @GetMapping("/summary")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN','ROLE_OPERATOR')")
@@ -196,5 +200,53 @@ public class AdminController {
 
         List<Map<String, Object>> stats = adminService.getDailyVisitStats(days);
         return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.", stats);
+    }
+
+    // ==========================================
+    // 🚨 IP 블랙리스트 관리 API
+    // ==========================================
+
+    // 1. 블랙리스트 전체 조회
+    // - HTTP 상태 코드: 200 OK
+    // - 권한: 운영자(OPERATOR) 이상 열람 가능
+    @GetMapping("/blacklist")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    public ResponseEntity<ResultVO<List<BlacklistIp>>> getBlacklist() {
+        // 단순 전체 조회는 컨트롤러에서 Repository를 직접 호출해도 무방합니다.
+        List<BlacklistIp> list = blacklistIpRepository.findAll();
+
+        // 🟢 성공 응답: HTTP 200 + 비즈니스 성공 데이터
+        return ResponseEntity.ok(ResultVO.ok(list));
+    }
+
+    // 2. 특정 IP 차단하기
+    @PostMapping("/blacklist")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @ActionLog(action = "IP 블랙리스트 추가", target = "보안 시스템")
+    public ResponseEntity<ResultVO<Void>> addBlacklist(@RequestBody Map<String, String> payload) {
+        try {
+            // ★ 요리사(Service)에게 모든 걸 맡깁니다. 코드가 미친 듯이 깔끔해집니다!
+            adminService.addBlacklist(payload.get("ip"), payload.get("reason"));
+            return ResponseEntity.ok(ResultVO.ok("IP가 차단되었습니다.", null));
+
+        } catch (IllegalArgumentException e) {
+            // 서비스에서 에러(이미 차단됨 등)를 던지면 여기서 캐치해서 400 에러로 서빙합니다.
+            return ResponseEntity.badRequest().body(ResultVO.fail("BL-400", e.getMessage()));
+        }
+    }
+
+    // 3. 특정 IP 차단 해제하기
+    @DeleteMapping("/blacklist/{ip}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @ActionLog(action = "IP 블랙리스트 해제", target = "보안 시스템")
+    public ResponseEntity<ResultVO<Void>> removeBlacklist(@PathVariable String ip, @RequestParam String reason) {
+        try {
+            // ★ 마찬가지로 서비스에게 삭제를 지시합니다.
+            adminService.removeBlacklist(ip);
+            return ResponseEntity.ok(ResultVO.ok("IP 차단이 해제되었습니다.", null));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ResultVO.fail("BL-404", e.getMessage()));
+        }
     }
 }
