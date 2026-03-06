@@ -1,4 +1,4 @@
-package com.example.backend_main.Limdongju.service;
+package com.example.backend_main.LimDongJu.service;
 
 import com.example.backend_main.common.repository.LawyerInfoRepository;
 import com.example.backend_main.dto.LawyerCardDTO;
