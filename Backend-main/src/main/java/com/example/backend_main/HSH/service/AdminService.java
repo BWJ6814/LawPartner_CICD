@@ -2,8 +2,10 @@
 package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.entity.AccessLog;
+import com.example.backend_main.common.entity.BlacklistIp;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AccessLogRepository;
+import com.example.backend_main.common.repository.BlacklistIpRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.spec.AccessLogSpecification;
 import com.example.backend_main.common.util.Aes256Util;
@@ -40,6 +42,7 @@ public class AdminService {
     private final Aes256Util aes256Util;                    // PII 전용 암호기
     private final PasswordEncoder passwordEncoder;          // 비밀번호 암호기
     private final HashUtil hashUtil;                        // 단방향 해시 처리 (검색용)
+    private final BlacklistIpRepository blacklistIpRepository;
 
     // [화면 조회용] 회왼 목록 조회 API
     // 모든 회원 목록을 가져오는 함수 정의하기
@@ -418,6 +421,39 @@ public class AdminService {
         return accessLogRepository.findAll(spec, pageable)
                 .map(AccessLogResponseDTO::fromEntity);
 
+    }
+
+
+    // ==========================================
+// 🚨 IP 블랙리스트 관리 (비즈니스 로직)
+// ==========================================
+
+    // 1. 블랙리스트 추가 로직
+    @Transactional // ★ S급 필수: DB에 INSERT/UPDATE/DELETE 할 때는 무조건 트랜잭션을 걸어줍니다.
+    public void addBlacklist(String ip, String reason) {
+        // 1-1. 검증 로직도 서비스가 담당합니다.
+        if (blacklistIpRepository.existsByIpAddress(ip)) {
+            throw new IllegalArgumentException("이미 차단된 IP입니다.");
+        }
+
+        // 1-2. 데이터 조립 및 저장
+        BlacklistIp blacklistIp = BlacklistIp.builder()
+                .ipAddress(ip)
+                .reason(reason)
+                .regDt(LocalDateTime.now())
+                .build();
+
+        blacklistIpRepository.save(blacklistIp);
+    }
+
+    // 2. 블랙리스트 삭제(해제) 로직
+    @Transactional
+    public void removeBlacklist(String ip) {
+        // Optional 처리를 람다식(orElseThrow)으로 아주 우아하게 처리합니다.
+        BlacklistIp target = blacklistIpRepository.findByIpAddress(ip)
+                .orElseThrow(() -> new IllegalArgumentException("차단 목록에 없는 IP입니다."));
+
+        blacklistIpRepository.delete(target);
     }
 
 

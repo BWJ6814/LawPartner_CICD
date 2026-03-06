@@ -418,7 +418,7 @@ export default function ExpertsPage() {
                                         onClick={() => handleConsult(e.id)}
                                         className="flex-1 py-3.5 rounded-2xl font-black text-xs bg-slate-900 text-white hover:bg-slate-800 transition-all active:scale-95"
                                     >
-                                        상담신청
+                                        1:1채팅하기
                                     </button>
                                 </div>
                             </div>

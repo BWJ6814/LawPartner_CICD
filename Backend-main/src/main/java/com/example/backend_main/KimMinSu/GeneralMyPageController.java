@@ -30,6 +30,7 @@ public class GeneralMyPageController {
     private final GeneralMyPageService myPageService;
     private final JwtTokenProvider jwtTokenProvider; // ★ 신분증 해독기 추가
     private final ChatRoomRepository chatRoomRepository;
+    private final NotificationRepository notificationRepository;
 
     private final NotificationRepository notificationRepository;
 
