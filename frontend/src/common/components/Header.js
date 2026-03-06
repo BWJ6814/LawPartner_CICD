@@ -271,7 +271,7 @@ const Header = ({auth, onLoginUpdate}) => {
         setShowNotifications(false); // 창 닫기
         if (noti.roomId) {
             // ★ 네 프로젝트의 진짜 채팅방 라우터 주소로 맞춰라! (예: /chat/방번호)
-            navigate(`/chat/${noti.roomId}`);
+            navigate(`/chatList/${noti.roomId}`);
         }
     };
 

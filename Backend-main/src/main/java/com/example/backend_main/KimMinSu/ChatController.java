@@ -9,6 +9,7 @@ import com.example.backend_main.dto.ChatRoomDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,7 +63,7 @@ public class ChatController {
 
     // @MessageMapping("/chat/message")은 /pub/chat/message로 온 메시지를 가로챔
     @MessageMapping("/chat/message")
-    public void message(ChatMessageDTO msg){
+    public void message(@Payload ChatMessageDTO msg){
         // 1. 받은 메시지를 DB에 저장
         chatService.saveMessage(msg);
         // 2. 해당 방을 구독 중인 (/sub/chat/room/{roomId}) 사람들에게 메시지 뿌리기

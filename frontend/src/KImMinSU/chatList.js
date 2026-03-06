@@ -99,13 +99,14 @@ const ChatList = () => {
         const token = localStorage.getItem('accessToken');
 
         client.connect({Authorization : `Bearer ${token}`}, () => {
-            console.log("웹소켓 연결 성공!");
+            console.log("🔥 [채팅방] 웹소켓 연결 성공! roomId:", roomId);
             client.subscribe(`/sub/chat/room/${roomId}`, (response) => {
                 const newMessage = JSON.parse(response.body);
+                console.log("💌 [실시간 메시지 도착!]:", newMessage); // ★ 화면 안 떠도 로그에 찍히는지 확인
                 setChatLog((prev) => [...prev, newMessage]);
             });
         }, (error) => {
-            console.error("웹소켓 연결 실패 :" ,error)
+            console.error("❌ 웹소켓 연결 실패 :" ,error)
         });
 
         stompClient.current = client;
@@ -149,6 +150,7 @@ const ChatList = () => {
             message: message,
             msgType: 'TEXT'
         };
+        console.log("🚀 [메시지 서버로 발송]:", chatDTO); // ★ 보낼 때 로그 찍기
         stompClient.current.send("/pub/chat/message", {}, JSON.stringify(chatDTO));
         setMessage('');
     };
