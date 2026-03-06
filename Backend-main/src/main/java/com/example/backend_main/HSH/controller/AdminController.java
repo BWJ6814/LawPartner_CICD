@@ -221,23 +221,23 @@ public class AdminController {
 
     // 2. 특정 IP 차단하기
     @PostMapping("/blacklist")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     @ActionLog(action = "IP 블랙리스트 추가", target = "보안 시스템")
-    public ResponseEntity<ResultVO<Void>> addBlacklist(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<ResultVO<Void>> addBlacklist(
+            @RequestBody Map<String, String> payload,
+            @AuthenticationPrincipal CustomUserDetails userDetails) { // ★ 로그인한 관리자 정보 가져오기
         try {
-            // ★ 요리사(Service)에게 모든 걸 맡깁니다. 코드가 미친 듯이 깔끔해집니다!
-            adminService.addBlacklist(payload.get("ip"), payload.get("reason"));
+            // 서비스에게 IP, 사유, 그리고 '현재 관리자 번호'를 함께 넘김
+            adminService.addBlacklist(payload.get("ip"), payload.get("reason"), userDetails.getUserNo());
             return ResponseEntity.ok(ResultVO.ok("IP가 차단되었습니다.", null));
-
         } catch (IllegalArgumentException e) {
-            // 서비스에서 에러(이미 차단됨 등)를 던지면 여기서 캐치해서 400 에러로 서빙합니다.
             return ResponseEntity.badRequest().body(ResultVO.fail("BL-400", e.getMessage()));
         }
     }
 
     // 3. 특정 IP 차단 해제하기
     @DeleteMapping("/blacklist/{ip}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     @ActionLog(action = "IP 블랙리스트 해제", target = "보안 시스템")
     public ResponseEntity<ResultVO<Void>> removeBlacklist(@PathVariable String ip, @RequestParam String reason) {
         try {
