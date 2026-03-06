@@ -210,19 +210,24 @@ public class ChatService {
     public List<ChatRoomDTO> getMyChatRooms(Long myUserNo) {
         return chatRoomRepository.findByUserNoOrLawyerNoOrderByRegDtDesc(myUserNo, myUserNo).stream()
                 .map(room -> {
-                    // ★ [핵심 추가] DB에서 유저 번호로 진짜 이름을 꺼내온다!
                     String clientName = userRepository.findById(room.getUserNo())
                             .map(u -> u.getUserNm()).orElse("알 수 없는 유저");
                     String lawyerName = userRepository.findById(room.getLawyerNo())
                             .map(u -> u.getUserNm() + " 변호사").orElse("알 수 없는 변호사");
+
+                    // ★ [핵심] DB에서 이 방의 가장 최근 메시지 1개를 가져옴
+                    String lastMsg = chatMessageRepository.findTopByRoomIdOrderBySendDtDesc(room.getRoomId())
+                            .map(msg -> "FILE".equals(msg.getMsgType()) ? "[파일이 전송되었습니다]" : msg.getMessage())
+                            .orElse("대화를 시작하세요..."); // 메시지가 아예 없으면 기본 텍스트 출력
 
                     return ChatRoomDTO.builder()
                             .roomId(room.getRoomId())
                             .userNo(room.getUserNo())
                             .lawyerNo(room.getLawyerNo())
                             .progressCode(room.getProgressCode())
-                            .userNm(clientName)       // 프론트로 의뢰인 이름 전송
-                            .lawyerName(lawyerName)   // 프론트로 변호사 이름 전송
+                            .userNm(clientName)
+                            .lawyerName(lawyerName)
+                            .lastMessage(lastMsg) // ★ 꺼내온 메시지를 DTO에 박아줌!
                             .build();
                 })
                 .collect(Collectors.toList());

@@ -9,4 +9,6 @@ import java.util.List;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
     // 특정 채팅방의 메시지 내역을 시간순으로 조회
     List<ChatMessage> findByRoomIdOrderBySendDtAsc(String roomId);
+
+    java.util.Optional<ChatMessage> findTopByRoomIdOrderBySendDtDesc(String roomId);
 }

@@ -53,9 +53,15 @@ const ChatList = () => {
         const selectedRoom = rooms.find(r => String(r.roomId) === String(roomId));
         if (selectedRoom) {
             setCurrentRoomStatus(selectedRoom.progressCode);
-            setTargetName(selectedRoom.lawyerName || selectedRoom.userNm || '상대방');
+
+            // ★ [핵심] 내가 의뢰인이면 변호사 이름을, 아니면 의뢰인 이름을 타겟으로 잡음
+            const opponentName = Number(selectedRoom.userNo) === Number(userNo)
+                ? selectedRoom.lawyerName
+                : selectedRoom.userNm;
+
+            setTargetName(opponentName || '상대방');
         }
-    }, [roomId, rooms]);
+    }, [roomId, rooms, userNo]);
 
     // ========================================================
     // 3. [진짜 API] 과거 대화 내역 가져오기 & 웹소켓 연결
@@ -286,32 +292,42 @@ const ChatList = () => {
 
                         <div className="flex-1 overflow-y-auto bg-white custom-scrollbar">
                             {filteredRooms.length > 0 ? (
-                                // ★ 이중 map 제거하고 제대로 된 화살표 함수 문법 적용
                                 filteredRooms.map((room) => {
-                                    // ★ 내가 변호사인지 의뢰인인지 판별해서 상대방 이름 가져오기
+                                    // 내가 의뢰인이면 변호사 이름을, 내가 변호사면 의뢰인 이름을 타겟으로 잡음
                                     const opponentName = Number(room.userNo) === Number(userNo) ? room.lawyerName : room.userNm;
 
                                     return (
                                         <Link
                                             to={`/chatList/${room.roomId}`}
                                             key={room.roomId}
-                                            className={`p-5 border-b border-slate-50 cursor-pointer transition block ${String(roomId) === String(room.roomId) ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                                            // [초심자 핵심] p-5였던 패딩을 p-3으로 줄여서 상하 여백을 깎고, flex items-center로 프로필과 글자를 가로 정렬함
+                                            className={`p-3 border-b border-slate-100 cursor-pointer transition flex items-center gap-3 ${String(roomId) === String(room.roomId) ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                                         >
-                                            <div className="flex justify-between items-start mb-1">
-                                                <span className="font-black text-slate-900 text-sm truncate pr-2">
-                                                    {/* ★ 여기서 UUID 대신 진짜 상대방 이름 출력! */}
-                                                    {opponentName || `상담방 ${String(room.roomId).substring(0, 5)}`}
-                                                </span>
-                                                <span className={`text-[10px] px-2 py-0.5 rounded font-black shrink-0 ${
-                                                    room.progressCode === 'ST01' ? 'bg-orange-100 text-orange-600' :
-                                                        room.progressCode === 'ST02' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'
-                                                }`}>
-                                                    {room.progressCode === 'ST01' ? '대기' : room.progressCode === 'ST02' ? '진행중' : '완료'}
-                                                </span>
+                                            {/* [초심자 핵심] 카톡처럼 동그란 프로필 사진(Avatar) 영역. shrink-0을 줘야 글자가 길어져도 동그라미가 안 찌그러짐! */}
+                                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-black shrink-0 shadow-sm text-sm">
+                                                {/* 이름의 첫 글자만 따서 프로필에 박아줌 */}
+                                                {opponentName ? opponentName.substring(0, 1) : '상'}
                                             </div>
-                                            <p className="text-xs text-slate-400 truncate font-medium mt-1">
-                                                {room.lastMessage || '클릭해서 대화를 시작하세요'}
-                                            </p>
+
+                                            {/* [초심자 핵심] 텍스트 영역. flex-1로 남은 공간을 다 먹게 하고, min-w-0을 무조건 줘야 자식의 truncate(말줄임표)가 먹힘 */}
+                                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                <div className="flex justify-between items-center mb-0.5">
+                        <span className="font-bold text-slate-800 text-[13px] truncate pr-2">
+                            {opponentName || `상담방 ${String(room.roomId).substring(0, 5)}`}
+                        </span>
+                                                    {/* 뱃지도 컴팩트하게 패딩과 글자 크기를 줄임 */}
+                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-black shrink-0 ${
+                                                        room.progressCode === 'ST01' ? 'bg-orange-100 text-orange-600' :
+                                                            room.progressCode === 'ST02' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'
+                                                    }`}>
+                            {room.progressCode === 'ST01' ? '대기' : room.progressCode === 'ST02' ? '진행' : '완료'}
+                        </span>
+                                                </div>
+                                                {/* 최신 메시지 한 줄 처리 */}
+                                                <p className="text-[11px] text-slate-400 truncate font-medium mt-0.5">
+                                                    {room.lastMessage || '대화를 시작하세요...'}
+                                                </p>
+                                            </div>
                                         </Link>
                                     );
                                 })
@@ -345,7 +361,10 @@ const ChatList = () => {
                                         const isMyMessage = Number(msg.senderNo) === Number(userNo);
                                         return (
                                             <div key={index} className={`flex items-start space-x-3 ${isMyMessage ? 'justify-end' : ''}`}>
-                                                {!isMyMessage && <div className="w-9 h-9 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-black shadow-inner flex-shrink-0">상대</div>}
+                                                <div className="w-9 h-9 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500 text-[11px] font-black shadow-inner flex-shrink-0 text-center leading-none">
+                                                    {/* 이름이 너무 길면 첫 두 글자만 보여주는 게 UI 국룰이다 */}
+                                                    {targetName.length > 2 ? targetName.substring(0, 2) : targetName}
+                                                </div>
                                                 <div className={`space-y-1 ${isMyMessage ? 'flex flex-col items-end' : ''}`}>
                                                     <p className="text-[10px] font-black text-slate-400 ml-1 ">
                                                         {isMyMessage ? '나' : (msg.senderName || targetName)}

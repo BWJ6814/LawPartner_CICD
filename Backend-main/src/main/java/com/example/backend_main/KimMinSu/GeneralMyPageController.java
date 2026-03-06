@@ -4,6 +4,7 @@ import com.example.backend_main.common.entity.CalendarEvent;
 import com.example.backend_main.common.entity.ChatRoom;
 import com.example.backend_main.common.entity.Notification;
 import com.example.backend_main.common.repository.ChatRoomRepository;
+import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
@@ -30,10 +31,12 @@ public class GeneralMyPageController {
     private final JwtTokenProvider jwtTokenProvider; // ★ 신분증 해독기 추가
     private final ChatRoomRepository chatRoomRepository;
 
+    private final NotificationRepository notificationRepository;
+
     @GetMapping("/general")
     // ★ 리턴 타입을 팀 표준인 ResultVO로 변경
     public ResultVO<GeneralMyPageDTO> getGeneralDashboard(
-            @RequestHeader(value = "Authorization") String token
+            @RequestHeader(value = "Authorization", required = false) String token
     ) {
         // 1. "Bearer " 글자 떼어내기 (순수 토큰만 추출)
         String actualToken = token;
@@ -55,7 +58,7 @@ public class GeneralMyPageController {
 
     @PostMapping("/calendar")
     public ResultVO<Long> addCalendarEvents(
-            @RequestHeader(value = "Authorization") String token,
+            @RequestHeader(value = "Authorization", required = false) String token,
             @Valid @RequestBody GeneralMyPageDTO.CalendarEventDTO dto
     ){
         // 1. token에서 실제 userNo를 추출한다.
@@ -77,7 +80,7 @@ public class GeneralMyPageController {
     @PutMapping("/calendar/{eventNo}")
     public ResultVO<String> updateCalendarEvent(
             @PathVariable("eventNo") Long eventNo,
-            @RequestHeader(value = "Authorization") String token,
+            @RequestHeader(value = "Authorization", required = false) String token,
             @Valid @RequestBody GeneralMyPageDTO.CalendarEventDTO dto
     ){
         // 1. 토큰 까서 유저 번호 꺼내기
@@ -91,7 +94,7 @@ public class GeneralMyPageController {
     @DeleteMapping("/calendar/{eventNo}")
     public ResultVO<String> deleteCalendarEvent(
             @PathVariable("eventNo") Long eventNo,
-            @RequestHeader(value = "Authorization") String token
+            @RequestHeader(value = "Authorization", required = false) String token
     ){
         String actualToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : null;
         Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
@@ -131,7 +134,9 @@ public class GeneralMyPageController {
 
     // 2. 비밀번호 수정
     @PutMapping("/password")
-    public ResultVO<String> updatePassword(@RequestHeader("Authorization") String token, @RequestBody java.util.Map<String, String> body) {
+    public ResultVO<String> updatePassword(
+            @RequestHeader(value = "Authorization" , required = false) String token,
+            @RequestBody java.util.Map<String, String> body) {
         Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
         myPageService.updatePassword(userNo, body.get("oldPassword"), body.get("newPassword"));
         return ResultVO.ok("비밀번호 수정 성공", null);
@@ -139,7 +144,8 @@ public class GeneralMyPageController {
 
     // 3. 회원 탈퇴
     @DeleteMapping("/account")
-    public ResultVO<String> deleteAccount(@RequestHeader("Authorization") String token) {
+    public ResultVO<String> deleteAccount(
+            @RequestHeader(value = "Authorization", required = false) String token) {
         Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
         myPageService.deleteAccount(userNo);
         return ResultVO.ok("회원 탈퇴 성공", null);
