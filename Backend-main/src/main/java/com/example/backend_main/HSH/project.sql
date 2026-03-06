@@ -785,6 +785,8 @@ commit ;
 
 
 select * from tb_user;
+select * from TB_LAWYER_INFO;
+
 
 delete from tb_user where user_no = 20003;
 
@@ -799,3 +801,4 @@ select * from TB_IP_BLACKLIST;
 
 select * from tb_lawyer_info;
 
+commit;
