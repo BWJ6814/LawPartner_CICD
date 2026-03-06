@@ -429,20 +429,22 @@ public class AdminService {
     // ==========================================
 
     // 1. 블랙리스트 추가 로직
-    @Transactional // ★ S급 필수: DB에 INSERT/UPDATE/DELETE 할 때는 무조건 트랜잭션을 걸어줍니다.
-    public void addBlacklist(String ip, String reason, Long adminNo) { // 👈 인수 3개로 완벽 수정!
+    @Transactional
+    public void addBlacklist(String ip, String reason, String adminId) {
 
-        // 1-1. 검증 로직 (PK가 IP 문자열 자체가 되었으므로 existsById로 초고속 검사!)
         if (blacklistIpRepository.existsById(ip)) {
             throw new IllegalArgumentException("이미 차단된 IP입니다.");
         }
 
-        // 1-2. 데이터 조립 및 저장
+        // 아이디로 DB를 찔러서 진짜 관리자 객체를 가져옵니다!
+        User admin = userRepository.findByUserId(adminId)
+                .orElseThrow(() -> new IllegalArgumentException("관리자 정보를 찾을 수 없습니다."));
+
         BlacklistIp blacklistIp = BlacklistIp.builder()
                 .ipAddress(ip)
                 .reason(reason)
-                .adminNo(adminNo) // ★ 컨트롤러에서 받아온 '차단한 관리자 번호' 쏙 집어넣기!
-                .blockDt(LocalDateTime.now()) // ★ 파트너님 설계도에 맞춘 컬럼명(BLOCK_DT) 적용!
+                .adminNo(admin.getUserNo()) // ★ DB에서 직접 꺼낸 진짜 번호 꽂아넣기!!
+                .blockDt(LocalDateTime.now())
                 .build();
 
         blacklistIpRepository.save(blacklistIp);
