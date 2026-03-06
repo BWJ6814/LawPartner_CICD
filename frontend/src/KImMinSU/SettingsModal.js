@@ -15,6 +15,7 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
 
     const [pwInput, setPwInput] = useState({ oldPw: '', newPw: '', confirmPw: '' });
     const [isLoading, setIsLoading] = useState(false);
+    const [agreeDelete, setAgreeDelete] = useState(false);
 
     // [초심자 핵심] 이름 기반 랜덤 배경색 생성기
     const getRandomColor = (name) => {
@@ -36,6 +37,8 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
 
             setPwInput({ oldPw: '', newPw: '', confirmPw: '' });
             setActiveTab('profile');
+
+            setAgreeDelete(false);
         }
     }, [isOpen, profileData]);
 
@@ -216,9 +219,37 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
 
                     {/* 탈퇴 탭 */}
                     {activeTab === 'delete' && (
-                        <div className="py-4 text-center">
-                            <p className="text-red-600 font-bold mb-4">탈퇴하면 복구 불가 ㅅㄱ</p>
-                            <button onClick={handleDeleteAccount} disabled={isLoading} className="w-full py-3.5 border-2 border-red-500 text-red-500 font-bold rounded-xl hover:bg-red-50">영구 탈퇴하겠습니다</button>
+                        <div className="py-6 px-4 bg-red-50 rounded-2xl border border-red-100 text-left">
+                            <h3 className="text-red-700 font-black text-lg mb-3 flex items-center">
+                                <i className="fas fa-exclamation-triangle mr-2"></i> 정말 탈퇴하시겠습니까?
+                            </h3>
+
+                            <ul className="text-red-600 text-sm space-y-2 mb-6 font-medium leading-relaxed">
+                                <li>• 탈퇴 시 귀하의 모든 상담 내역 및 채팅 기록은 즉시 삭제됩니다.</li>
+                                <li>• 저장된 캘린더 일정과 개인 설정 데이터는 복구가 불가능합니다.</li>
+                                <li>• 현재 진행 중인 상담이 있는 경우, 상담이 강제 종료될 수 있습니다.</li>
+                                <li>• 법률 서비스 특성상 일부 데이터는 관련 법령에 따라 일정 기간 보관될 수 있습니다.</li>
+                            </ul>
+
+                            <div className="flex items-center space-x-2 mb-6">
+                                <input
+                                    type="checkbox"
+                                    id="deleteConfirm"
+                                    onChange={(e) => setAgreeDelete(e.target.checked)} // 상태 하나 만들어라 게이야
+                                    className="w-4 h-4 accent-red-500"
+                                />
+                                <label htmlFor="deleteConfirm" className="text-xs text-slate-600 font-bold cursor-pointer">
+                                    위 안내 사항을 모두 숙지하였으며, 영구 탈퇴에 동의합니다.
+                                </label>
+                            </div>
+
+                            <button
+                                onClick={handleDeleteAccount}
+                                disabled={isLoading || !agreeDelete} // 동의 안 하면 버튼 안 눌리게 막아라
+                                className="w-full py-4 bg-white border-2 border-red-500 text-red-500 font-black rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                                영구 탈퇴 진행하기
+                            </button>
                         </div>
                     )}
                 </div>

@@ -1,5 +1,6 @@
 package com.example.backend_main.KimMinSu;
 
+import com.example.backend_main.common.entity.CalendarEvent;
 import com.example.backend_main.common.entity.ChatMessage;
 import com.example.backend_main.common.entity.ChatRoom;
 import com.example.backend_main.common.entity.Notification;
@@ -51,6 +52,7 @@ public class ChatService {
     // 파일을 저장할 서버 하드디스크 절대 경로 (리눅스면 /var/uploads/chat/ 같은 걸로 바꿔라)
     private final String CHAT_UPLOAD_DIR = "C:/LP_uploads/chat/";
     private final org.apache.tika.Tika tika = new org.apache.tika.Tika();
+    private final CalendarEventRepository calendarEventRepository;
 
     @Value("${chat.file.upload-dir}")
     private String uploadDir;
@@ -294,6 +296,56 @@ public class ChatService {
                     .body(resource);
         } catch (MalformedURLException e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // 1. 상담 종료 로직
+    @Transactional
+    public void closeChat(String roomId, Long lawyerNo) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("방이 존재하지 않습니다."));
+        if(!room.getLawyerNo().equals(lawyerNo)) {
+            throw new RuntimeException("변호사만 종료할 수 있습니다.");
+        }
+        room.setProgressCode("ST05"); // 종료 상태로 변경
+    }
+
+    // 2. 캘린더 동시 저장 로직
+    @Transactional
+    public void confirmSchedule(String roomId, String dateStr) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("방이 없습니다."));
+
+        String clientName = userRepository.findById(room.getUserNo())
+                .map(com.example.backend_main.common.entity.User::getUserNm).orElse("의뢰인");
+        String lawyerName = userRepository.findById(room.getLawyerNo())
+                .map(com.example.backend_main.common.entity.User::getUserNm).orElse("담당");
+
+        // [초심자 핵심] 양측 캘린더에 일정을 박아준다.
+        // 변호사 달력에 추가 (의뢰인 이름 표시)
+        CalendarEvent lawyerEvent = CalendarEvent.builder()
+                .roomId(roomId)
+                .userNo(room.getLawyerNo())
+                .lawyerNo(room.getLawyerNo())
+                .title(clientName + "님과의 1:1 면담")
+                .startDate(dateStr)
+                .colorCode("#f59e0b") // 주황색
+                .build();
+        calendarEventRepository.save(lawyerEvent);
+
+        // 의뢰인 달력에 추가 (변호사 이름 표시)
+        CalendarEvent clientEvent = CalendarEvent.builder()
+                .roomId(roomId)
+                .userNo(room.getUserNo())
+                .lawyerNo(room.getLawyerNo())
+                .title(lawyerName + " 변호사 면담")
+                .startDate(dateStr)
+                .colorCode("#3b82f6") // 파란색
+                .build();
+        calendarEventRepository.save(clientEvent);
+
+        if ("ST01".equals(room.getProgressCode())) {
+            room.setProgressCode("ST02");
         }
     }
 

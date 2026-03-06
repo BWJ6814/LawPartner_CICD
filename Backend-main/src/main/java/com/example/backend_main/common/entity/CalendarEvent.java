@@ -3,6 +3,8 @@ package com.example.backend_main.common.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "TB_CALENDAR_EVENT")
 @Getter @Setter
@@ -33,4 +35,9 @@ public class CalendarEvent {
 
     @Column(name = "COLOR_CODE")
     private String colorCode;
+
+    @Column(name = "REG_DT", insertable = false, updatable = false)
+    private LocalDateTime regDt;
+
+
 }
