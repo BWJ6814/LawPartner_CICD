@@ -1,6 +1,6 @@
-package com.example.backend_main.LimDongJu.controller;
+package com.example.backend_main.LDJ.controller;
 
-import com.example.backend_main.LimDongJu.service.LawyerInfoService;
+import com.example.backend_main.LDJ.service.LawyerInfoService;
 import com.example.backend_main.dto.LawyerCardDTO;
 import com.example.backend_main.dto.LawyerDetailDTO;
 import lombok.RequiredArgsConstructor;

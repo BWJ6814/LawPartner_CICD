@@ -25,6 +25,8 @@ public interface LawyerInfoRepository extends JpaRepository<LawyerInfo, Long> {
         FROM LawyerInfo l
         LEFT JOIN l.reviews r
         WHERE l.approvalYn = 'Y'
+          AND l.user.statusCode = 'S01'
+          AND l.user.roleCode = 'ROLE_LAWYER'
         GROUP BY l.userNo, l.user.userNm, l.specialtyStr, l.imgUrl
     """)
     List<LawyerCardDTO> findApprovedCards();

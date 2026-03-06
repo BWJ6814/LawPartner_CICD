@@ -19,10 +19,12 @@ import {
     Search,
     Medal,
     CheckCircle,
-    Star
+    Star,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react";
 
-const NAVY = "#0f172a";
+const PAGE_SIZE = 6;
 
 /** ✅ 카테고리 설정 */
 const CATEGORY_GRID = [
@@ -80,21 +82,26 @@ function containsKoreanInsensitive(haystack, needle) {
 function recommendScore(expert) {
     const rating = Number(expert.rating || 0);
     const reviews = Number(expert.reviewCount || 0);
+    const career = Number(expert.careerYears || 0);
     const responseRate = Number(expert.responseRate || 0);
-    const logReviews = Math.log10(reviews + 1);
-    return rating * 0.55 + logReviews * 0.30 + (responseRate / 100) * 0.15;
+
+    return rating * 60 + reviews * 2 + career * 3 + responseRate * 0.2;
 }
 
 function splitTags(specialtyStr) {
     if (!specialtyStr) return [];
-    return String(specialtyStr).split(/[,/|]/g).map(s => s.trim()).filter(Boolean).slice(0, 8);
+    return String(specialtyStr)
+        .split(/[,/|]/g)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 8);
 }
 
 function inferMainCategory(tags) {
-    const tagSet = new Set((tags || []).map(t => String(t)));
+    const tagSet = new Set((tags || []).map((t) => String(t)));
     for (const [cat, keywords] of Object.entries(CATEGORY_MAP)) {
         if (cat === "기타") continue;
-        const hit = (keywords || []).some(kw => {
+        const hit = (keywords || []).some((kw) => {
             for (const t of tagSet) {
                 if (t.includes(kw) || kw.includes(t)) return true;
             }
@@ -107,8 +114,9 @@ function inferMainCategory(tags) {
 
 function safeImage(url) {
     const u = (url || "").trim();
-    if (u) return u;
-    return "https://via.placeholder.com/160?text=LAWYER";
+    if (!u) return "";
+    if (u.startsWith("/")) return `http://localhost:8080${u}`;
+    return u;
 }
 
 function pickArray(payload) {
@@ -121,6 +129,65 @@ function pickArray(payload) {
     return [];
 }
 
+function getVisibleTags(tags) {
+    const safeTags = Array.isArray(tags) ? tags : [];
+    const visibleTags = safeTags.slice(0, 3);
+    const hiddenCount = Math.max(0, safeTags.length - 3);
+    return { visibleTags, hiddenCount };
+}
+
+function getInitial(name) {
+    const safeName = String(name || "").trim();
+    if (!safeName) return "법";
+    return safeName.charAt(0);
+}
+
+function Avatar({ image, name, size = "md", rounded = "xl", clickable = false, onClick }) {
+    const [imgError, setImgError] = useState(false);
+
+    const sizeClass =
+        size === "lg"
+            ? "w-20 h-20 text-2xl"
+            : "w-16 h-16 text-xl";
+
+    const roundedClass =
+        rounded === "2xl"
+            ? "rounded-2xl"
+            : "rounded-xl";
+
+    const canShowImage = !!image && !imgError;
+
+    if (canShowImage) {
+        return (
+            <div
+                className={`${sizeClass} ${roundedClass} overflow-hidden shadow-md flex-shrink-0 ${
+                    clickable ? "cursor-pointer" : ""
+                }`}
+                onClick={onClick}
+            >
+                <img
+                    src={image}
+                    alt={name}
+                    className="w-full h-full object-cover"
+                    onError={() => setImgError(true)}
+                />
+            </div>
+        );
+    }
+
+    return (
+        <div
+            className={`${sizeClass} ${roundedClass} flex items-center justify-center flex-shrink-0 ${
+                clickable ? "cursor-pointer" : ""
+            } bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 font-black border border-slate-200 shadow-sm select-none`}
+            onClick={onClick}
+            title={name}
+        >
+            {getInitial(name)}
+        </div>
+    );
+}
+
 export default function ExpertsPage() {
     const recommendRef = useRef(null);
     const navigate = useNavigate();
@@ -128,11 +195,13 @@ export default function ExpertsPage() {
 
     const initialCategory = searchParams.get("category") || "ALL";
     const initialRole = searchParams.get("role") || "LAWYER";
+    const initialPage = Math.max(1, Number(searchParams.get("page") || 1));
 
     const [selectedRole] = useState(initialRole);
     const [selectedCategory, setSelectedCategory] = useState(initialCategory);
     const [keyword, setKeyword] = useState(searchParams.get("q") || "");
     const [sortKey, setSortKey] = useState(searchParams.get("sort") || "RECOMMEND");
+    const [currentPage, setCurrentPage] = useState(initialPage);
 
     const [experts, setExperts] = useState([]);
     const [loadMsg, setLoadMsg] = useState("");
@@ -147,6 +216,12 @@ export default function ExpertsPage() {
             else params.set(k, String(v));
         });
         setSearchParams(params, { replace: true });
+    };
+
+    const goToPage = (page) => {
+        setCurrentPage(page);
+        syncParams({ page });
+        recommendRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
     useEffect(() => {
@@ -188,48 +263,108 @@ export default function ExpertsPage() {
                         image: safeImage(imgUrl),
                     };
                 });
+
                 setExperts(mapped);
                 console.log("=== RAW API DATA ===", res.data);
                 console.log("=== MAPPED DATA ===", mapped);
-
             } catch (e) {
                 setLoadMsg("데이터를 불러오는 중 오류가 발생했습니다.");
             } finally {
                 setIsLoading(false);
             }
         };
+
         fetchLawyers();
     }, []);
 
     const filtered = useMemo(() => {
         const roleFiltered = experts.filter((e) => e.role === selectedRole);
-        const categoryFiltered = selectedCategory === "ALL"
-            ? roleFiltered
-            : roleFiltered.filter((e) => {
-                const keywords = CATEGORY_MAP[selectedCategory] || [];
-                return e.mainCategory === selectedCategory || e.tags?.some((tag) => keywords.some((kw) => String(tag).includes(kw)));
-            });
+
+        const categoryFiltered =
+            selectedCategory === "ALL"
+                ? roleFiltered
+                : roleFiltered.filter((e) => {
+                    const keywords = CATEGORY_MAP[selectedCategory] || [];
+                    return (
+                        e.mainCategory === selectedCategory ||
+                        e.tags?.some((tag) =>
+                            keywords.some((kw) => String(tag).includes(kw))
+                        )
+                    );
+                });
 
         const q = keyword.trim();
         if (!q) return categoryFiltered;
+
         return categoryFiltered.filter((e) => {
-            const hay = [e.name, e.mainCategory, (e.tags || []).join(" "), `${e.careerYears || 0}년`].join(" ");
+            const hay = [
+                e.name,
+                e.mainCategory,
+                (e.tags || []).join(" "),
+                `${e.careerYears || 0}년`,
+            ].join(" ");
             return containsKoreanInsensitive(hay, q);
         });
     }, [experts, selectedRole, selectedCategory, keyword]);
 
     const sorted = useMemo(() => {
         const arr = [...filtered];
-        if (sortKey === "RATING") arr.sort((a, b) => b.rating - a.rating);
-        else if (sortKey === "REVIEWS") arr.sort((a, b) => b.reviewCount - a.reviewCount);
-        else if (sortKey === "CAREER") arr.sort((a, b) => b.careerYears - a.careerYears);
-        else arr.sort((a, b) => recommendScore(b) - recommendScore(a));
+
+        if (sortKey === "RATING") {
+            arr.sort((a, b) => {
+                if (b.rating !== a.rating) return b.rating - a.rating;
+                if (b.reviewCount !== a.reviewCount) return b.reviewCount - a.reviewCount;
+                return b.careerYears - a.careerYears;
+            });
+        } else if (sortKey === "REVIEWS") {
+            arr.sort((a, b) => {
+                if (b.reviewCount !== a.reviewCount) return b.reviewCount - a.reviewCount;
+                if (b.rating !== a.rating) return b.rating - a.rating;
+                return b.careerYears - a.careerYears;
+            });
+        } else if (sortKey === "CAREER") {
+            arr.sort((a, b) => {
+                if (b.careerYears !== a.careerYears) return b.careerYears - a.careerYears;
+                if (b.rating !== a.rating) return b.rating - a.rating;
+                return b.reviewCount - a.reviewCount;
+            });
+        } else {
+            arr.sort((a, b) => recommendScore(b) - recommendScore(a));
+        }
+
         return arr;
     }, [filtered, sortKey]);
 
     const topRecommended = useMemo(() => {
-        return [...filtered].sort((a, b) => recommendScore(b) - recommendScore(a)).slice(0, 3);
-    }, [filtered]);
+        return sorted.slice(0, 3);
+    }, [sorted]);
+
+    const listOnly = useMemo(() => {
+        const topIds = new Set(topRecommended.map((e) => e.id));
+        return sorted.filter((e) => !topIds.has(e.id));
+    }, [sorted, topRecommended]);
+
+    const totalPages = useMemo(() => {
+        return Math.max(1, Math.ceil(listOnly.length / PAGE_SIZE));
+    }, [listOnly.length]);
+
+    const pagedExperts = useMemo(() => {
+        const safePage = Math.min(currentPage, totalPages);
+        const start = (safePage - 1) * PAGE_SIZE;
+        return listOnly.slice(start, start + PAGE_SIZE);
+    }, [listOnly, currentPage, totalPages]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+        syncParams({ page: 1 });
+    }, [selectedCategory, keyword, sortKey]);
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+            syncParams({ page: totalPages });
+        }
+    }, [currentPage, totalPages]);
 
     const handleCategoryClick = (catKey) => {
         setSelectedCategory(catKey);
@@ -238,15 +373,26 @@ export default function ExpertsPage() {
     };
 
     const handleProfile = (id) => navigate(`/experts/${id}`);
+
     const handleConsult = (id) => {
-        if (!isLoggedIn()) { alert("로그인이 필요합니다."); navigate("/login"); return; }
+        if (!isLoggedIn()) {
+            alert("로그인이 필요합니다.");
+            navigate("/login");
+            return;
+        }
         navigate(`/consultation?lawyerId=${id}`);
     };
 
     const resultLabel = useMemo(() => {
         const catLabel = selectedCategory === "ALL" ? "전체" : selectedCategory;
-        return keyword.trim() ? `${catLabel} · ‘${keyword}’ ${sorted.length}명` : `${catLabel} 전문가 ${sorted.length}명`;
+        return keyword.trim()
+            ? `${catLabel} · ‘${keyword}’ ${sorted.length}명`
+            : `${catLabel} 전문가 ${sorted.length}명`;
     }, [selectedCategory, keyword, sorted.length]);
+
+    const pageNumbers = useMemo(() => {
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }, [totalPages]);
 
     return (
         <div className="max-w-7xl mx-auto py-14 px-4 bg-slate-50/30">
@@ -268,11 +414,25 @@ export default function ExpertsPage() {
                         key={c.key}
                         onClick={() => handleCategoryClick(c.key)}
                         className={`group bg-white rounded-2xl border p-4 text-center transition-all duration-200 ${
-                            selectedCategory === c.key ? "border-slate-900 shadow-lg ring-1 ring-slate-900" : "border-slate-200 hover:border-slate-300 hover:shadow-md"
+                            selectedCategory === c.key
+                                ? "border-slate-900 shadow-lg ring-1 ring-slate-900"
+                                : "border-slate-200 hover:border-slate-300 hover:shadow-md"
                         }`}
                     >
-                        <div className={`text-2xl mb-2 transition-transform group-hover:scale-110 ${selectedCategory === c.key ? "text-slate-900" : "text-slate-400"}`}>{c.icon}</div>
-                        <div className={`text-sm font-bold ${selectedCategory === c.key ? "text-slate-900" : "text-slate-600"}`}>{c.label}</div>
+                        <div
+                            className={`text-2xl mb-2 transition-transform group-hover:scale-110 ${
+                                selectedCategory === c.key ? "text-slate-900" : "text-slate-400"
+                            }`}
+                        >
+                            {c.icon}
+                        </div>
+                        <div
+                            className={`text-sm font-bold ${
+                                selectedCategory === c.key ? "text-slate-900" : "text-slate-600"
+                            }`}
+                        >
+                            {c.label}
+                        </div>
                     </button>
                 ))}
             </div>
@@ -280,183 +440,296 @@ export default function ExpertsPage() {
             {/* 검색 및 정렬 */}
             <div className="flex flex-col md:flex-row gap-4 mb-10">
                 <div className="flex-1 relative group">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={20} />
+                    <Search
+                        className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors"
+                        size={20}
+                    />
                     <input
                         value={keyword}
-                        onChange={(e) => { setKeyword(e.target.value); syncParams({ q: e.target.value }); }}
+                        onChange={(e) => {
+                            setKeyword(e.target.value);
+                            syncParams({ q: e.target.value });
+                        }}
                         className="w-full bg-white border border-slate-200 rounded-2xl pl-14 pr-12 py-4 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 font-semibold shadow-sm transition-all"
                         placeholder="이름 또는 상담 키워드 검색"
                     />
-                    {keyword && <button onClick={() => { setKeyword(""); syncParams({ q: "" }); }} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 font-bold">✕</button>}
+                    {keyword && (
+                        <button
+                            onClick={() => {
+                                setKeyword("");
+                                syncParams({ q: "" });
+                            }}
+                            className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 font-bold"
+                        >
+                            ✕
+                        </button>
+                    )}
                 </div>
+
                 <div className="bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm flex items-center justify-between md:w-60 focus-within:border-slate-900 transition-all">
                     <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Sort by</span>
-                    <select value={sortKey} onChange={(e) => { setSortKey(e.target.value); syncParams({ sort: e.target.value }); }} className="outline-none font-bold text-slate-800 bg-transparent cursor-pointer">
-                        {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                    <select
+                        value={sortKey}
+                        onChange={(e) => {
+                            setSortKey(e.target.value);
+                            syncParams({ sort: e.target.value });
+                        }}
+                        className="outline-none font-bold text-slate-800 bg-transparent cursor-pointer"
+                    >
+                        {SORTS.map((s) => (
+                            <option key={s.key} value={s.key}>
+                                {s.label}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
 
-            {/* ✅ Premium 추천 전문가 섹션 */}
-            <div
-                ref={recommendRef}
-                className="mb-16 bg-gradient-to-br from-indigo-900 via-slate-800 to-slate-900 rounded-[40px] p-10 shadow-2xl relative overflow-hidden"
-            >
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 relative z-10 gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm text-white shadow-xl rotate-3">
-                            <Medal size={28} />
-                        </div>
-                        <div>
-                            <h3 className="text-2xl font-black text-white">
-                                Premium 추천 전문가
-                            </h3>
-                            <p className="text-slate-300 font-bold mt-1">
-                                평점과 응답 속도가 검증된 최고의 파트너
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="px-5 py-2 rounded-full bg-white/10 text-white text-sm font-black border border-white/20">
-                        {resultLabel}
-                    </div>
-                </div>
-
-                {topRecommended.length === 0 ? (
-                    <div className="py-20 text-center text-slate-300 font-bold bg-white/5 rounded-3xl border border-white/10">
-                        조건에 맞는 추천 전문가가 없습니다.
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {topRecommended.map((e) => (
-                            <div
-                                key={e.id}
-                                className="group bg-white rounded-[32px] border border-slate-100 p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:border-slate-200 flex flex-col"
-                            >
-                                <div className="flex items-center gap-5 mb-6">
-                                    <div
-                                        className="w-20 h-20 rounded-2xl overflow-hidden shadow-md cursor-pointer flex-shrink-0 group-hover:scale-105 transition-transform"
-                                        onClick={() => handleProfile(e.id)}
-                                    >
-                                        <img
-                                            src={e.image}
-                                            alt={e.name}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <div className="flex items-center gap-1.5 mb-1">
-                                            <h4
-                                                className="text-xl font-black text-slate-900 truncate cursor-pointer"
-                                                onClick={() => handleProfile(e.id)}
-                                            >
-                                                {e.name}
-                                            </h4>
-                                            <CheckCircle
-                                                className="text-blue-500 flex-shrink-0"
-                                                size={18}
-                                                fill="#EFF6FF"
-                                            />
-                                        </div>
-                                        <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-slate-900 text-white uppercase tracking-tighter">
-                {e.mainCategory}
-              </span>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-3 gap-2 bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100">
-                                    <div className="text-center">
-                                        <div className="text-[10px] text-slate-400 font-black uppercase">
-                                            Career
-                                        </div>
-                                        <div className="text-sm font-bold text-slate-900">
-                                            {e.careerYears}년
-                                        </div>
-                                    </div>
-                                    <div className="text-center border-x border-slate-200">
-                                        <div className="text-[10px] text-slate-400 font-black uppercase">
-                                            Rating
-                                        </div>
-                                        <div className="text-sm font-bold text-slate-900 flex items-center justify-center gap-0.5">
-                                            <Star
-                                                size={12}
-                                                fill="#f59e0b"
-                                                className="text-yellow-500"
-                                            />
-                                            {e.rating.toFixed(1)}
-                                        </div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-[10px] text-slate-400 font-black uppercase">
-                                            Reviews
-                                        </div>
-                                        <div className="text-sm font-bold text-slate-900">
-                                            {e.reviewCount}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-1.5 mb-8 flex-grow">
-                                    {e.tags.slice(0, 3).map((t) => (
-                                        <span
-                                            key={t}
-                                            className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-50 text-slate-500 border border-slate-200"
-                                        >
-                #{t}
-              </span>
-                                    ))}
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => handleProfile(e.id)}
-                                        className="flex-1 py-3.5 rounded-2xl font-black text-xs border-2 border-slate-900 text-slate-900 hover:bg-slate-50 transition-all active:scale-95"
-                                    >
-                                        프로필
-                                    </button>
-                                    <button
-                                        onClick={() => handleConsult(e.id)}
-                                        className="flex-1 py-3.5 rounded-2xl font-black text-xs bg-slate-900 text-white hover:bg-slate-800 transition-all active:scale-95"
-                                    >
-                                        1:1채팅하기
-                                    </button>
-                                </div>
+            {/* ✅ 1페이지에서만 추천 전문가 노출 */}
+            {currentPage === 1 && (
+                <div
+                    ref={recommendRef}
+                    className="mb-16 bg-gradient-to-br from-indigo-900 via-slate-800 to-slate-900 rounded-[40px] p-10 shadow-2xl relative overflow-hidden"
+                >
+                    <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 relative z-10 gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm text-white shadow-xl rotate-3">
+                                <Medal size={28} />
                             </div>
-                        ))}
+                            <div>
+                                <h3 className="text-2xl font-black text-white">Premium 추천 전문가</h3>
+                                <p className="text-slate-300 font-bold mt-1">
+                                    {sortKey === "RECOMMEND"
+                                        ? "평점, 후기, 경력을 종합한 추천 전문가"
+                                        : `${SORTS.find((s) => s.key === sortKey)?.label || "추천순"} 기준 상위 전문가`}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="px-5 py-2 rounded-full bg-white/10 text-white text-sm font-black border border-white/20">
+                            {resultLabel}
+                        </div>
                     </div>
-                )}
-            </div>
+
+                    {topRecommended.length === 0 ? (
+                        <div className="py-20 text-center text-slate-300 font-bold bg-white/5 rounded-3xl border border-white/10">
+                            조건에 맞는 추천 전문가가 없습니다.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {topRecommended.map((e) => {
+                                const { visibleTags, hiddenCount } = getVisibleTags(e.tags);
+
+                                return (
+                                    <div
+                                        key={e.id}
+                                        className="group bg-white rounded-[32px] border border-slate-100 p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:border-slate-200 flex flex-col"
+                                    >
+                                        <div className="flex items-center gap-5 mb-6">
+                                            <Avatar
+                                                image={e.image}
+                                                name={e.name}
+                                                size="lg"
+                                                rounded="2xl"
+                                                clickable
+                                                onClick={() => handleProfile(e.id)}
+                                            />
+
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-1.5 mb-1">
+                                                    <h4
+                                                        className="text-xl font-black text-slate-900 truncate cursor-pointer"
+                                                        onClick={() => handleProfile(e.id)}
+                                                    >
+                                                        {e.name}
+                                                    </h4>
+                                                    <CheckCircle
+                                                        className="text-blue-500 flex-shrink-0"
+                                                        size={18}
+                                                        fill="#EFF6FF"
+                                                    />
+                                                </div>
+                                                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-slate-900 text-white uppercase tracking-tighter">
+                                                    {e.mainCategory}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-2 bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100">
+                                            <div className="text-center">
+                                                <div className="text-[10px] text-slate-400 font-black uppercase">Career</div>
+                                                <div className="text-sm font-bold text-slate-900">{e.careerYears}년</div>
+                                            </div>
+                                            <div className="text-center border-x border-slate-200">
+                                                <div className="text-[10px] text-slate-400 font-black uppercase">Rating</div>
+                                                <div className="text-sm font-bold text-slate-900 flex items-center justify-center gap-0.5">
+                                                    <Star size={12} fill="#f59e0b" className="text-yellow-500" />
+                                                    {e.rating.toFixed(1)}
+                                                </div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-[10px] text-slate-400 font-black uppercase">Reviews</div>
+                                                <div className="text-sm font-bold text-slate-900">{e.reviewCount}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-1.5 mb-8 flex-grow">
+                                            {visibleTags.map((t) => (
+                                                <span
+                                                    key={t}
+                                                    className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-50 text-slate-500 border border-slate-200"
+                                                >
+                                                    #{t}
+                                                </span>
+                                            ))}
+                                            {hiddenCount > 0 && (
+                                                <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-900 text-white border border-slate-900">
+                                                    +{hiddenCount}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => handleProfile(e.id)}
+                                                className="flex-1 py-3.5 rounded-2xl font-black text-xs border-2 border-slate-900 text-slate-900 hover:bg-slate-50 transition-all active:scale-95"
+                                            >
+                                                프로필
+                                            </button>
+                                            <button
+                                                onClick={() => handleConsult(e.id)}
+                                                className="flex-1 py-3.5 rounded-2xl font-black text-xs bg-slate-900 text-white hover:bg-slate-800 transition-all active:scale-95"
+                                            >
+                                                1:1채팅하기
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* 일반 목록 그리드 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {sorted.map((e) => (
-                    <div key={e.id} className="bg-white rounded-[32px] shadow-sm border border-slate-200 p-8 hover:shadow-xl transition-all duration-300 flex flex-col">
-                        <div className="flex items-center gap-5 mb-6">
-                            <div className="w-16 h-16 rounded-xl overflow-hidden cursor-pointer flex-shrink-0" onClick={() => handleProfile(e.id)}>
-                                <img src={e.image} alt={e.name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="min-w-0">
-                                <h4 className="text-lg font-black text-slate-900 truncate">{e.name} 변호사</h4>
-                                <p className="text-xs font-bold text-slate-400">{e.mainCategory} · 경력 {e.careerYears}년</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="flex text-yellow-400 text-xs">★★★★★</div>
-                            <span className="font-bold text-slate-800 text-sm">{e.rating.toFixed(1)}</span>
-                            <span className="text-slate-400 text-xs font-bold">(후기 {e.reviewCount})</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 mb-8 flex-grow">
-                            {e.tags.slice(0, 3).map(t => (
-                                <span key={t} className="text-[10px] font-bold px-2 py-1 rounded-md bg-slate-50 text-slate-500 border border-slate-100">#{t}</span>
-                            ))}
-                        </div>
-                        <div className="flex gap-2">
-                            <button onClick={() => handleProfile(e.id)} className="flex-1 py-3 rounded-xl font-bold text-xs border border-slate-200 text-slate-600 hover:bg-slate-50">프로필</button>
-                            <button onClick={() => handleConsult(e.id)} className="flex-1 py-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-900 hover:bg-slate-200">1:1채팅하기</button>
-                        </div>
+            {pagedExperts.length > 0 && (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {pagedExperts.map((e) => {
+                            const { visibleTags, hiddenCount } = getVisibleTags(e.tags);
+
+                            return (
+                                <div
+                                    key={e.id}
+                                    className="bg-white rounded-[32px] shadow-sm border border-slate-200 p-8 hover:shadow-xl transition-all duration-300 flex flex-col"
+                                >
+                                    <div className="flex items-center gap-5 mb-6">
+                                        <Avatar
+                                            image={e.image}
+                                            name={e.name}
+                                            size="md"
+                                            rounded="xl"
+                                            clickable
+                                            onClick={() => handleProfile(e.id)}
+                                        />
+
+                                        <div className="min-w-0">
+                                            <h4 className="text-lg font-black text-slate-900 truncate">
+                                                {e.name} 변호사
+                                            </h4>
+                                            <p className="text-xs font-bold text-slate-400">
+                                                {e.mainCategory} · 경력 {e.careerYears}년
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 mb-6">
+                                        <div className="flex text-yellow-400 text-xs">★★★★★</div>
+                                        <span className="font-bold text-slate-800 text-sm">{e.rating.toFixed(1)}</span>
+                                        <span className="text-slate-400 text-xs font-bold">
+                                            (후기 {e.reviewCount})
+                                        </span>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-1.5 mb-8 flex-grow">
+                                        {visibleTags.map((t) => (
+                                            <span
+                                                key={t}
+                                                className="text-[10px] font-bold px-2 py-1 rounded-md bg-slate-50 text-slate-500 border border-slate-100"
+                                            >
+                                                #{t}
+                                            </span>
+                                        ))}
+                                        {hiddenCount > 0 && (
+                                            <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-slate-900 text-white border border-slate-900">
+                                                +{hiddenCount}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleProfile(e.id)}
+                                            className="flex-1 py-3 rounded-xl font-bold text-xs border border-slate-200 text-slate-600 hover:bg-slate-50"
+                                        >
+                                            프로필
+                                        </button>
+                                        <button
+                                            onClick={() => handleConsult(e.id)}
+                                            className="flex-1 py-3 rounded-xl font-bold text-xs bg-slate-100 text-slate-900 hover:bg-slate-200"
+                                        >
+                                            1:1채팅하기
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
-                ))}
-            </div>
+
+                    {/* 페이지네이션 */}
+                    {totalPages > 1 && (
+                        <div className="mt-10 flex items-center justify-center gap-2 flex-wrap">
+                            <button
+                                onClick={() => goToPage(Math.max(1, currentPage - 1))}
+                                disabled={currentPage === 1}
+                                className={`inline-flex items-center justify-center w-10 h-10 rounded-xl border text-sm font-black transition-all ${
+                                    currentPage === 1
+                                        ? "border-slate-200 text-slate-300 bg-white cursor-not-allowed"
+                                        : "border-slate-300 text-slate-700 bg-white hover:border-slate-900 hover:text-slate-900"
+                                }`}
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+
+                            {pageNumbers.map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => goToPage(page)}
+                                    className={`inline-flex items-center justify-center min-w-[40px] h-10 px-3 rounded-xl border text-sm font-black transition-all ${
+                                        currentPage === page
+                                            ? "bg-slate-900 text-white border-slate-900 shadow-md"
+                                            : "bg-white text-slate-700 border-slate-300 hover:border-slate-900 hover:text-slate-900"
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
+                                disabled={currentPage === totalPages}
+                                className={`inline-flex items-center justify-center w-10 h-10 rounded-xl border text-sm font-black transition-all ${
+                                    currentPage === totalPages
+                                        ? "border-slate-200 text-slate-300 bg-white cursor-not-allowed"
+                                        : "border-slate-300 text-slate-700 bg-white hover:border-slate-900 hover:text-slate-900"
+                                }`}
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
 
             {sorted.length === 0 && !isLoading && (
                 <div className="mt-20 py-20 bg-white border border-slate-200 rounded-[40px] text-center shadow-inner">
