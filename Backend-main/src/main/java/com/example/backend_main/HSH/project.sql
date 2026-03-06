@@ -797,3 +797,5 @@ ALTER TABLE TB_USER ADD PROFILE_IMG VARCHAR2(500);
 select * from TB_CHAT_ROOM;
 select * from TB_IP_BLACKLIST;
 
+select * from tb_lawyer_info;
+

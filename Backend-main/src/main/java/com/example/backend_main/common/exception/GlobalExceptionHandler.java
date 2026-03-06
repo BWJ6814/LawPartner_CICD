@@ -1,79 +1,147 @@
 package com.example.backend_main.common.exception;
 
-
 import com.example.backend_main.common.vo.ResultVO;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
+import java.util.NoSuchElementException;
 
-// 해당 클래스는 모든 Controller을 감시하는 중앙 통제실!
-// 예외처리는 각 컨트롤러에서 하는 것이 디폴트이지만, 해당 어노테이션을 붙이면 모든 컨트롤러에서
-// 발생하는 에러를 이곳 한 곳에서 가로채 처리할 수 있다!
+// 해당 클래스는 모든 Controller를 감시하는 중앙 통제실!
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
-    // @ExceptionHandler(Exception.class):  모든 알 수 없는 에러를 잡아서 "서버 오류"로 포장하기
-    //                                   즉, 어떤 종류의 에러든 Exception가 발생하면 해당 메서드 실행
-    //                                   자바의 모든 에러는 Exception을 상속 받기때문에..!
-    @ExceptionHandler(Exception.class)
-    // ResponseEntity : HTTP 상태 코드(200, 400, 500 등) 최종 배송 상자
-    // <ResultVO<Void>> : 상자 안의 내용물은 ResultVo, 에러 응답에는 데이터가 필요 없으니
-    //                    비어있다는 뜻의 Void를 주머니 <T>에 담기
-    // Exception e : 발생한 에러의 정보를 e라는 이름의 바구니에 담아 가져오기
-    public ResponseEntity<ResultVO<Void>> handleAllException(Exception e) {
-        // 개발자 전용 로그 출력
-        // 두 번째 인자로 e를 넘기면 Stack Trace까지 로그 파일에 예쁘게 기록됩니다.
-        log.error("🚨 [System Error] 원인 미상의 에러 발생: ", e);
-        // internalServerError() : HTTP 상태 코드 500(Internal Server Error)를 상자에 붙이기
-        // .body(ResultVO.fail("...")) : 상자 안에 실패(false)라고 적힌 ResultVO 객체와 메시지를 담아
-        //                               사용자에게 보내기
-        return ResponseEntity.internalServerError()
-                // ★ "SYSTEM_ERROR" 코드를 부여하여 시스템 결함임을 알림
-                .body(ResultVO.fail("SYSTEM_ERROR","죄송합니다. 서버에 문제가 발생했습니다."));
-    }
+    // ==================================================================================
+    // 1. 🧮 [비즈니스 로직 에러] 개발자가 의도적으로 던지는 에러들
+    // ==================================================================================
 
-
-
-    // IllegalArgumentException.class : 누군자잘못된 값(인자)을 보냈을 때(IllegalArgumentException)
-    //                                  에만 이 메서드가 실행되는 특정 어노테이션
+    // 1-1. 잘못된 값(인자)이 들어왔을 때 (400)
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ResultVO<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
-        // 비즈니스 예외는 보통 WARN 레벨로 기록합니다.
         log.warn("⚠️ [Invalid Input] 사용자 입력 오류: {}", e.getMessage());
-
-        // badRequest() : HTTP 상태 코드 400(Bad Request)을 상자에 붙입니다. - 손님이 요청일 잘못보냈다.
-        // e.getMessage() : 에러 바구니(e)에 들어있는 구체적인 이유를 꺼내서 사용자에게 바로 보여주기
-        // ex) AES 열쇠는 반드지 32자여야 합니다!
         return ResponseEntity.badRequest()
-                // ★ "INVALID_INPUT" 코드로 사용자 입력값 문제임을 명시
-                .body(ResultVO.fail("INVALID_INPUT",e.getMessage()));
+                .body(ResultVO.fail("INVALID_INPUT", e.getMessage()));
     }
 
-    // @Valid 어노테이션으로 검사했을 때 통과하지 못하면 발생하는 에러 잡기
-    // 이메일 형식이나 비밀번호가 너무 짧지 않은지 등을 자동으로 검사!
-    // MethodArgumentNotValidException : 서류 양식이 틀렸을 때 발생하는 에러
+    // 1-2. 데이터베이스에서 값을 찾을 수 없을 때 (404) - (Optional.orElseThrow 등)
+    @ExceptionHandler({NoSuchElementException.class, EntityNotFoundException.class})
+    public ResponseEntity<ResultVO<Void>> handleNotFoundException(Exception e) {
+        log.warn("⚠️ [Not Found] 데이터를 찾을 수 없음: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ResultVO.fail("DATA_NOT_FOUND", e.getMessage() != null ? e.getMessage() : "요청하신 데이터를 찾을 수 없습니다."));
+    }
+
+    // 1-3. 현재 상태와 맞지 않는 요청을 할 때 (409 Conflict) - ex) 이미 취소된 주문을 또 취소
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ResultVO<Void>> handleIllegalStateException(IllegalStateException e) {
+        log.warn("⚠️ [Illegal State] 잘못된 상태 요청: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ResultVO.fail("ILLEGAL_STATE", e.getMessage()));
+    }
+
+
+    // ==================================================================================
+    // 2. 📝 [스프링 웹 / 파라미터 / JSON 바인딩 에러] 프론트엔드의 실수들
+    // ==================================================================================
+
+    // 2-1. @Valid 유효성 검사 실패 (400)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ResultVO<Void>> handleValidationException(MethodArgumentNotValidException e) {
-        // 여러 에러 중 첫 번째 에러 메시지만 가져와서 사용자에게 보여줍니다.
-        // e.getBindingResult() : 심가 결과가 적힌 결과 보고서 꺼내기
-        // .getAllErrors() : 보거서 중 틀린 부분들이 적힌 목록 전부 가져오기(이름 업석나, 이메일 형식 틀림 등)
-        // .get(0) : 틀린 게 여러 개라도 사용자가 한 번에 고치기 편하게 가장 첫 번째 에러 하나만 가져오기
-        // .getDefaultMessage() : 그 에러에 대해 미리 적어둔 친절한 설명을 가져오기
-        //  ex) 이메일 형식이 아닙니다 등..
         String errorMessage = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        log.warn("⚠️ [Validation Error] 양식 검증 실패: {}", errorMessage);
         return ResponseEntity.badRequest()
-                // errorMessage : 친절한 설명 대입하기..
-                // ★ "VALIDATION_ERROR" 코드로 어떤 형식이 틀렸는지 프론트가 인지하게 함
-                .body(ResultVO.fail("VALIDATION_ERROR",errorMessage));
+                .body(ResultVO.fail("VALIDATION_ERROR", errorMessage));
     }
-    /*
-    public ResultVO<String> join(@Valid @RequestBody UserDTO userDTO) {
-     ... 회원가입 로직  }
-    처럼 사용하게 됨..!
-    */
 
+    // 2-2. 필수 파라미터(?id=xxx)를 빼먹고 요청했을 때 (400)
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ResultVO<Void>> handleMissingParamException(MissingServletRequestParameterException e) {
+        log.warn("⚠️ [Missing Parameter] 필수 파라미터 누락: {}", e.getParameterName());
+        return ResponseEntity.badRequest()
+                .body(ResultVO.fail("MISSING_PARAM", "필수 파라미터 '" + e.getParameterName() + "'가 누락되었습니다."));
+    }
+
+    // 2-3. JSON 양식이 깨졌거나 타입이 안 맞을 때 (400) - ex) 숫자에 문자를 보냄
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ResultVO<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        log.warn("⚠️ [JSON Parse Error] 프론트엔드 JSON 파싱 실패: {}", e.getMessage());
+        return ResponseEntity.badRequest()
+                .body(ResultVO.fail("JSON_PARSE_ERROR", "요청 데이터의 형식이 잘못되었거나 파싱할 수 없습니다."));
+    }
+
+    // 2-4. 지원하지 않는 HTTP 메서드 호출 (405) - ex) GET 방식 API에 POST로 보냄
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ResultVO<Void>> handleMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
+        log.warn("⚠️ [Method Not Supported] 잘못된 HTTP 메서드 호출: {}", e.getMethod());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ResultVO.fail("METHOD_NOT_ALLOWED", "지원하지 않는 호출 방식(Method)입니다."));
+    }
+
+    // 2-5. 존재하지 않는 API 주소로 요청했을 때 (404)
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<ResultVO<Void>> handleNoHandlerFoundException(NoHandlerFoundException e) {
+        log.warn("⚠️ [API Not Found] 존재하지 않는 API 요청: {}", e.getRequestURL());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ResultVO.fail("API_NOT_FOUND", "요청하신 API 주소를 찾을 수 없습니다."));
+    }
+
+
+    // ==================================================================================
+    // 3. 🗄️ [데이터베이스 & 파일 에러]
+    // ==================================================================================
+
+    // 3-1. DB 제약조건 위배 (409 Conflict) - 중복된 아이디, 방금 전 겪은 NOT NULL 위반 등!
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ResultVO<Void>> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+        log.error("🚨 [DB Constraint Violation] 데이터베이스 제약 조건 위배: ", e);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ResultVO.fail("DUPLICATE_DATA", "이미 존재하는 데이터이거나 형식에 맞지 않는 데이터입니다."));
+    }
+
+    // 3-2. 파일 용량 초과 에러 (413 Payload Too Large)
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ResultVO<Void>> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+        log.warn("⚠️ [File Size Exceeded] 파일 업로드 용량 초과");
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ResultVO.fail("FILE_TOO_LARGE", "업로드 가능한 파일 용량을 초과했습니다."));
+    }
+
+
+    // ==================================================================================
+    // 4. 🔒 [스프링 시큐리티 관련 에러]
+    // ==================================================================================
+
+    // 4-1. 권한 부족 (403 Forbidden) - @PreAuthorize("hasRole('ADMIN')") 에 걸렸을 때
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ResultVO<Void>> handleAccessDeniedException(AccessDeniedException e) {
+        log.warn("⚠️ [Access Denied] 권한이 없는 사용자의 접근 시도");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ResultVO.fail("ACCESS_DENIED", "해당 기능을 실행할 권한이 없습니다."));
+    }
+
+
+    // ==================================================================================
+    // 5. 💣 [최후의 보루] 위에서 못 잡은 모든 에러 (500)
+    // ==================================================================================
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ResultVO<Void>> handleAllException(Exception e) {
+        // 이 로그가 찍히면 백엔드 개발자는 무조건 코드를 수정해서 위쪽의 개별 예외로 빼야 합니다!
+        log.error("🚨 [Critical System Error] 원인 미상의 서버 에러 발생: ", e);
+
+        return ResponseEntity.internalServerError()
+                .body(ResultVO.fail("SYSTEM_ERROR", "서버 내부 오류가 발생했습니다. 관리자에게 문의하세요."));
+    }
 }

@@ -1,13 +1,22 @@
 package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AuthService;
+import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.TokenDTO;
 import com.example.backend_main.dto.UserJoinRequestDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /*
@@ -25,6 +34,8 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final UserRepository userRepository;
 
     /*
         [회원 가입 API] - USR-01
@@ -103,4 +114,31 @@ public class AuthController {
         }
 
     }
+
+    // @RequestBody Map<String, String> payload
+    // 프론트에서 보낸 JSON 데이터{refreshToken:"...")를 자바의 Map 형태로 가져오겠습니당! 
+    // 즉, Key : Value형태
+    @PostMapping("/refresh")
+    public ResponseEntity<ResultVO<TokenDTO>> refreshToken(@RequestBody Map<String, String> payload) {
+        String refreshToken = payload.get("refreshToken");
+
+        if (refreshToken == null || refreshToken.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ResultVO.fail("AUTH-400", "요청에 리프레시 토큰이 없습니다."));
+        }
+
+        try {
+            // ★ 모든 복잡한 검증과 재발급 로직을 서비스에게 위임!
+            TokenDTO newTokenDTO = authService.refresh(refreshToken);
+
+            // 성공 시 새 토큰을 프론트로 전달
+            return ResponseEntity.ok(ResultVO.ok("토큰이 성공적으로 재발급되었습니다.", newTokenDTO));
+
+        } catch (IllegalArgumentException e) {
+            // ★ 서비스에서 던진 예외를 캐치해서 프론트엔드에게 401(미인증)로 깔끔하게 전달!
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ResultVO.fail("AUTH-401", e.getMessage()));
+        }
+    }
+
 }

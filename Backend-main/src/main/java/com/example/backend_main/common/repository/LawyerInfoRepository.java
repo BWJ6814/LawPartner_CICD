@@ -12,7 +12,7 @@ import java.util.List;
 public interface LawyerInfoRepository extends JpaRepository<LawyerInfo, Long> {
 
     @Query("""
-        SELECT LawyerCardDTO(
+        SELECT new com.example.backend_main.dto.LawyerCardDTO(
             l.userNo,
             l.user.userNm,
             l.specialtyStr,
