@@ -32,7 +32,6 @@ public class GeneralMyPageController {
     private final ChatRoomRepository chatRoomRepository;
     private final NotificationRepository notificationRepository;
 
-    private final NotificationRepository notificationRepository;
 
     @GetMapping("/general")
     // ★ 리턴 타입을 팀 표준인 ResultVO로 변경
