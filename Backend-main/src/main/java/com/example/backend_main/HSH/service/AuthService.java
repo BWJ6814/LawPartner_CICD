@@ -1,6 +1,8 @@
 package com.example.backend_main.HSH.service;
 
+import com.example.backend_main.common.entity.RefreshToken;
 import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.repository.RefreshTokenRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.util.Aes256Util;
@@ -16,6 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 /*
@@ -37,6 +41,7 @@ public class AuthService {
     private final LawyerService lawyerService;
     private final RefreshTokenService refreshTokenService;
     private final HashUtil hashUtil;                    // 단방향 해시 처리 (검색용)
+    private final RefreshTokenRepository refreshTokenRepository;
 
     /*
      [회원가입] USR-01 요구사항 반영
@@ -216,4 +221,60 @@ public class AuthService {
         return !userRepository.existsByPhoneHash(phoneHash);
     }
 
+
+    // 리프레시 토큰 재발급 처리.
+    @Transactional // DB 조작이 들어가므로 트랜잭션 필수!
+    public TokenDTO refresh(String oldRefreshToken) {
+
+        // 1. 토큰 자체의 유효성 검사 (서명, 만료)
+        if (!jwtTokenProvider.validateToken(oldRefreshToken)) {
+            throw new IllegalArgumentException("리프레시 토큰이 만료되었거나 유효하지 않습니다.");
+        }
+
+        // 2. 토큰에서 유저 ID(문자열) 추출
+        String userId = jwtTokenProvider.parseClaims(oldRefreshToken).getSubject();
+
+        // 3. DB에서 유저 최신 정보 조회 (★ userNo를 알아내기 위해 가장 먼저 실행해야 합니다!)
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if ("S03".equals(user.getStatusCode()) || "S99".equals(user.getStatusCode())) {
+            throw new IllegalArgumentException("이용이 정지되거나 탈퇴한 계정입니다.");
+        }
+
+        // 4. 저장소 대조 (보안 핵심!)
+        // 문자열 userId가 아니라, 방금 조회한 user 객체의 Long userNo를 사용합니다!
+        RefreshToken savedToken = refreshTokenRepository.findByUserNo(user.getUserNo())
+                .orElseThrow(() -> new IllegalArgumentException("로그아웃 된 사용자입니다. 다시 로그인해주세요."));
+
+        if (!savedToken.getTokenValue().equals(oldRefreshToken)) {
+            // 탈취 의심 시 즉시 DB에서 해당 토큰을 날려버려 강제 로그아웃 처리
+            refreshTokenRepository.delete(savedToken);
+            throw new IllegalArgumentException("탈취된 토큰이 의심됩니다. 다시 로그인해주세요.");
+        }
+
+        // 5. 새로운 권한 객체 생성
+        List<SimpleGrantedAuthority> authorities = Collections.singletonList(
+                new SimpleGrantedAuthority(user.getRoleCode())
+        );
+        UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(user.getUserId(), null, authorities);
+
+
+        // 5. 새로운 토큰 세트(Access + Refresh) 발급
+        TokenDTO newTokenDTO = jwtTokenProvider.createToken(
+                auth, user.getUserNo(), user.getUserNm(), user.getNickNm()
+        );
+
+        // ==========================================================
+        // ★ 피드백 3번 반영: Refresh Token Rotation (기존 토큰 폐기)
+        // ==========================================================
+        // 파트너님이 엔티티에 만들어두신 updateToken 메서드를 활용합니다! (JPA 더티체킹)
+        // 만료일은 프로젝트 정책에 맞게 수정하세요 (예: 7일 뒤)
+        LocalDateTime newExpireDt = LocalDateTime.now().plusDays(7);
+        savedToken.updateToken(newTokenDTO.getRefreshToken(), newExpireDt);
+
+        // 6. 새로 발급된 토큰 객체 딱 하나만 깔끔하게 반환!
+        return newTokenDTO;
+    }
 }

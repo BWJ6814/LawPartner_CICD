@@ -39,6 +39,8 @@ public class GeneralMyPageService {
     private final HashUtil hashUtil;
 
 
+
+
     public GeneralMyPageDTO getDashboardData(Long userNo) {
         GeneralMyPageDTO dto = new GeneralMyPageDTO();
 
@@ -290,7 +292,8 @@ public class GeneralMyPageService {
         String dummyPhone = "010-0000-" +userNo + UUID.randomUUID().toString().substring(0, 6) ;
         String dummyUserId = "deleted_" +userNo + UUID.randomUUID().toString().substring(0, 16);
 
-        user.setNickNm("탈퇴한 사용자");
+
+        user.setNickNm("탈퇴한 사용자" + UUID.randomUUID().toString().substring(0, 6) );
         user.setUserId(dummyUserId);
         user.setEmail(user.getEmailHash());
         user.setPhone(user.getPhoneHash());

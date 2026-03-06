@@ -15,6 +15,7 @@ const ChatList = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [currentRoomStatus, setCurrentRoomStatus] = useState(null);
     const [targetName, setTargetName] = useState('상대방');
+    const [currentRoom, setCurrentRoom] = useState(null);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('ALL');
@@ -31,18 +32,26 @@ const ChatList = () => {
     const recognitionRef = useRef(null);
     const initialMessageRef = useRef('');
 
+    // ★ 캘린더 모달 상태
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState('');
+
     // ========================================================
     // 1. [진짜 API] 내 채팅방 목록 가져오기 (더미 완전 제거)
     // ========================================================
-    useEffect(() => {
+    const loadRooms = () => {
         api.get('/api/chat/rooms')
             .then(res => {
                 setRooms(res.data.data || []);
             })
             .catch(err => {
                 console.error("방 목록 로딩 실패:", err);
-                setRooms([]); // 에러 나면 빈 배열
+                setRooms([]);
             });
+    };
+
+    useEffect(() => {
+        loadRooms();
     }, []);
 
     // ========================================================
@@ -52,6 +61,8 @@ const ChatList = () => {
         if (!roomId || rooms.length === 0) return;
         const selectedRoom = rooms.find(r => String(r.roomId) === String(roomId));
         if (selectedRoom) {
+            setCurrentRoom(selectedRoom);
+
             setCurrentRoomStatus(selectedRoom.progressCode);
 
             // ★ [핵심] 내가 의뢰인이면 변호사 이름을, 아니면 의뢰인 이름을 타겟으로 잡음
@@ -88,13 +99,14 @@ const ChatList = () => {
         const token = localStorage.getItem('accessToken');
 
         client.connect({Authorization : `Bearer ${token}`}, () => {
-            console.log("웹소켓 연결 성공!");
+            console.log("🔥 [채팅방] 웹소켓 연결 성공! roomId:", roomId);
             client.subscribe(`/sub/chat/room/${roomId}`, (response) => {
                 const newMessage = JSON.parse(response.body);
+                console.log("💌 [실시간 메시지 도착!]:", newMessage); // ★ 화면 안 떠도 로그에 찍히는지 확인
                 setChatLog((prev) => [...prev, newMessage]);
             });
         }, (error) => {
-            console.error("웹소켓 연결 실패 :" ,error)
+            console.error("❌ 웹소켓 연결 실패 :" ,error)
         });
 
         stompClient.current = client;
@@ -106,6 +118,29 @@ const ChatList = () => {
         };
     }, [roomId]);
 
+    // ★ 현재 접속자가 변호사인지 판별
+    const isLawyer = currentRoom && Number(currentRoom.lawyerNo) === Number(userNo);
+
+    // ★ 상태 변경 API 호출 (수락 or 종료)
+    const handleStatusChange = async (type) => {
+        try {
+            const endpoint = type === 'ACCEPT' ? `/api/chat/room/accept/${roomId}` : `/api/chat/room/close/${roomId}`;
+            const method = type === 'ACCEPT' ? api.put : api.put; // 둘 다 PUT
+
+            await method(endpoint, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+            });
+
+            alert(type === 'ACCEPT' ? "상담을 수락했습니다." : "상담을 종료했습니다.");
+
+            // 상태 업데이트 및 목록 새로고침
+            setCurrentRoomStatus(type === 'ACCEPT' ? 'ST02' : 'ST05');
+            loadRooms();
+        } catch (error) {
+            alert("처리 중 에러가 발생했습니다.");
+        }
+    };
+
     // 메시지 전송 로직
     const handleSendMessage = () => {
         if (!message.trim() || !stompClient.current) return;
@@ -115,8 +150,34 @@ const ChatList = () => {
             message: message,
             msgType: 'TEXT'
         };
+        console.log("🚀 [메시지 서버로 발송]:", chatDTO); // ★ 보낼 때 로그 찍기
         stompClient.current.send("/pub/chat/message", {}, JSON.stringify(chatDTO));
         setMessage('');
+    };
+
+    // ★ 캘린더 제안 발송 (변호사)
+    const sendCalendarProposal = () => {
+        if (!selectedDate) {
+            alert("날짜와 시간을 선택해주세요.");
+            return;
+        }
+        handleSendMessage('CALENDAR', selectedDate);
+        setIsCalendarOpen(false);
+    };
+
+    // ★ 캘린더 제안 수락 (의뢰인)
+    const acceptCalendarProposal = async (dateStr) => {
+        if (!window.confirm(`[${dateStr}] 일정으로 확정하시겠습니까? 양측 캘린더에 추가됩니다.`)) return;
+
+        try {
+            await api.post('/api/chat/calendar/confirm', { roomId, date: dateStr }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+            });
+            // 백엔드 저장 후 챗방에 알림 쏘기
+            handleSendMessage('TEXT', `[시스템] ${dateStr} 으로 일정이 확정되었습니다.`);
+        } catch (error) {
+            alert("일정 확정에 실패했습니다.");
+        }
     };
 
     // ★ [기능 1] 파일 업로드 핸들러
@@ -257,16 +318,23 @@ const ChatList = () => {
     return (
         <div className="flex h-screen bg-[#f1f5f9] overflow-hidden font-sans text-slate-900">
             <DashboardSidebar isSidebarOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+            <main className="flex-1 flex flex-col bg-slate-100 min-w-0 relative">
+            {/* 헤더 */}
+            <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm z-10 shrink-0">
+                <h2 className="text-lg font-black text-navy-dark tracking-tight ">채팅 목록</h2>
 
-            <main className="flex-1 flex flex-col bg-slate-100 h-full min-w-0 relative">
-                <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm z-10 shrink-0">
-                    <div className="flex items-center space-x-4">
-                        <Link to="/mypage" className="text-slate-400 hover:text-navy-dark transition">
-                            <i className="fas fa-arrow-left"></i>
-                        </Link>
-                        <div><h2 className="text-lg font-black text-navy-dark tracking-tight ">채팅 목록</h2></div>
+                {/* [초심자 핵심] 변호사 전용 컨트롤 패널 */}
+                {isLawyer && roomId && (
+                    <div className="flex gap-2">
+                        {currentRoomStatus === 'ST01' && (
+                            <button onClick={() => handleStatusChange('ACCEPT')} className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold shadow-md hover:bg-blue-700 transition">상담 수락하기</button>
+                        )}
+                        {currentRoomStatus === 'ST02' && (
+                            <button onClick={() => handleStatusChange('CLOSE')} className="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-sm font-bold shadow-md hover:bg-slate-900 transition">상담 완료(종료)</button>
+                        )}
                     </div>
-                </header>
+                )}
+            </header>
 
                 <div className="flex-1 flex overflow-hidden">
                     {/* (1) 좌측: 상담 목록 */}
@@ -339,130 +407,115 @@ const ChatList = () => {
                         </div>
                     </section>
 
-                    {/* (2) 중앙: 채팅창 */}
+                    {/* 중앙 채팅창 */}
                     <section className="flex-1 flex flex-col bg-white min-w-0 relative">
                         {!roomId ? (
-                            <div className="flex-1 flex items-center justify-center bg-slate-50">
-                                <div className="text-center text-slate-400">
-                                    <i className="fas fa-comments text-4xl mb-3 opacity-50"></i>
-                                    <p className="font-bold">좌측 목록에서 채팅방을 선택해주세요.</p>
-                                </div>
-                            </div>
+                            <div className="flex-1 flex items-center justify-center bg-slate-50 font-bold text-slate-400">방을 선택해주세요.</div>
                         ) : (
                             <>
-                                {currentRoomStatus === 'ST01' && (
-                                    <div className="bg-orange-50 p-3 text-center border-b border-orange-100 text-orange-600 text-sm font-bold shadow-inner z-20">
-                                        <i className="fas fa-exclamation-circle mr-1"></i> 변호사의 수락을 대기 중입니다. 사전 질문을 남겨주세요.
-                                    </div>
-                                )}
+                                {/* 상태 경고창 */}
+                                {currentRoomStatus === 'ST01' && <div className="bg-orange-50 p-2 text-center text-orange-600 text-sm font-bold">대기 중입니다.</div>}
+                                {currentRoomStatus === 'ST05' && <div className="bg-slate-200 p-2 text-center text-slate-600 text-sm font-bold">종료된 상담입니다.</div>}
 
-                                <div ref={chatContainerRef} className="flex-1 p-8 overflow-y-auto custom-scrollbar space-y-6 bg-gray-50/50 scroll-smooth">
+                                <div ref={chatContainerRef} className="flex-1 p-8 overflow-y-auto bg-gray-50/50">
                                     {chatLog.map((msg, index) => {
                                         const isMyMessage = Number(msg.senderNo) === Number(userNo);
+
+                                        // [초심자 핵심] 백엔드에서 프사 URL을 보내주면 받고, 없으면 null 처리
+                                        const profileImg = msg.profileUrl || (currentRoom && !isMyMessage ? currentRoom.targetProfileImg : null);
+
                                         return (
-                                            <div key={index} className={`flex items-start space-x-3 ${isMyMessage ? 'justify-end' : ''}`}>
-                                                <div className="w-9 h-9 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500 text-[11px] font-black shadow-inner flex-shrink-0 text-center leading-none">
-                                                    {/* 이름이 너무 길면 첫 두 글자만 보여주는 게 UI 국룰이다 */}
-                                                    {targetName.length > 2 ? targetName.substring(0, 2) : targetName}
-                                                </div>
+                                            <div key={index} className={`flex items-start space-x-3 mb-6 ${isMyMessage ? 'justify-end' : ''}`}>
+
+                                                {/* 상대방 프로필 렌더링 (내 메시지 아닐 때만) */}
+                                                {!isMyMessage && (
+                                                    profileImg ? (
+                                                        // 1. 진짜 프사가 있을 때
+                                                        <img src={profileImg} alt="profile" className="w-10 h-10 rounded-full object-cover shadow-sm shrink-0 border border-slate-200" />
+                                                    ) : (
+                                                        // 2. 프사가 없을 때 (기본 첫 글자 아바타)
+                                                        <div className="w-10 h-10 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-600 text-[13px] font-black shadow-sm shrink-0">
+                                                            {targetName ? targetName.substring(0, 1) : '상'}
+                                                        </div>
+                                                    )
+                                                )}
+
                                                 <div className={`space-y-1 ${isMyMessage ? 'flex flex-col items-end' : ''}`}>
-                                                    <p className="text-[10px] font-black text-slate-400 ml-1 ">
-                                                        {isMyMessage ? '나' : (msg.senderName || targetName)}
-                                                    </p>
-                                                    <div className={`p-4 rounded-2xl text-sm font-medium max-w-md shadow-sm border leading-relaxed ${isMyMessage ? 'bg-navy-main text-white rounded-tr-none border-navy-main' : 'bg-white text-slate-800 rounded-tl-none border-slate-100'}`}>
-                                                        {msg.msgType === 'FILE' ? (
+
+                                                    {/* 내 이름은 숨기고, 상대방일 때만 이름 띄움 */}
+                                                    {!isMyMessage && (
+                                                        <p className="text-[11px] font-bold text-slate-500 px-1">{msg.senderName || targetName}</p>
+                                                    )}
+
+                                                    <div className={`p-3.5 rounded-2xl text-[13px] font-medium shadow-sm border ${isMyMessage ? 'bg-navy-main text-white rounded-tr-none' : 'bg-white text-slate-800 rounded-tl-none'}`}>
+
+                                                        {/* 메시지 타입별 렌더링 분기 */}
+                                                        {msg.msgType === 'CALENDAR' ? (
+                                                            <div className="flex flex-col items-center bg-blue-50 text-slate-800 p-3 rounded-lg border border-blue-100">
+                                                                <i className="fas fa-calendar-check text-2xl text-blue-500 mb-2"></i>
+                                                                <p className="font-bold text-center">일정 제안: {msg.message}</p>
+                                                                {!isLawyer && !isMyMessage && currentRoomStatus === 'ST02' && (
+                                                                    <button onClick={() => acceptCalendarProposal(msg.message)} className="mt-3 bg-blue-600 text-white px-4 py-1 rounded shadow hover:bg-blue-700">예, 확정합니다</button>
+                                                                )}
+                                                            </div>
+                                                        ) : msg.msgType === 'FILE' ? (
                                                             <div className="flex flex-col space-y-2">
-                                                                {/* [초심자 핵심 1] 파일명 문자열 끝을 잘라서 정규식으로 이미지인지 검사하는 로직 */}
                                                                 {msg.message && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.message) ? (
-                                                                    // [초심자 핵심 2] 이미지면 img 태그로 렌더링. 화면 안 깨지게 max-w-xs (최대너비) 걸어두는 게 팩트 필수!
                                                                     <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
-                                                                        <img
-                                                                            src={msg.fileUrl}
-                                                                            alt={msg.message}
-                                                                            className="max-w-xs rounded-lg shadow-sm border border-slate-200 cursor-pointer hover:opacity-80 transition"
-                                                                        />
+                                                                        <img src={msg.fileUrl} alt={msg.message} className="max-w-xs rounded-lg shadow-sm border border-slate-200 cursor-pointer hover:opacity-80 transition" />
                                                                     </a>
                                                                 ) : (
-                                                                    // 일반 파일(PDF 등)은 기존처럼 아이콘이랑 이름만 띄움
-                                                                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline font-bold text-blue-100">
-                                                                        <i className="fas fa-file-alt text-lg"></i>
-                                                                        <span className="truncate">{msg.message}</span>
+                                                                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline font-bold text-blue-500">
+                                                                        <i className="fas fa-file-alt text-lg"></i> <span className="truncate">{msg.message}</span>
                                                                     </a>
                                                                 )}
-
-                                                                {/* [초심자 핵심 3] 강제 다운로드 버튼! 백엔드에 만들어둔 isDownload=true 파라미터를 쿼리스트링으로 쏴줌 */}
-                                                                <a
-                                                                    href={`${msg.fileUrl}?isDownload=true`}
-                                                                    className="text-[11px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md w-max hover:bg-slate-200 transition font-black flex items-center gap-1.5 shadow-sm mt-1"
-                                                                >
+                                                                <a href={`${msg.fileUrl}?isDownload=true`} className="text-[11px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md w-max hover:bg-slate-200 transition font-black flex items-center gap-1.5 shadow-sm mt-1">
                                                                     <i className="fas fa-download"></i> 저장하기
                                                                 </a>
                                                             </div>
                                                         ) : (
                                                             msg.message
                                                         )}
+
                                                     </div>
                                                 </div>
-                                                {isMyMessage && <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xs font-black shadow-lg flex-shrink-0">나</div>}
                                             </div>
                                         );
                                     })}
                                 </div>
 
-                                <div className="p-6 border-t border-slate-100 bg-white z-10">
+                                {/* 입력창 영역 (사라졌던 버튼들 완벽 복구) */}
+                                <div className="p-6 border-t border-slate-100 bg-white">
                                     <div className="relative bg-slate-50 rounded-2xl p-4 border border-slate-200">
-
-                                        {isRecording && (
-                                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-500 text-white px-5 py-2 rounded-full shadow-lg flex items-center space-x-3 z-50 animate-bounce">
-                                                <span className="relative flex h-3 w-3">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                                                </span>
-                                                <span className="font-bold text-xs">음성을 듣고 있습니다...</span>
-                                            </div>
-                                        )}
-
                                         <textarea
-                                            placeholder={currentRoomStatus === 'ST03' ? "상담이 종료되었습니다." : "채팅을 입력해주세요.."}
-                                            disabled={currentRoomStatus === 'ST03'}
-                                            className="w-full bg-transparent border-none outline-none text-sm font-medium resize-none placeholder:text-slate-300 disabled:opacity-50"
-                                            rows="3"
-                                            value={message}
-                                            onChange={(e) => setMessage(e.target.value)}
-                                            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                                        ></textarea>
+                                            disabled={currentRoomStatus === 'ST05'}
+                                            placeholder={currentRoomStatus === 'ST05' ? "상담이 종료되어 채팅할 수 없습니다." : "메시지를 입력하세요."}
+                                            className="w-full bg-transparent border-none outline-none text-sm font-medium resize-none disabled:opacity-50"
+                                            rows="2" value={message} onChange={(e) => setMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                                        />
                                         <div className="flex justify-between items-center mt-3 border-t border-slate-200 pt-3">
                                             <div className="flex space-x-5 text-slate-400">
-                                                {/* 숨겨진 파일 인풋 */}
-                                                <input
-                                                    type="file"
-                                                    ref={fileInputRef}
-                                                    onChange={handleFileUpload}
-                                                    className="hidden"
-                                                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" // 허용 확장자
-                                                />
-                                                <button
-                                                    onClick={() => fileInputRef.current.click()}
-                                                    disabled={currentRoomStatus === 'ST03' || isUploading}
-                                                    className={`transition ${isUploading ? 'text-gray-300 cursor-wait' : 'hover:text-blue-600'}`}
-                                                >
+
+                                                {/* 1. 파일 첨부 버튼 */}
+                                                <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" />
+                                                <button onClick={() => fileInputRef.current.click()} disabled={currentRoomStatus === 'ST05' || isUploading} className={`transition ${isUploading ? 'text-gray-300 cursor-wait' : 'hover:text-blue-600'}`}>
                                                     <i className={`fas ${isUploading ? 'fa-spinner fa-spin' : 'fa-paperclip'}`}></i>
                                                 </button>
-                                                <button
-                                                    onClick={toggleRecording}
-                                                    disabled={currentRoomStatus === 'ST03'} // 완료된 방이면 마이크도 막음
-                                                    className={`transition ${isRecording ? 'text-red-500 animate-pulse' : 'hover:text-blue-600 text-slate-400'}`}
-                                                    title="마이크를 눌러 음성으로 입력하세요"
-                                                >
+
+                                                {/* 2. STT 마이크 버튼 */}
+                                                <button onClick={toggleRecording} disabled={currentRoomStatus === 'ST05'} className={`transition ${isRecording ? 'text-red-500 animate-pulse' : 'hover:text-blue-600 text-slate-400'}`}>
                                                     <i className="fa-solid fa-microphone"></i>
                                                 </button>
+
+                                                {/* 3. [핵심] 캘린더 호출 버튼 (isLawyer 조건 추가!) */}
+                                                {isLawyer && (
+                                                    <button onClick={() => setIsCalendarOpen(true)} disabled={currentRoomStatus === 'ST05'} className="hover:text-blue-600">
+                                                        <i className="fas fa-calendar-alt text-lg"></i>
+                                                    </button>
+                                                )}
+
                                             </div>
-                                            <button
-                                                onClick={handleSendMessage}
-                                                disabled={currentRoomStatus === 'ST03' || !message.trim()}
-                                                className="bg-navy-main text-white px-8 py-2.5 rounded-xl text-xs font-black hover:bg-blue-800 transition shadow-lg disabled:bg-slate-300 disabled:cursor-not-allowed">
-                                                <i className="fas fa-paper-plane mr-2"></i> 전송하기
-                                            </button>
+                                            <button onClick={() => handleSendMessage()} disabled={currentRoomStatus === 'ST05' || !message.trim()} className="bg-navy-main text-white px-6 py-2 rounded-xl text-xs font-black disabled:bg-slate-300">전송</button>
                                         </div>
                                     </div>
                                 </div>
@@ -470,8 +523,27 @@ const ChatList = () => {
                         )}
                     </section>
                 </div>
-            </main>
-        </div>
+
+            {/* ★ 캘린더 제안 모달창 */}
+            {isCalendarOpen && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-2xl w-80 shadow-2xl">
+                        <h3 className="font-black text-lg mb-4 text-slate-800">🗓 일정 제안하기</h3>
+                        <input
+                            type="datetime-local"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="w-full p-2 border border-slate-200 rounded-lg mb-4 text-sm font-bold"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button onClick={() => setIsCalendarOpen(false)} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold">취소</button>
+                            <button onClick={sendCalendarProposal} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-md">상대방에게 제안</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </main>
+    </div>
     );
 };
 

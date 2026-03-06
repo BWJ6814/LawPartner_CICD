@@ -785,6 +785,8 @@ commit ;
 
 
 select * from tb_user;
+select * from TB_LAWYER_INFO;
+
 
 delete from tb_user where user_no = 20003;
 
@@ -794,6 +796,9 @@ SELECT * FROM TB_ACCESS_LOG;
 
 ALTER TABLE TB_USER ADD PROFILE_IMG VARCHAR2(500);
 
-
+select * from TB_CHAT_ROOM;
 select * from TB_IP_BLACKLIST;
 
+select * from tb_lawyer_info;
+
+commit;

@@ -47,20 +47,25 @@ public class JwtTokenProvider {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
+        // now : 현재 시간
+        // tokenValidityInMilliseconds : 설정한 토큰의 수명 = 60분
+        // 현재 시간과 더해서 하루 뒤인 시간으로 만들기!
         long now = (new Date()).getTime();
         Date accessTokenExpiresIn = new Date(now + tokenValidityInMilliseconds); // 1일
 
         String accessToken = Jwts.builder()
-                .subject(authentication.getName())                        // 이메일 (누구인가?)         - 주인
-                .claim("role", authorities)                             // 권한 (무엇을 할 수 있는가?) - 추가
-                .claim("userNo", userNo)                                // 회원 번호(DB 식별자)       - 추가
-                .claim("userNm", userNm)                                 // 회원 이름               - 추가
-                .claim("nickNm", nickNm)                                 // 회원 닉네임
-                .expiration(new Date(now + tokenValidityInMilliseconds))     // 유효기간 설정
-                .signWith(key)                                                // 우리 열쇠로 서명(위조 방지)
-                .compact();                                                // 한 줄의 문자열로 압축하기.
-
+                .subject(authentication.getName())                      // 이메일 (누구인가?)         - 주인
+                .claim("role", authorities)                          // 권한 (무엇을 할 수 있는가?) - 추가
+                .claim("userNo", userNo)                             // 회원 번호(DB 식별자)       - 추가
+                .claim("userNm", userNm)                             // 회원 이름               - 추가
+                .claim("nickNm", nickNm)                             // 회원 닉네임
+                .expiration(accessTokenExpiresIn)                       // 유효기간 설정
+                .signWith(key)                                          // 우리 열쇠로 서명(위조 방지)
+                .compact();                                             // 한 줄의 문자열로 압축하기.
+        
+        // 리프레시 토큰 설정
         String refreshToken = Jwts.builder()
+                .subject(authentication.getName()) // 누구 건지 이름표는 붙여주자!
                 .expiration(new Date(now + refreshTokenValidityInMilliseconds))
                 .signWith(key)
                 .compact();

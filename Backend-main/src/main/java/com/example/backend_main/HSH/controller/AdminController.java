@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize; // ★ 권한 체크
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -225,11 +226,19 @@ public class AdminController {
     @ActionLog(action = "IP 블랙리스트 추가", target = "보안 시스템")
     public ResponseEntity<ResultVO<Void>> addBlacklist(
             @RequestBody Map<String, String> payload,
-            @AuthenticationPrincipal CustomUserDetails userDetails) { // ★ 로그인한 관리자 정보 가져오기
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        // 🚨 S급 방어 로직: 로그인 정보(토큰)가 없거나 규격이 안 맞아서 null로 들어올 경우 서버 다운 방지
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ResultVO.fail("AUTH-401", "로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요."));
+        }
+
         try {
-            // 서비스에게 IP, 사유, 그리고 '현재 관리자 번호'를 함께 넘김
-            adminService.addBlacklist(payload.get("ip"), payload.get("reason"), userDetails.getUserNo());
+            // ★ 수정: getUserNo() 대신 확실한 getUsername()(=userId)을 넘겨줍니다!
+            adminService.addBlacklist(payload.get("ip"), payload.get("reason"), userDetails.getUsername());
             return ResponseEntity.ok(ResultVO.ok("IP가 차단되었습니다.", null));
+
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ResultVO.fail("BL-400", e.getMessage()));
         }
