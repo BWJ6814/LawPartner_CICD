@@ -21,6 +21,9 @@ import org.springframework.security.access.prepost.PreAuthorize; // ★ 권한 �
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
+import java.security.Principal;
+
+
 
 // 페이징 처리를 위한 핵심 클래스들
 import org.springframework.data.domain.Page;
@@ -226,17 +229,17 @@ public class AdminController {
     @ActionLog(action = "IP 블랙리스트 추가", target = "보안 시스템")
     public ResponseEntity<ResultVO<Void>> addBlacklist(
             @RequestBody Map<String, String> payload,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            Principal principal) {
 
-        // 🚨 S급 방어 로직: 로그인 정보(토큰)가 없거나 규격이 안 맞아서 null로 들어올 경우 서버 다운 방지
-        if (userDetails == null) {
+        // 🚨 S급 방어 로직: principal 객체가 null인지 확인
+        if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ResultVO.fail("AUTH-401", "로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요."));
         }
 
         try {
-            // ★ 수정: getUserNo() 대신 확실한 getUsername()(=userId)을 넘겨줍니다!
-            adminService.addBlacklist(payload.get("ip"), payload.get("reason"), userDetails.getUsername());
+            // principal.getName()을 통해 사용자 ID(username/userId)를 안전하게 가져옵니다.
+            adminService.addBlacklist(payload.get("ip"), payload.get("reason"), principal.getName());
             return ResponseEntity.ok(ResultVO.ok("IP가 차단되었습니다.", null));
 
         } catch (IllegalArgumentException e) {
