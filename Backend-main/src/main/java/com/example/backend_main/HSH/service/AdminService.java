@@ -460,16 +460,24 @@ public class AdminService {
         blacklistIpRepository.delete(target);
     }
 
-
+    /*
+     금지어를 등록합니다.
+     @param word 등록할 금지어
+     @param currentAdminId 등록을 수행하는 관리자 아이디
+     */
     @Transactional // ★ 에러 발생 시 자동 롤백 보장
     public void addBannedWord(String word, String currentAdminId) {
+        
+        // 1. 중복 검사하기
         if (bannedWordRepository.existsByWord(word)) {
             throw new IllegalArgumentException("이미 등록된 금지어입니다.");
         }
 
+        // 2. 관리자 정보 조회하기(엔티티 얻기)
         User admin = userRepository.findByUserId(currentAdminId)
                 .orElseThrow(() -> new IllegalArgumentException("관리자 정보 없음"));
 
+        // 3. 금지어 엔티티 생성 및 저장하기.
         BannedWord newWord = BannedWord.builder()
                 .word(word)
                 .adminNo(admin.getUserNo())
@@ -479,20 +487,28 @@ public class AdminService {
         log.info("🛡️ 금지어 등록 완료: [{}] by Admin: {}", word, currentAdminId);
     }
 
+    /*
+     게시글의 블라인드 상태를 토글(변경)합니다.
+     @param boardNo 대상 게시글 번호
+     @param reason 블라인드 처리/해제 사유
+     @param currentAdminId 처리하는 관리자 아이디
+     */
     @Transactional // ★ 핵심: 트랜잭션 안에서 엔티티를 조회하고 변경해야 함
     public void toggleBoardBlind(Long boardNo, String reason, String currentAdminId) {
+
+        // 1. 대상 게시글 조회하기
         Board board = boardRepository.findById(boardNo)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
 
-        // 토글 로직 (Y -> N, N -> Y)
+        // 2. 현재 상태 확인 및 토글 로직 (Y -> N, N -> Y)
         String currentBlind = board.getBlindYn() != null ? board.getBlindYn() : "N";
         String newBlind = "Y".equals(currentBlind) ? "N" : "Y";
 
         board.setBlindYn(newBlind);
 
-        // 💡 [S급 꿀팁] repository.save(board)가 없습니다!
-        // 이유: @Transactional 메서드 내에서 영속성 컨텍스트(JPA)가 엔티티의 변경을 감지합니다.
-        // 메서드가 종료될 때 알아서 UPDATE 쿼리를 DB로 날립니다. (이것이 Dirty Checking 입니다)
+        // 💡 repository.save(board)는 필요하지 않음.
+        // @Transactional 안에서 불러온 엔티티(board)의 값을 Setter로 변경하기만 하면,
+        // JPA의 Dirty Checking 기능이 메서드 종료 시점에 자동으로 UPDATE 쿼리를 DB로 전송합니다.
 
         log.warn("🚨 [콘텐츠 제어] 관리자[{}]가 게시글[{}]의 블라인드 상태를 [{}]로 변경했습니다. 사유: {}",
                 currentAdminId, boardNo, newBlind, reason);

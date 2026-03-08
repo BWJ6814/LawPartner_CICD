@@ -5,7 +5,7 @@ import {
   LogOut, Search, Download, Eye, EyeOff, CheckCircle, XCircle, 
   AlertTriangle, Lock, Unlock, Filter, Calendar, Terminal,
   UserCheck, Ban, Trash2, FileSearch, ShieldCheck, ChevronRight,
-  Activity, RotateCcw
+  Activity, RotateCcw, Plus, X
 } from 'lucide-react';
 import { 
   AreaChart, Area, 
