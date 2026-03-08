@@ -156,10 +156,10 @@ public class AdminService {
     [슈퍼 관리자 전용] 하위 관리자 생성 로직
     */
     @Transactional
-    public void createSubAdmin(UserJoinRequestDTO joinDto, Long currentAdminNo) throws Exception{
+    public void createSubAdmin(UserJoinRequestDTO joinDto, String currentAdminId) throws Exception{
 
         // 1. 요청자가 진짜 슈퍼 관리자인지 DB에서 다시 확인하기(철통 보안)!!
-        User currentAdmin = userRepository.findById(currentAdminNo)
+        User currentAdmin = userRepository.findById(currentAdminId)
                 .orElseThrow(() -> new IllegalArgumentException("접근 권한이 없습니다."));
 
         // 슈퍼 관리자가 아닐 경우 즉시 차단하기.
@@ -201,7 +201,7 @@ public class AdminService {
     }
 
     @Transactional
-    public void changeUserStatus(String userId, String targetStatusCode) {
+    public void changeUserStatus(String userId, String targetStatusCode, String reason, String currentAdminId) { // ★ 파라미터 2개(사유, 관리자 ID) 추가
         // 1. 대상 회원 찾기
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
@@ -217,34 +217,34 @@ public class AdminService {
             }
         }
 
-
         // 2. 상태 변경 (Setter 사용)
         user.setStatusCode(targetStatusCode);
 
-        // 3. [비즈니스 로직 완벽 연동]
+        // 3. [비즈니스 로직 완벽 연동] - 각 상황별 로그에 '누가', '왜' 했는지 추가
         if ("S01".equals(targetStatusCode)) {
             // 케이스 A: [변호사 승인] 준회원(ROLE_ASSOCIATE) -> 정상(S01) 변경 시
             if ("ROLE_ASSOCIATE".equals(user.getRoleCode())) {
                 user.setRoleCode("ROLE_LAWYER");
-                log.info("🎉 [변호사 승인] 회원[{}]의 권한이 ROLE_LAWYER로 완벽하게 승격되었습니다.", user.getUserId());
+                log.info("🎉 [변호사 승인] 관리자[{}]에 의해 회원[{}]의 권한이 ROLE_LAWYER로 완벽하게 승격되었습니다. 사유: {}", currentAdminId, user.getUserId(), reason);
             }
             // 케이스 B: [계정 복구] 기존에 정지(S03)였던 유저를 정상(S01)으로 돌릴 때
             else if ("S03".equals(oldStatus)) {
-                log.info("🔄 [계정 복구] 블랙리스트/정지 처리되었던 회원[{}]이 정상 활동으로 복구되었습니다.", user.getUserId());
+                log.info("🔄 [계정 복구] 관리자[{}]에 의해 정지 처리되었던 회원[{}]이 정상 활동으로 복구되었습니다. 사유: {}", currentAdminId, user.getUserId(), reason);
             }
         }
         else if ("S03".equals(targetStatusCode)) {
             // 케이스 C: [블랙리스트 / 강제 정지]
-            log.warn("🚨 [계정 정지] 회원[{}]이 관리자에 의해 강제 정지(블랙리스트) 처리되었습니다.", user.getUserId());
+            log.warn("🚨 [계정 정지] 회원[{}]이 관리자[{}]에 의해 강제 정지(블랙리스트) 처리되었습니다. 사유: {}", user.getUserId(), currentAdminId, reason);
             // (추후 확장 포인트: 정지되는 순간 이 유저의 RefreshToken을 DB에서 삭제해버리면, 즉시 로그아웃 시킬 수 있습니다!)
         }
-
 
         // JPA의 Dirty Checking으로 인해 save를 호출하지 않아도 트랜잭션 종료 시 자동 업데이트되지만,
         // 명시적으로 작성하는 것이 가독성에 좋습니다.
         userRepository.save(user);
 
-        log.info("🔧 회원[{}] 상태 변경 완료: {} -> {}", user.getUserId(), oldStatus, targetStatusCode);
+        // ★ [핵심 추적 로그] 모든 케이스를 아우르는 최종 Audit 로그
+        log.info("🛡️ [회원 상태 변경 최종 완료] 실행 관리자: {}, 대상 회원: {}, 상태: {} -> {}, 사유: {}",
+                currentAdminId, user.getUserId(), oldStatus, targetStatusCode, reason);
     }
 
     // [대시보드용] 일별 접속자 수 통계 조회하기

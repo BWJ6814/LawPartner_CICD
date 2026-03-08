@@ -78,7 +78,13 @@ public class AdminController {
     @PutMapping("/user/status")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')") // 슈퍼 관리자, 일반 관리자
     @ActionLog(action = "CHANGE_STATUS", target = "TB_USER") // 감시 로그 기록
-    public ResultVO<String> changeUserStatus(@RequestBody Map<String, String> requestBody) {
+    public ResultVO<String> changeUserStatus(@RequestBody Map<String, String> requestBody,
+                                             Principal principal) { // ★ 1. 범용 Principal 객체 추가
+
+        // 🚨 S급 방어 로직: 로그인 정보가 없으면 튕기지 않고 우아하게 에러 반환
+        if (principal == null) {
+            return ResultVO.fail("AUTH-401", "로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요.");
+        }
 
         // 1. 필수 파라미터 추출 (사유 포함)
         String userId = requestBody.get("userId");
@@ -91,8 +97,11 @@ public class AdminController {
         }
 
         try {
-            // 비즈니스 로직 수행
-            adminService.changeUserStatus(userId, statusCode);
+            // ★ 2. 안전하게 현재 실행 중인 관리자 아이디 추출
+            String currentAdminId = principal.getName();
+
+            // ★ 3. 비즈니스 로직 수행 (관리자 ID와 사유도 같이 넘겨줌!)
+            adminService.changeUserStatus(userId, statusCode, reason, currentAdminId);
 
             // 성공 응답 (성공 시 AOP가 'reason'을 포함해 감사 로그 저장)
             return ResultVO.ok("회원 상태가 성공적으로 변경되었습니다.", null);
@@ -115,12 +124,18 @@ public class AdminController {
     @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')") // ★ 2중 보안 (슈퍼 관리자만!)
     @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER")
     public ResultVO<String> createOperator(@RequestBody UserJoinRequestDTO joinDto,
-                                           @AuthenticationPrincipal CustomUserDetails userDetails) {
+                                           Principal principa) {
+
+        // 🚨 방어 로직: 인증 정보가 날아갔을 경우 튕기지 않고 우아하게 실패 메시지 반환
+        if (principal == null) {
+            return ResultVO.fail("AUTH-401", "로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요.");
+        }
+
         try {
             // [Pro Level 최적화]
             // 로그인 시 저장해둔 CustomUserDetails에서 PK(userNo)를 바로 꺼냄
             // 불필요한 DB 조회(SELECT)를 방지함
-            Long currentAdminNo = userDetails.getUserNo();
+            String currentAdminId = principal.getName();
 
             // 서비스 호출
             adminService.createSubAdmin(joinDto, currentAdminNo);

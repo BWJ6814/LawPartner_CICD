@@ -159,13 +159,14 @@ public class LogingAspect {
         String actionType = actionLog.action();
         String targetInfo = actionLog.target();
 
-        // 1. 관리자 정보 가져오기
-        Long adminNo = null;
+        // 1. 관리자 정보 가져오기 (S급 최적화 적용)
+        Long adminNo = getCurrentUserNo();
         String adminId = "UNKNOWN";
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
-            adminNo = details.getUserNo();
-            adminId = details.getUserId();
+
+        // 토큰이 존재하고 정상적으로 인증된 상태라면 범용 인터페이스(getName)를 통해 ID 추출
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            adminId = auth.getName();
         }
 
         // 2. 환경 정보 및 TraceID
