@@ -1,5 +1,6 @@
 package com.example.backend_main.common.security;
 
+import com.example.backend_main.common.security.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +28,9 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter{
     // 신분증 발급기를 미리 가져오기!
     private final JwtTokenProvider jwtTokenProvider;
+    // DB에서 사용자 상세 정보를 로드할 서비스(SeurityConfig에서 주입 설정 필요)
+    // 학원에서 처리할 예정
+    private final CustomUserDetailsService customUserDetailsService;
 
     // OncePerRequestFilter의 검분 업무를 재정의하기
     // HttpServletRequest : 손님이 들고온 가방(요청 정보) - 신분증!
@@ -56,12 +60,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
         // false : 실패..
         // 신분증이 null이 아니고, 발급기에게 신분증을 넣었을 때, 가짜/날짜가 안 지났을 때만 true!
         if (token != null && jwtTokenProvider.validateToken(token)) {
-            // 3. 신분증을 보고 공식 명찰(Authentication)을 만듭니다.
-            // userNo가 비고란(details)에 이미 적혀있음.
-            Authentication auth = jwtTokenProvider.getAuthentication(token);
-            // 4. 이 사람의 명찰을 성 안의 '현재 접속자 명단'에 등록합니다.
-            // SecurityContextHolder.getContext() : 현재 출입자 명부 펼치기
-            // setAuthentication(auth) : 명부에 이 사람의 이름(이메일)과 권한을 등록하기..!
+            // 1. 토큰에서 이메일(Subject) 추출
+            String email = jwtTokenProvider.parseClaims(token).getSubject();
+
+            // 2. ⭐ 형변환 추가: 상세 정보를 CustomUserDetails 타입으로 확실히 가져옵니다.
+            CustomUserDetails userDetails = (CustomUserDetails) customUserDetailsService.loadUserByUsername(email);
+
+            // 3. 주머니에 넣을 명찰 생성 (Principal 자리에 String이 아닌 userDetails 객체 주입)
+            Authentication auth = new UsernamePasswordAuthenticationToken(
+                    userDetails,
+                    null,
+                    userDetails.getAuthorities()
+            );
+
+            // 4. 시큐리티 컨텍스트에 저장
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
