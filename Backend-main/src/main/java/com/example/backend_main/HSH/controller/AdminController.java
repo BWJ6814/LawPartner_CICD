@@ -3,6 +3,10 @@ package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.common.annotation.ActionLog;
+// 금지어 설정 관련
+import com.example.backend_main.common.entity.BannedWord;
+import com.example.backend_main.BWJ.BoardRepository;
+import com.example.backend_main.dto.Board;
 
 import com.example.backend_main.common.entity.BlacklistIp;
 import com.example.backend_main.common.entity.User;
@@ -56,7 +60,9 @@ public class AdminController {
     // 블랙리스트 의존성 추가
     private final BlacklistIpRepository blacklistIpRepository;
     private final AdminService adminService;
-
+    private final BannedWordRepository bannedWordRepository;
+    private final BoardRepository boardRepository;
+    private final UserRepository userRepository;
 
     // [전체 화원 목록 조회] [ADM-02]
     // 관리자가 전체 시민 명부를 확인하는 기능
@@ -138,7 +144,7 @@ public class AdminController {
             String currentAdminId = principal.getName();
 
             // 서비스 호출
-            adminService.createSubAdmin(joinDto, currentAdminNo);
+            adminService.createSubAdmin(joinDto, currentAdminId);
 
             return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.", null);
 
@@ -274,6 +280,37 @@ public class AdminController {
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ResultVO.fail("BL-404", e.getMessage()));
+        }
+    }
+
+    // 보안 정책 관리 (금지어 API)
+    @PostMapping("/security/banned-words")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @ActionLog(action = "금지어 등록", target = "TB_BANNED_WORD")
+    public ResultVO<Void> addBannedWord(@RequestBody Map<String, String> payload, Principal principal) {
+        String word = payload.get("word");
+
+        try {
+            // 서비스로 단어와 관리자 아이디만 토스!
+            adminService.addBannedWord(word, principal.getName());
+            return ResultVO.ok("금지어가 등록되었습니다.", null);
+        } catch (IllegalArgumentException e) {
+            return ResultVO.fail("BW-400", e.getMessage());
+        }
+    }
+
+    // 콘텐츠 보안 관리 (게시물 블라인드 API) 리뷰 및 개선
+    @PutMapping("/content/boards/{boardNo}/blind")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    @ActionLog(action = "게시글 블라인드 상태 변경", target = "TB_BOARD")
+    public ResultVO<Void> toggleBoardBlind(@PathVariable Long boardNo, @RequestBody Map<String, String> payload, Principal principal) {
+        String reason = payload.get("reason");
+
+        try {
+            adminService.toggleBoardBlind(boardNo, reason, principal.getName());
+            return ResultVO.ok("블라인드 상태가 변경되었습니다.", null);
+        } catch (IllegalArgumentException e) {
+            return ResultVO.fail("BOARD-400", e.getMessage());
         }
     }
 }

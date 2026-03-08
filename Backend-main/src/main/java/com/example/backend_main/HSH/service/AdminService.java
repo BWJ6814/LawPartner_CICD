@@ -461,5 +461,42 @@ public class AdminService {
     }
 
 
+    @Transactional // ★ 에러 발생 시 자동 롤백 보장
+    public void addBannedWord(String word, String currentAdminId) {
+        if (bannedWordRepository.existsByWord(word)) {
+            throw new IllegalArgumentException("이미 등록된 금지어입니다.");
+        }
+
+        User admin = userRepository.findByUserId(currentAdminId)
+                .orElseThrow(() -> new IllegalArgumentException("관리자 정보 없음"));
+
+        BannedWord newWord = BannedWord.builder()
+                .word(word)
+                .adminNo(admin.getUserNo())
+                .build();
+
+        bannedWordRepository.save(newWord);
+        log.info("🛡️ 금지어 등록 완료: [{}] by Admin: {}", word, currentAdminId);
+    }
+
+    @Transactional // ★ 핵심: 트랜잭션 안에서 엔티티를 조회하고 변경해야 함
+    public void toggleBoardBlind(Long boardNo, String reason, String currentAdminId) {
+        Board board = boardRepository.findById(boardNo)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+
+        // 토글 로직 (Y -> N, N -> Y)
+        String currentBlind = board.getBlindYn() != null ? board.getBlindYn() : "N";
+        String newBlind = "Y".equals(currentBlind) ? "N" : "Y";
+
+        board.setBlindYn(newBlind);
+
+        // 💡 [S급 꿀팁] repository.save(board)가 없습니다!
+        // 이유: @Transactional 메서드 내에서 영속성 컨텍스트(JPA)가 엔티티의 변경을 감지합니다.
+        // 메서드가 종료될 때 알아서 UPDATE 쿼리를 DB로 날립니다. (이것이 Dirty Checking 입니다)
+
+        log.warn("🚨 [콘텐츠 제어] 관리자[{}]가 게시글[{}]의 블라인드 상태를 [{}]로 변경했습니다. 사유: {}",
+                currentAdminId, boardNo, newBlind, reason);
+    }
+
 }
 
