@@ -44,6 +44,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 8. S99 상태가 아닌 유저들만 조회하기
     List<User> findAllByStatusCodeNot(String statusCode);
 
+    // 이메일로 해당 객체 가져오기.
+    Optional<User> findByEmailHash(String emailHash);
     //
     @Query(value = "SELECT TO_CHAR(JOIN_DT, 'YYYY-MM-DD') as \"date\", COUNT(*) as \"count\" " +
             "FROM TB_USER " +

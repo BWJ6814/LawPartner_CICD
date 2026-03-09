@@ -1,7 +1,7 @@
 package com.example.backend_main.common.security;
 
 import com.example.backend_main.HSH.service.CustomUserDetailsService;
-import com.example.backend_main.common.security.CustomUserDetails;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,13 +62,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
         // false : 실패..
         // 신분증이 null이 아니고, 발급기에게 신분증을 넣었을 때, 가짜/날짜가 안 지났을 때만 true!
         if (token != null && jwtTokenProvider.validateToken(token)) {
-            // 1. 토큰에서 이메일(Subject) 추출
-            String email = jwtTokenProvider.parseClaims(token).getSubject();
+            // ★ 수정 1: 토큰에서 추출하는 것은 email이 아니라 userId(아이디)입니다.
+            String userId = jwtTokenProvider.parseClaims(token).getSubject();
 
-            // 2. ⭐ 형변환 추가: 상세 정보를 CustomUserDetails 타입으로 확실히 가져옵니다.
-            CustomUserDetails userDetails = (CustomUserDetails) customUserDetailsService.loadUserByUsername(email);
+            // ★ 수정 2: 추출한 userId를 넘겨줍니다.
+            CustomUserDetails userDetails = (CustomUserDetails) customUserDetailsService.loadUserByUsername(userId);
 
-            // 3. 주머니에 넣을 명찰 생성 (Principal 자리에 String이 아닌 userDetails 객체 주입)
+            // 3. 주머니에 넣을 명찰 생성
             Authentication auth = new UsernamePasswordAuthenticationToken(
                     userDetails,
                     null,
