@@ -1,16 +1,22 @@
 import os
+import sys
 from dotenv import load_dotenv
 from datasets import load_dataset
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # 1. 환경 변수(.env)에서 구글 API 키를 불러옵니다.
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
 
-def add_more_data_to_db():
+# 한 번에 불러올 데이터 구간 크기 (1만 건씩)
+SEGMENT_SIZE = 10000
+# 전체 데이터 개수 (14만~15만이면 150000으로 두고, 14만이면 140000으로 수정)
+TOTAL_RECORDS = 150000
+
+def add_more_data_to_db(segment: int):
     # 2. 임베딩 모델 설정 (문장을 숫자로 바꿔주는 역할)
     embedding_model = "models/gemini-embedding-001"
     embeddings = GoogleGenerativeAIEmbeddings(model=embedding_model)
@@ -27,11 +33,14 @@ def add_more_data_to_db():
         print("🌱 기존 DB가 없습니다. 새로운 DB를 생성합니다.")
         vectordb = Chroma(persist_directory=db_path, embedding_function=embeddings)
 
-    print("📥 허깅페이스에서 KLAID 데이터를 다운로드 중입니다...")
-    # ✨ 변경된 부분: 이전에는 split="train[:10]" 이었지만,
-    # 이제 유료 결제를 하셨으니 범위를 늘립니다! (예: 10번부터 1000번까지 가져오기)
-    # 전체를 다 가져오려면 split="train" 이라고 쓰면 되지만, 처음엔 1000개 정도만 테스트해 보세요.
-    ds = load_dataset("lawcompany/KLAID", split="train[90000:100000]")
+    start = (segment - 1) * SEGMENT_SIZE
+    end = min(segment * SEGMENT_SIZE, TOTAL_RECORDS)
+    if start >= TOTAL_RECORDS:
+        print(f"⚠️ 세그먼트 {segment}은 전체 범위({TOTAL_RECORDS}건)를 벗어납니다. 종료합니다.")
+        return
+
+    print(f"📥 허깅페이스에서 KLAID 데이터를 다운로드 중입니다... (세그먼트 {segment}: {start}~{end}건)")
+    ds = load_dataset("lawcompany/KLAID", split=f"train[{start}:{end}]")
 
     print("⚙️ 다운받은 데이터를 800자 크기로 쪼개는 중...")
 
@@ -67,10 +76,25 @@ def add_more_data_to_db():
         vectordb.add_documents(batch)
         print(f"🔄 진행 상황: {min(i + batch_size, len(documents))} / {len(documents)} 개 저장 완료...")
 
-    print("✅ 데이터 추가 및 저장 완료! 이제 메인 서버를 실행하셔도 됩니다.")
-
-    print("✅ 데이터 추가 및 저장 완료! 이제 메인 서버를 실행하셔도 됩니다.")
+    print(f"✅ 세그먼트 {segment} ({start}~{end}건) 추가 및 저장 완료!")
 
 # 파이썬 파일을 실행하면 위 함수가 작동하도록 설정
+# 사용법: python update_db.py 1  → 0~1만건
+#         python update_db.py 2  → 1만~2만건
+#         python update_db.py 15 → 14만~15만건 (총 15만건일 때)
 if __name__ == "__main__":
-    add_more_data_to_db()
+    if len(sys.argv) < 2:
+        print("사용법: python update_db.py <세그먼트번호>")
+        print("  예: python update_db.py 1   → 0~10,000건")
+        print("      python update_db.py 2   → 10,000~20,000건")
+        print(f"      python update_db.py 15 → 140,000~{TOTAL_RECORDS:,}건 (총 {TOTAL_RECORDS:,}건 기준)")
+        sys.exit(1)
+    try:
+        segment = int(sys.argv[1])
+    except ValueError:
+        print("세그먼트 번호는 숫자로 입력하세요. (예: 1, 2, 3, ...)")
+        sys.exit(1)
+    if segment < 1:
+        print("세그먼트 번호는 1 이상이어야 합니다.")
+        sys.exit(1)
+    add_more_data_to_db(segment)
