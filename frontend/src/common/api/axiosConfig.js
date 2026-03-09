@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+// 공통: 백엔드 주소 (API 호출·WebSocket·이미지 URL 등 한 곳에서 관리)
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.0.43:8080';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -37,7 +38,7 @@ api.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                // 🔑 핵심 2: 본문에 refreshToken을 담지 않습니다. 
+                // 🔑 핵심 2: 본문에 refreshToken을 담지 않습니다.
                 // 쿠키에 담겨 자동으로 날아가기 때문에 빈 객체{}만 보냅니다.
                 // 인터셉터가 없는 순수 axios를 사용합니다.
                 const res = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {}, {
