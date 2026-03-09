@@ -10,6 +10,7 @@
     "cookie": "^1.1.1",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.563.0",
+    "react-toastify": "^11.0.5",
     "recharts": "^3.7.0",
     "sockjs-client": "^1.6.1"
   }
