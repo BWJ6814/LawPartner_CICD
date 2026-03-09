@@ -168,7 +168,7 @@ public class AuthService {
         } else {
             // [일반 유저] 닉네임 = 입력값 (유효성 검사 필수)
             if (dto.getNickNm() == null || dto.getNickNm().trim().isEmpty()) {
-                throw new IllegalArgumentException("일반 회원은 닉네임을 반드시 입력해야 합니다.");
+                throw new CustomException(ErrorCode.INVALID_INPUT, "일반 회원은 닉네임을 반드시 입력해야 합니다.");
             }
             return dto.getNickNm();
         }
