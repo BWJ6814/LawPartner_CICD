@@ -1,15 +1,13 @@
 
 package com.example.backend_main.HSH.service;
 
-import com.example.backend_main.common.entity.AccessLog;
-import com.example.backend_main.common.entity.BlacklistIp;
-import com.example.backend_main.common.entity.User;
-import com.example.backend_main.common.repository.AccessLogRepository;
-import com.example.backend_main.common.repository.BlacklistIpRepository;
-import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.BWJ.BoardRepository;
+import com.example.backend_main.common.entity.*;
+import com.example.backend_main.common.repository.*;
 import com.example.backend_main.common.spec.AccessLogSpecification;
 import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil; // 해시 유틸
+import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.UserJoinRequestDTO;
 import com.example.backend_main.dto.AccessLogResponseDTO;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,6 +41,10 @@ public class AdminService {
     private final PasswordEncoder passwordEncoder;          // 비밀번호 암호기
     private final HashUtil hashUtil;                        // 단방향 해시 처리 (검색용)
     private final BlacklistIpRepository blacklistIpRepository;
+    private final LawyerInfoRepository lawyerInfoRepository; // 변호사 상세 정보 DB
+    private final BannedWordRepository bannedWordRepository;
+    private final BoardRepository boardRepository;
+
 
     // [화면 조회용] 회왼 목록 조회 API
     // 모든 회원 목록을 가져오는 함수 정의하기
@@ -159,7 +161,7 @@ public class AdminService {
     public void createSubAdmin(UserJoinRequestDTO joinDto, String currentAdminId) throws Exception{
 
         // 1. 요청자가 진짜 슈퍼 관리자인지 DB에서 다시 확인하기(철통 보안)!!
-        User currentAdmin = userRepository.findById(currentAdminId)
+        User currentAdmin = userRepository.findByUserId(currentAdminId)
                 .orElseThrow(() -> new IllegalArgumentException("접근 권한이 없습니다."));
 
         // 슈퍼 관리자가 아닐 경우 즉시 차단하기.
@@ -225,6 +227,7 @@ public class AdminService {
             // 케이스 A: [변호사 승인] 준회원(ROLE_ASSOCIATE) -> 정상(S01) 변경 시
             if ("ROLE_ASSOCIATE".equals(user.getRoleCode())) {
                 user.setRoleCode("ROLE_LAWYER");
+                lawyerInfoRepository.findById(user.getUserNo()).ifPresent(LawyerInfo::approve);
                 log.info("🎉 [변호사 승인] 관리자[{}]에 의해 회원[{}]의 권한이 ROLE_LAWYER로 완벽하게 승격되었습니다. 사유: {}", currentAdminId, user.getUserId(), reason);
             }
             // 케이스 B: [계정 복구] 기존에 정지(S03)였던 유저를 정상(S01)으로 돌릴 때
@@ -237,6 +240,7 @@ public class AdminService {
             log.warn("🚨 [계정 정지] 회원[{}]이 관리자[{}]에 의해 강제 정지(블랙리스트) 처리되었습니다. 사유: {}", user.getUserId(), currentAdminId, reason);
             // (추후 확장 포인트: 정지되는 순간 이 유저의 RefreshToken을 DB에서 삭제해버리면, 즉시 로그아웃 시킬 수 있습니다!)
         }
+
 
         // JPA의 Dirty Checking으로 인해 save를 호출하지 않아도 트랜잭션 종료 시 자동 업데이트되지만,
         // 명시적으로 작성하는 것이 가독성에 좋습니다.
@@ -467,7 +471,7 @@ public class AdminService {
      */
     @Transactional // ★ 에러 발생 시 자동 롤백 보장
     public void addBannedWord(String word, String currentAdminId) {
-        
+
         // 1. 중복 검사하기
         if (bannedWordRepository.existsByWord(word)) {
             throw new IllegalArgumentException("이미 등록된 금지어입니다.");

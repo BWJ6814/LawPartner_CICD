@@ -1,11 +1,13 @@
 package com.example.backend_main.common.security;
 
-import com.example.backend_main.common.security.CustomUserDetailsService;
+import com.example.backend_main.HSH.service.CustomUserDetailsService;
+import com.example.backend_main.common.security.CustomUserDetails;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;

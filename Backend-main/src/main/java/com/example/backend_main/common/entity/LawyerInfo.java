@@ -59,4 +59,13 @@ public class LawyerInfo {
     @OneToMany(mappedBy = "lawyer", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Review> reviews = new ArrayList<>();
+
+    // 엔티티 스스로 승인 상태로 변경하는 메서드
+    public void approve() {
+        this.approvalYn = "Y";
+    }
+    // 혹시 모를 반려 처리
+    public void reject() {
+        this.approvalYn = "N";
+    }
 }

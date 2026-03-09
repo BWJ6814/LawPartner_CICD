@@ -1,9 +1,7 @@
 package com.example.backend_main.security;
 
-import com.example.backend_main.common.security.JwtAccessDeniedHandler;
-import com.example.backend_main.common.security.JwtAuthenticationEntryPoint;
-import com.example.backend_main.common.security.JwtAuthenticationFilter;
-import com.example.backend_main.common.security.JwtTokenProvider;
+import com.example.backend_main.HSH.service.CustomUserDetailsService;
+import com.example.backend_main.common.security.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,7 +41,7 @@ public class SecurityConfig {
     // 401과 403처리를 다른 곳에서 한 이유
     // 401 : 인증 실패 - 입구 컷 (신분증 -JWT가 없음)
     // 403 : 인가 실패 - 권한 컷 (입장은 했으나, JWT 권한에 막힘)
-
+    private final CustomUserDetailsService customUserDetailsService;
 
     // 비밀번호 암호기 등록하기.
     @Bean
@@ -100,8 +98,8 @@ public class SecurityConfig {
                 )
 
                 // 5. JWT 문지기 배치 (기본 문지기 앞에 우리 문지기를 세웁니다)
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
-                        UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, customUserDetailsService),
+                UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

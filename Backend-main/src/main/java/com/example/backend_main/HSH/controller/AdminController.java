@@ -6,6 +6,8 @@ import com.example.backend_main.common.annotation.ActionLog;
 // 금지어 설정 관련
 import com.example.backend_main.common.entity.BannedWord;
 import com.example.backend_main.BWJ.BoardRepository;
+import com.example.backend_main.common.repository.BannedWordRepository;
+import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.dto.Board;
 
 import com.example.backend_main.common.entity.BlacklistIp;
@@ -22,6 +24,7 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize; // ★ 권한 체크
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
@@ -130,10 +133,10 @@ public class AdminController {
     @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')") // ★ 2중 보안 (슈퍼 관리자만!)
     @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER")
     public ResultVO<String> createOperator(@RequestBody UserJoinRequestDTO joinDto,
-                                           Principal principa) {
+                                           @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         // 🚨 방어 로직: 인증 정보가 날아갔을 경우 튕기지 않고 우아하게 실패 메시지 반환
-        if (principal == null) {
+        if (userDetails == null) { // ⭐ 2. null 체크도 userDetails로!
             return ResultVO.fail("AUTH-401", "로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요.");
         }
 
@@ -141,7 +144,7 @@ public class AdminController {
             // [Pro Level 최적화]
             // 로그인 시 저장해둔 CustomUserDetails에서 PK(userNo)를 바로 꺼냄
             // 불필요한 DB 조회(SELECT)를 방지함
-            String currentAdminId = principal.getName();
+            String currentAdminId = userDetails.getUserId();
 
             // 서비스 호출
             adminService.createSubAdmin(joinDto, currentAdminId);
