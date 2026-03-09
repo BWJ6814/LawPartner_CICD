@@ -53,7 +53,6 @@ const LoginPage = () => {
             if (tokenData && tokenData.accessToken) {
                 // 모든 정보를 로컬 스토리지에 저장 (RBAC 연동의 핵심)
                 localStorage.setItem('accessToken', tokenData.accessToken);
-                localStorage.setItem('refreshToken', tokenData.refreshToken);
                 localStorage.setItem('userNm', tokenData.userNm || "사용자");
                 // ★ 추가 저장: 이메일과 유저 번호
                 localStorage.setItem('userEmail', tokenData.email);

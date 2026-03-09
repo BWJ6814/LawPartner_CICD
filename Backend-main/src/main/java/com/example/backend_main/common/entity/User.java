@@ -1,5 +1,6 @@
 package com.example.backend_main.common.entity;
 
+import com.example.backend_main.common.converter.Aes256Converter;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -37,13 +38,16 @@ public class User {
 
     // ================= [이메일 & 휴대폰 (보안 설계 핵심)] =================
 
-    @Column(name = "EMAIL", nullable = false, length = 256)
+    //
+    @Convert(converter = Aes256Converter.class)
+    @Column(name = "EMAIL")
     private String email; // [연락용] AES-256 암호화 (복호화 가능)
 
     @Column(name = "EMAIL_HASH", nullable = false, length = 64)
     private String emailHash; // ★ [검색/중복체크용] SHA-256 해시 (복호화 불가, 고속 검색)
 
-    @Column(name = "PHONE", nullable = false, length = 256)
+    @Convert(converter = Aes256Converter.class)
+    @Column(name = "PHONE")
     private String phone; // [연락용] AES-256 암호화 (복호화 가능)
 
     @Column(name = "PHONE_HASH", nullable = false, length = 64)
