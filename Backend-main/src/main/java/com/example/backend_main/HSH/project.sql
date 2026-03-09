@@ -577,7 +577,8 @@ CREATE TABLE TB_BANNED_WORD (
 );
 
 select * from TB_BANNED_WORD;
-
+ALTER TABLE TB_BANNED_WORD ADD REASON VARCHAR2(200);
+commit;
 -- 일병 통계 (대시보드용)
 CREATE TABLE TB_DAILY_STATS (
     -- 날짜 (20260205)
@@ -804,3 +805,8 @@ select * from tb_lawyer_info;
 commit;
 
 select * from tb_user;
+
+INSERT INTO TB_COM_CODE VALUES ('USER_ROLE', 'ROLE_OPERATOR', '운영자');
+INSERT INTO TB_COM_CODE VALUES ('USER_ROLE', 'ROLE_SUPER_ADMIN', '최고 관리자');
+INSERT INTO TB_COM_CODE VALUES ('USER_ROLE', 'ROLE_ASSOCIATE', '승인 대기 변호사');
+-- ROLE_ASSOCIATE도 서비스에서 쓰이고 있음

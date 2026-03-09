@@ -1,148 +1,87 @@
 package com.example.backend_main.HSH.controller;
 
-
 import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.common.annotation.ActionLog;
-// 금지어 설정 관련
-import com.example.backend_main.common.entity.BannedWord;
-import com.example.backend_main.BWJ.BoardRepository;
-import com.example.backend_main.common.repository.BannedWordRepository;
-import com.example.backend_main.common.repository.UserRepository;
-import com.example.backend_main.dto.*;
-
 import com.example.backend_main.common.entity.BlacklistIp;
 import com.example.backend_main.common.entity.User;
-import com.example.backend_main.common.repository.BlacklistIpRepository;
-import com.example.backend_main.common.security.CustomUserDetails; // ★ 최적화용
+import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.vo.ResultVO;
+import com.example.backend_main.dto.*;
+import com.example.backend_main.dto.HSH_DTO.*;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; // ★ 권한 체크
-import org.springframework.security.core.Authentication;
+import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.Page;
-import java.security.Principal;
-
-
-
-// 페이징 처리를 위한 핵심 클래스들
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
-// 동적 쿼리(검색)을 위한 JPA Specification
-import org.springframework.data.jpa.domain.Specification;
-// 검색 규칙 클래스
-import com.example.backend_main.common.spec.AccessLogSpecification;
-// 엔티티 및 DTO
-import com.example.backend_main.common.entity.AccessLog;
-import com.example.backend_main.dto.AccessLogResponseDTO;
 
 import java.io.IOException;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
 /*
-
-@RequestMapping("/api/admin") : 관리자 전용 구역으로 들어오는 주소는 /api/admin이라고 설정..!
-
-- 회원 관리, 로그 다운로드, 관리자 계정 생성 등 수행
-- 모든 API는 SecurityConfig에서 1차, @PreAuthorize에서 2차 검증
-*/
+ * [AdminController]
+ * - 모든 예외는 GlobalExceptionHandler가 처리 → 컨트롤러에 try-catch 없음
+ * - Security 필터가 인증을 보장 → null 체크 없음
+ * - 컨트롤러 역할: 요청 받기 → @Valid 형식 검증 → 서비스 호출 → 응답 반환
+ * - 응답 타입: ResultVO 로 통일 (ResponseEntity 혼용 제거)
+ * - Repository 직접 호출 없음 → 모든 데이터 접근은 AdminService 경유
+ */
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 @Slf4j
 public class AdminController {
-    // 블랙리스트 의존성 추가
-    private final BlacklistIpRepository blacklistIpRepository;
-    private final AdminService adminService;
-    private final BannedWordRepository bannedWordRepository;
-    private final BoardRepository boardRepository;
-    private final UserRepository userRepository;
 
-    // [전체 화원 목록 조회] [ADM-02]
-    // 관리자가 전체 시민 명부를 확인하는 기능
-    // ResultVO<List<User>> : ResultVO라는 큰 상자 안에, 유저 여러 명의 정보가 담긴 List를 넣어서 보내겠다!
-    // 리액트에서는 이 상자를 받아 success가 true인지 확인하고, 안에 든 유저 리스트를 화면의 표(Table)에 뿌려주기..!
+    // ✅ Repository 의존성 전부 제거 — 모든 데이터 접근은 Service 경유
+    private final AdminService adminService;
+
+    // ==================================================================================
+    // 👤 회원 관리
+    // ==================================================================================
+
     @GetMapping("/users")
     public ResultVO<List<User>> getAllUsers() {
-        // 서비스에게 "암호 해독해서 회원 목록 가져와!" 라고 명령하기
-        List<User> usersList = adminService.getAllUsers();
-        // 가공된 데이터를 표준 객체(ResultVO)에 담아서 보내기..
-        return ResultVO.ok("전체 회원 목록을 성공적으로 불러왔습니다.", usersList);
+        return ResultVO.ok("전체 회원 목록을 성공적으로 불러왔습니다.", adminService.getAllUsers());
     }
 
-    /*
-        [회원 상태 변경] - ADM-02/ADM-03
-        특정 회원을 정지(S02), 변호사를 승인할 때 사용...
-        나중에 AdminService에 로직 추가하여 완성할 예정
-    */
     @PutMapping("/user/status")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-    @ActionLog(action = "CHANGE_STATUS", target = "TB_USER")
-    public ResultVO<String> changeUserStatus(
-            @Valid @RequestBody UserStatusDto dto, // @Valid로 자동 검증 (if문 제거)
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @ActionLog(action = "UPDATE_USER_STATUS", target = "TB_USER")
+    public ResultVO<Void> updateUserStatus(
+            @Valid @RequestBody UserStatusUpdateDto dto,
             Principal principal) {
-
-        // 1. 시큐리티가 검증하므로 principal null 체크 생략 (코드 간결화)
-        String currentAdminId = principal.getName();
-
-        // 2. 비즈니스 로직만 집중 (try-catch는 GlobalExceptionHandler가 처리)
-        adminService.changeUserStatus(dto.getUserId(), dto.getStatusCode(), dto.getReason(), currentAdminId);
-
+        adminService.updateUserStatus(dto.getUserId(), dto.getStatusCode(), dto.getReason(), principal.getName());
         return ResultVO.ok("회원 상태가 성공적으로 변경되었습니다.", null);
     }
 
-    /*
-    [하위 관리자 생성]
-    - @ActionLog 적용 -> "누가 생성했는가?"를 자동 기록하게 처리
-    - ★ 슈퍼 관리자(SUPER_ADMIN)만 가능
-    - CustomUserDetails를 사용해 DB 재조회 없이 PK 추출 (성능 최적화)
-    */
-    @PostMapping("/create-operator")
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')") // ★ 2중 보안 (슈퍼 관리자만!)
-    @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER")
-    public ResultVO<String> createOperator(@RequestBody UserJoinRequestDTO joinDto,
-                                           @AuthenticationPrincipal CustomUserDetails userDetails) {
-
-        // 🚨 방어 로직: 인증 정보가 날아갔을 경우 튕기지 않고 우아하게 실패 메시지 반환
-        if (userDetails == null) { // ⭐ 2. null 체크도 userDetails로!
-            return ResultVO.fail("AUTH-401", "로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요.");
-        }
-
-        try {
-            // [Pro Level 최적화]
-            // 로그인 시 저장해둔 CustomUserDetails에서 PK(userNo)를 바로 꺼냄
-            // 불필요한 DB 조회(SELECT)를 방지함
-            String currentAdminId = userDetails.getUserId();
-
-            // 서비스 호출
-            adminService.createSubAdmin(joinDto, currentAdminId);
-
-            return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.", null);
-
-        } catch (SecurityException e) {
-            log.warn("🚨 권한 없는 관리자 생성 시도: AdminID={}", userDetails.getUsername());
-            // ★ fail("메시지") -> fail("코드", "메시지")
-            return ResultVO.fail("AUTH-FORBIDDEN", "권한 오류: " + e.getMessage());
-        } catch (IllegalArgumentException e) {
-            return ResultVO.fail("BAD-INPUT", "입력 오류: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("관리자 생성 중 시스템 오류", e);
-            return ResultVO.fail("SYS-ERROR", "시스템 오류가 발생했습니다.");
-        }
+    @PutMapping("/user/role")
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @ActionLog(action = "UPDATE_USER_ROLE", target = "TB_USER")
+    public ResultVO<Void> updateUserRole(
+            @Valid @RequestBody UserRoleUpdateDto dto,
+            Principal principal) {
+        adminService.updateUserRole(dto.getUserId(), dto.getRoleCode(), dto.getReason(), principal.getName());
+        return ResultVO.ok("회원 권한이 성공적으로 변경되었습니다.", null);
     }
 
-    /*
-    보안 감사 로그 목록 조회 (화면 Grid용) - 5주차 계획
-    - 엑셀이 아닌, JSON 데이터로 로그 리스트를 반환합니다.
-    */
+    @PostMapping("/create-operator")
+    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER")
+    public ResultVO<String> createOperator(
+            @Valid @RequestBody UserJoinRequestDTO joinDto,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        adminService.createSubAdmin(joinDto, userDetails.getUserId());
+        return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.", null);
+    }
+
+    // ==================================================================================
+    // 📋 로그 관리
+    // ==================================================================================
+
     @GetMapping("/logs")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
     public ResultVO<Page<AccessLogResponseDTO>> getAccessLogs(
@@ -153,152 +92,114 @@ public class AdminController {
             @RequestParam(required = false) String keywordType,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "ALL") String statusType) {
-
-        //  컨트롤러가 직접 레포지토리를 만지지 않고, 서비스에게 요청합니다.
-        Page<AccessLogResponseDTO> logs = adminService.searchAccessLogs(page, size, startDate, endDate, keywordType, keyword, statusType);
-
-        return ResultVO.ok("로그 조회 성공", logs);
+        return ResultVO.ok("로그 조회 성공",
+                adminService.searchAccessLogs(page, size, startDate, endDate, keywordType, keyword, statusType));
     }
 
-    // 그래프(차트)용 데이터를 만드는 전용 창구
-    @GetMapping("/summary")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN','ROLE_OPERATOR')")
-    public ResultVO<Map<String, Object>> getAdminSummary() {
-        Map<String, Object> summary = adminService.getAdminSummary();
-        return ResultVO.ok("요약 데이터를 성공적으로 불러왔습니다.", summary);
-    }
-
-    // 대시보드 최근 보안 위협 로그 전용 창구
-    @GetMapping("/logs/threats")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
-    public ResultVO<List<AccessLogResponseDTO>> getRecentThreats() {
-        List<AccessLogResponseDTO> threats = adminService.getRecentThreats();
-        return ResultVO.ok("최신 보안 위협 로그를 성공적으로 불러왔습니다.", threats);
-    }
-
-    /*
-     [보안 감사 로그 엑셀 다운로드] (SXSSF 방식)
-     - @ActionLog: 다운로드 이력 자동 저장
-     - 대용량 데이터도 메모리 오류 없이 다운로드 가능
-     */
     @GetMapping("/logs/download")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')") // 관리자급 이상 접근 가능
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
     @ActionLog(action = "DOWNLOAD_EXCEL", target = "TB_ACCESS_LOG")
-    public void downloadLogs(HttpServletResponse response,
-                             // 프론트에서 ?reason=감사제출용 이라고 보내면 이리로 쏙 들어옵니다.
-                             // reason을 파라미터에 적어둔 이유 : AOP를 위한 바구니 역할
-                             //
-                             @RequestParam(value = "reason", required = true) String reason)
-            throws IOException {
+    public void downloadLogs(
+            HttpServletResponse response,
+            @RequestParam String reason) throws IOException {
         adminService.downloadAccessLogExcel(response);
     }
 
-    /*
-    [대시보드 통계] 일별 접속자 수 조회 API
-    - 차트 라이브러리(Recharts 등)에 넣을 데이터 제공
-    */
-    @GetMapping("/status/daily")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN','ROLE_OPERATOR')")
-    public ResultVO<List<Map<String, Object>>> getDailyStats(
-            @RequestParam(defaultValue = "7") int days) { // days 추가!
-
-        List<Map<String, Object>> stats = adminService.getDailyVisitStats(days);
-        return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.", stats);
+    @GetMapping("/logs/threats")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    public ResultVO<List<AccessLogResponseDTO>> getRecentThreats() {
+        return ResultVO.ok("최신 보안 위협 로그를 성공적으로 불러왔습니다.", adminService.getRecentThreats());
     }
 
-    // ==========================================
-    // 🚨 IP 블랙리스트 관리 API
-    // ==========================================
+    // ==================================================================================
+    // 📊 대시보드 통계
+    // ==================================================================================
 
-    // 1. 블랙리스트 전체 조회
-    // - HTTP 상태 코드: 200 OK
-    // - 권한: 운영자(OPERATOR) 이상 열람 가능
+    @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    public ResultVO<Map<String, Object>> getAdminSummary() {
+        return ResultVO.ok("요약 데이터를 성공적으로 불러왔습니다.", adminService.getAdminSummary());
+    }
+
+    @GetMapping("/status/daily")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    public ResultVO<List<Map<String, Object>>> getDailyStats(
+            @RequestParam(defaultValue = "7") int days) {
+        return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.", adminService.getDailyVisitStats(days));
+    }
+
+    // ==================================================================================
+    // 🚨 IP 블랙리스트 관리
+    // ==================================================================================
+
     @GetMapping("/blacklist")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
-    public ResponseEntity<ResultVO<List<BlacklistIp>>> getBlacklist() {
-        // 단순 전체 조회는 컨트롤러에서 Repository를 직접 호출해도 무방합니다.
-        List<BlacklistIp> list = blacklistIpRepository.findAll();
-
-        // 🟢 성공 응답: HTTP 200 + 비즈니스 성공 데이터
-        return ResponseEntity.ok(ResultVO.ok(list));
+    public ResultVO<List<BlacklistIp>> getBlacklist() {
+        // ✅ blacklistIpRepository.findAll() → Service로 이동
+        return ResultVO.ok(adminService.getAllBlacklist());
     }
 
-    // 2. 특정 IP 차단하기
     @PostMapping("/blacklist")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     @ActionLog(action = "IP 블랙리스트 추가", target = "보안 시스템")
-    public ResponseEntity<ResultVO<Void>> addBlacklist(
+    public ResultVO<Void> addBlacklist(
             @RequestBody Map<String, String> payload,
             Principal principal) {
-
-        // 🚨 S급 방어 로직: principal 객체가 null인지 확인
-        if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ResultVO.fail("AUTH-401", "로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요."));
-        }
-
-        try {
-            // principal.getName()을 통해 사용자 ID(username/userId)를 안전하게 가져옵니다.
-            adminService.addBlacklist(payload.get("ip"), payload.get("reason"), principal.getName());
-            return ResponseEntity.ok(ResultVO.ok("IP가 차단되었습니다.", null));
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ResultVO.fail("BL-400", e.getMessage()));
-        }
+        adminService.addBlacklist(payload.get("ip"), payload.get("reason"), principal.getName());
+        return ResultVO.ok("IP가 차단되었습니다.", null);
     }
 
-    // 3. 특정 IP 차단 해제하기
     @DeleteMapping("/blacklist/{ip}")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     @ActionLog(action = "IP 블랙리스트 해제", target = "보안 시스템")
-    public ResponseEntity<ResultVO<Void>> removeBlacklist(@PathVariable String ip, @RequestParam String reason) {
-        try {
-            // ★ 마찬가지로 서비스에게 삭제를 지시합니다.
-            adminService.removeBlacklist(ip);
-            return ResponseEntity.ok(ResultVO.ok("IP 차단이 해제되었습니다.", null));
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ResultVO.fail("BL-404", e.getMessage()));
-        }
+    public ResultVO<Void> removeBlacklist(
+            @PathVariable String ip,
+            @RequestParam String reason) {
+        adminService.removeBlacklist(ip);
+        return ResultVO.ok("IP 차단이 해제되었습니다.", null);
     }
 
-    // [추가] 금지어 목록 조회 (SecurityPolicyView 연동)
-    @GetMapping("/banned-words")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
-    public ResultVO<List<BannedWord>> getAllBannedWords() {
-        return ResultVO.ok(bannedWordRepository.findAll());
+    // ==================================================================================
+    // 🔤 금지어 관리
+    // ==================================================================================
+
+    @PostMapping("/banned-words")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @ActionLog(action = "ADD_BANNED_WORD", target = "TB_BANNED_WORD")
+    public ResultVO<Void> addBannedWord(
+            @Valid @RequestBody BannedWordDto dto,
+            Principal principal) {
+        adminService.addBannedWord(dto.getWord(), dto.getReason(), principal.getName());
+        return ResultVO.ok("금지어가 등록되었습니다.", null);
     }
 
-    // [추가] 금지어 삭제 (SecurityPolicyView 연동)
     @DeleteMapping("/banned-words/{wordNo}")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     @ActionLog(action = "DELETE_BANNED_WORD", target = "TB_BANNED_WORD")
     public ResultVO<Void> deleteBannedWord(@PathVariable Long wordNo) {
-        bannedWordRepository.deleteById(wordNo);
+        // ✅ bannedWordRepository.deleteById() → Service로 이동
+        adminService.deleteBannedWord(wordNo);
         return ResultVO.ok("금지어가 삭제되었습니다.", null);
     }
 
-    // [추가] 전체 게시글 조회 (ContentSecurityView 연동)
+    // ==================================================================================
+    // 📝 게시글 관리
+    // ==================================================================================
+
     @GetMapping("/boards")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
     public ResultVO<List<Board>> getAllBoards() {
-        // 관리자용이므로 페이징 없이 전체 리스트 또는 최신순 조회
-        return ResultVO.ok(boardRepository.findAll());
+        // ✅ boardRepository.findAll() → Service로 이동
+        return ResultVO.ok(adminService.getAllBoards());
     }
 
-    // 콘텐츠 보안 관리 (게시물 블라인드 API) 리팩토링 버전
     @PutMapping("/board/blind")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
     @ActionLog(action = "TOGGLE_BLIND", target = "TB_BOARD")
     public ResultVO<Void> toggleBoardBlind(
-            @Valid @RequestBody BoardBlindDto dto, // 1. 자동 검증 및 객체 매핑
+            @Valid @RequestBody BoardBlindDto dto,
             Principal principal) {
-
-        // 2. dto에서 바로 꺼내 쓰기 (Long 변환 필요 없음)
         adminService.toggleBoardBlind(dto.getBoardNo(), dto.getReason(), principal.getName());
-
         return ResultVO.ok("게시글 상태가 변경되었습니다.", null);
     }
-
-
 }

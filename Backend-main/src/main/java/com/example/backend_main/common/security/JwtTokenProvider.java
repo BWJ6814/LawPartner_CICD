@@ -1,6 +1,6 @@
 package com.example.backend_main.common.security;
 
-import com.example.backend_main.dto.TokenDTO;
+import com.example.backend_main.dto.HSH_DTO.TokenDTO;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -86,6 +86,8 @@ public class JwtTokenProvider {
                 .userNm(userNm)
                 .nickNm(nickNm)
                 .role(authorities)
+                .email(authentication.getName()) // ★ 누락된 이메일 추가 (Subject)
+                .userNo(userNo)                  // ★ 누락된 유저 번호 추가
                 .build();
     }
 

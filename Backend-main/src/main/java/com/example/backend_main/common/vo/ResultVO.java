@@ -1,5 +1,6 @@
 package com.example.backend_main.common.vo;
 
+import com.example.backend_main.common.exception.ErrorCode;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -74,4 +75,29 @@ public class ResultVO<T> {
                 .data(data)
                 .build();
     }
+    // ======================= [ErrorCode 연동] =======================
+
+    // 6. [Enum 기본] ErrorCode의 기본 메시지 그대로 사용
+    // 사용법: ResultVO.fail(ErrorCode.INVALID_INPUT);
+    public static <T> ResultVO<T> fail(ErrorCode errorCode) {
+        return ResultVO.<T>builder()
+                .success(false)
+                .code(errorCode.getCode())
+                .message(errorCode.getMessage())
+                .data(null)
+                .build();
+    }
+
+    // 7. [Enum + 커스텀 메시지] 코드는 Enum, 메시지는 예외에서 꺼낼 때
+    // 사용법: ResultVO.fail(ErrorCode.INVALID_INPUT, e.getMessage());
+    public static <T> ResultVO<T> fail(ErrorCode errorCode, String customMessage) {
+        return ResultVO.<T>builder()
+                .success(false)
+                .code(errorCode.getCode())
+                .message(customMessage)
+                .data(null)
+                .build();
+    }
+
+
 }
