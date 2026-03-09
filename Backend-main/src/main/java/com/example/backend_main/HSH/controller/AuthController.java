@@ -6,10 +6,15 @@ import com.example.backend_main.dto.HSH_DTO.LoginRequestDto;
 import com.example.backend_main.dto.HSH_DTO.RefreshTokenRequestDto;
 import com.example.backend_main.dto.HSH_DTO.TokenDTO;
 import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
+// 쿠키 설정을 위한 스프링 유틸리티
+import org.springframework.http.ResponseCookie;
+// 헤더 이름을 상수로 쓰기 위한 스프링 유틸리티 (중타 방지)
+import org.springframework.http.HttpHeaders;
 
 /*
  [AuthController]
@@ -51,12 +56,28 @@ public class AuthController {
             - 페이지 접근 분기 처리..
 
     */
+    // ✅ AuthController.java의 login 메서드 수정 예시
     @PostMapping("/login")
-    public ResultVO<TokenDTO> login(@Valid @RequestBody LoginRequestDto dto) {
-        // 서비스에서 인증 실패 시 예외를 던지면 GlobalExceptionHandler가 캐치합니다.
+    public ResultVO<TokenDTO> login(
+            @Valid @RequestBody LoginRequestDto dto,
+            HttpServletResponse response) { // 응답 객체 추가
+
         TokenDTO tokenDTO = authService.login(dto.getUserId(), dto.getUserPw());
-        // 1. 왜? 상태 코드는 Handler가 관리하므로 여기선 비즈니스 결과만 집중합니다.
-        // 2. 흐름: 서비스 성공 -> ResultVO 생성 -> 프론트로 JSON 전달
+
+        // 🍪 Refresh Token을 위한 보안 쿠키 생성
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokenDTO.getRefreshToken())
+                .httpOnly(true)    // JS 접근 차단 (보안 핵심)
+                .secure(true)      // HTTPS에서만 전송 (로컬 개발 시 false 가능)
+                .path("/")         // 모든 경로에서 사용
+                .maxAge(7 * 24 * 60 * 60) // 7일 유지
+                .sameSite("Lax")   // CSRF 방어
+                .build();
+
+        response.setHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+        // 보안을 위해 프론트로 전달되는 JSON 데이터에서는 refreshToken을 삭제합니다.
+        tokenDTO.setRefreshToken(null);
+
         return ResultVO.ok("로그인 성공", tokenDTO);
     }
 
@@ -96,10 +117,24 @@ public class AuthController {
     // 프론트에서 보낸 JSON 데이터{refreshToken:"...")를 자바의 Map 형태로 가져오겠습니당! 
     // 즉, Key : Value형태
     @PostMapping("/refresh")
-    public ResultVO<TokenDTO> refreshToken(@Valid @RequestBody RefreshTokenRequestDto dto) {
-        // JwtTokenProvider를 컨트롤러에서 직접 부르지 않고 서비스를 통합니다.
-        TokenDTO newTokenDTO = authService.refresh(dto.getRefreshToken());
+    public ResultVO<TokenDTO> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+        // 1. 서비스 호출 (이제 파라미터로 DTO가 아닌 request 자체를 넘깁니다)
+        TokenDTO newTokenDTO = authService.refresh(request);
 
+        // 2. 새로 발급받은 리프레시 토큰을 다시 보안 쿠키로 굽기
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", newTokenDTO.getRefreshToken())
+                .httpOnly(true)
+                .secure(true) // 로컬 환경이면 생략/false 가능
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60)
+                .sameSite("Lax")
+                .build();
+
+        // 3. 헤더에 쿠키 세팅
+        response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        // 4. 보안을 위해 JSON 본문에서는 제거하고 전송
+        newTokenDTO.setRefreshToken(null);
         return ResultVO.ok("토큰 재발급 성공", newTokenDTO);
     }
 
