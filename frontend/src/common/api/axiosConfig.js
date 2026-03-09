@@ -1,8 +1,11 @@
 import axios from 'axios';
 
+// 공통: 백엔드 주소 (API 호출·WebSocket·이미지 URL 등 한 곳에서 관리)
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+
 // 1. Axios 인스턴스 생성 (기본 설정)
 const api = axios.create({
-    baseURL: 'http://localhost:8080', // 백엔드 주소
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -58,8 +61,8 @@ api.interceptors.response.use(
           throw new Error("리프레시 토큰이 없습니다.");
         }
 
-        // 백엔드에 새 액세스 토큰 달라고 요청
-        const res = await axios.post('http://localhost:8080/api/auth/refresh', {
+        // 백엔드에 새 액세스 토큰 달라고 요청 (api 대신 axios 사용해 인터셉터 재진입 방지)
+        const res = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
           refreshToken: refreshToken
         });
 

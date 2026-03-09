@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // useNavigate: 다른 페이지로 이동시켜주는(링크 역할) 리액트 훅입니다.
 import { useParams, useNavigate } from 'react-router-dom';
 // axios: 스프링 서버랑 통신(데이터 주고받기)하기 위한 라이브러리입니다.
-import axios from 'axios';
+import api from '../common/api/axiosConfig';
 import {
     CaretLeft, ChatCircleDots, Star, PencilSimple, Trash,
     CheckCircle, User, PaperPlaneRight, Siren, X, FileText, DownloadSimple
@@ -47,8 +47,8 @@ const ConsultationDetail = () => {
     useEffect(() => {
         const fetchPost = async () => {
             try {
-                const res = await axios.get(`http://localhost:8080/api/boards/${id}`);
-                setPost(res.data);
+                const res = await api.get(`/api/boards/${id}`);
+                setPost(res.data?.data ?? res.data);
                 setLoading(false);
             } catch (err) {
                 console.error("게시글 로딩 실패", err);
@@ -63,8 +63,8 @@ const ConsultationDetail = () => {
     const handleFileDownload = async (file) => {
         try {
             const fileNo = (typeof file === 'object') ? (file.fileNo || file.file_no) : file;
-            const response = await axios.get(`http://localhost:8080/api/boards/download/${fileNo}`, {
-                responseType: 'blob', // 파일 다운로드를 위해 blob 타입으로 받아옵니다.
+            const response = await api.get(`/api/boards/download/${fileNo}`, {
+                responseType: 'blob',
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
@@ -85,7 +85,7 @@ const ConsultationDetail = () => {
         if (!editTitle.trim()) return alert("제목을 입력해주세요.");
         if (!editContent.trim()) return alert("내용을 입력해주세요.");
         try {
-            await axios.put(`http://localhost:8080/api/boards/${id}`, {
+            await api.put(`/api/boards/${id}`, {
                 title: editTitle,
                 content: editContent
             });
@@ -101,7 +101,7 @@ const ConsultationDetail = () => {
     const handleDelete = async () => {
         if (window.confirm("정말 이 게시글을 삭제하시겠습니까? (달린 답변도 모두 삭제됩니다)")) {
             try {
-                await axios.delete(`http://localhost:8080/api/boards/${id}`);
+                await api.delete(`/api/boards/${id}`);
                 alert("삭제되었습니다.");
                 navigate('/consultation');
             } catch (err) {
@@ -114,7 +114,7 @@ const ConsultationDetail = () => {
     const handleMatchComplete = async () => {
         if (window.confirm("상담을 완료하시겠습니까?")) {
             try {
-                await axios.put(`http://localhost:8080/api/boards/${id}/match`);
+                await api.put(`/api/boards/${id}/match`);
                 alert("상담이 완료되었습니다.");
                 window.location.reload();
             } catch (err) {
@@ -127,7 +127,7 @@ const ConsultationDetail = () => {
     const handleReplySubmit = async () => {
         if (!replyContent.trim()) return alert("답변 내용을 입력해주세요.");
         try {
-            await axios.post(`http://localhost:8080/api/boards/${id}/replies`, {
+            await api.post(`/api/boards/${id}/replies`, {
                 content: replyContent,
                 lawyerNo: currentUser.userNo
             });
@@ -142,7 +142,7 @@ const ConsultationDetail = () => {
     const handleReplyDelete = async (replyId) => {
         if (window.confirm("정말 이 답변을 삭제하시겠습니까?")) {
             try {
-                await axios.delete(`http://localhost:8080/api/boards/replies/${replyId}`);
+                await api.delete(`/api/boards/replies/${replyId}`);
                 alert("답변이 삭제되었습니다.");
                 window.location.reload();
             } catch (err) {
@@ -161,7 +161,7 @@ const ConsultationDetail = () => {
     const handleReplyUpdate = async (replyId) => {
         if (!editingReplyContent.trim()) return alert("내용을 입력해주세요.");
         try {
-            await axios.put(`http://localhost:8080/api/boards/replies/${replyId}`, {
+            await api.put(`/api/boards/replies/${replyId}`, {
                 content: editingReplyContent
             });
             alert("답변이 수정되었습니다.");
@@ -177,7 +177,7 @@ const ConsultationDetail = () => {
         if (rating === 0) return alert("별점을 선택해주세요.");
         if (!reviewContent.trim()) return alert("후기 내용을 입력해주세요.");
         try {
-            await axios.post(`http://localhost:8080/api/boards/${id}/reviews`, {
+            await api.post(`/api/boards/${id}/reviews`, {
                 lawyerNo: selectedLawyer.lawyerNo,
                 writerNo: currentUser.userNo,
                 writerNm: currentUser.name || "익명",
@@ -203,11 +203,9 @@ const ConsultationDetail = () => {
 
         try {
             // axios.post로 스프링 백엔드에 채팅방 생성 요청을 보냅니다.
-            const response = await axios.post(`http://localhost:8080/api/boards/chat/room`, {
+            const response = await api.post(`/api/boards/chat/room`, {
                 userNo: currentUser.userNo,
                 lawyerNo: lawyerNo
-            }, {
-                headers: { Authorization: `Bearer ${token}` } // 토큰 필수!
             });
 
             if (response.status === 200) {

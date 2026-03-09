@@ -159,4 +159,35 @@ public class JwtTokenProvider {
     public Long getUserNoFromToken(String token) {
         return parseClaims(token).get("userNo", Long.class);
     }
+
+    /**
+     * Authorization 헤더에서 순수 토큰 문자열만 추출.
+     *
+     * @param authorization "Bearer &lt;token&gt;" 또는 null
+     * @return 토큰 문자열, 또는 null (헤더 없음/형식 오류 시)
+     */
+    public String getTokenFromAuthorizationHeader(String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return null;
+        }
+        String token = authorization.substring(7);
+        return (token != null && !token.isBlank()) ? token : null;
+    }
+
+    /**
+     * Authorization 헤더에서 userNo를 안전하게 추출하는 공통 메서드.
+     * null/빈값/Bearer 미포함/토큰 무효 시 null 반환.
+     *
+     * @param authorization "Bearer &lt;token&gt;" 또는 null
+     * @return userNo, 또는 null (헤더 없음/형식 오류/토큰 무효 시)
+     */
+    public Long getUserNoFromAuthorizationHeader(String authorization) {
+        String token = getTokenFromAuthorizationHeader(authorization);
+        if (token == null) return null;
+        try {
+            return getUserNoFromToken(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
+    }
 }

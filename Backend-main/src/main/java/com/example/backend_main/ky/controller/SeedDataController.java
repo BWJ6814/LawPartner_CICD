@@ -38,8 +38,11 @@ public class SeedDataController {
     @PostMapping("/seed")
     public ResultVO<String> seed(@RequestHeader("Authorization") String token) {
 
-        // 1. JWT 파싱 및 변호사 번호 추출
-        String actualToken = token.startsWith("Bearer ") ? token.substring(7) : token;
+        // 1. 공통 메서드로 토큰 추출 후 파싱
+        String actualToken = jwtTokenProvider.getTokenFromAuthorizationHeader(token);
+        if (actualToken == null) {
+            return ResultVO.fail("SEED-FAIL", "토큰이 없거나 형식이 올바르지 않습니다. 재로그인 후 시도하세요.");
+        }
         Claims claims = jwtTokenProvider.parseClaims(actualToken);
 
         Long lawyerNo = claims.get("userNo", Long.class);

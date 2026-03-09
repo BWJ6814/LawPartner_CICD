@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../common/api/axiosConfig';
 import {
     Search, Menu, User, Scale, Gavel, Car, Home, Key,
     HandCoins, CircleDollarSign, Calculator, HeartCrack,
@@ -156,8 +156,10 @@ const ConsultationBoard = () => {
 
     const fetchPosts = async () => {
         try {
-            const response = await axios.get('http://localhost:8080/api/boards');
-            const mappedData = response.data.map(board => ({
+            const response = await api.get('/api/boards');
+            const raw = response.data?.data ?? response.data;
+            const list = Array.isArray(raw) ? raw : [];
+            const mappedData = list.map(board => ({
                 id: board.boardNo,
                 title: board.title,
                 content: board.content,

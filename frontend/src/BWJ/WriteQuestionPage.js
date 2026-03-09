@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../common/api/axiosConfig';
 import { LayoutGrid, CheckCircle, CloudUpload, X, FileText } from 'lucide-react';
 
 const CATEGORIES = [
@@ -111,11 +111,7 @@ const WriteQuestionPage = () => {
 
         try {
             // [중요] axios 전송 시 헤더에 multipart/form-data를 설정합니다.
-            await axios.post('http://localhost:8080/api/boards', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            await api.post('/api/boards', formData);
             alert("질문이 등록되었습니다.");
             navigate('/consultation');
         } catch (error) {

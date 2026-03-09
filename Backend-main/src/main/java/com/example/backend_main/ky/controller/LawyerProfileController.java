@@ -36,6 +36,7 @@ public class LawyerProfileController {
             @RequestHeader("Authorization") String token) {
 
         Long lawyerNo = extractUserNo(token);
+        if (lawyerNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
 
         Map<String, Object> data = new HashMap<>();
         lawyerInfoRepository.findById(lawyerNo).ifPresent(info -> {
@@ -59,6 +60,7 @@ public class LawyerProfileController {
             @RequestBody Map<String, Object> body) {
 
         Long lawyerNo = extractUserNo(token);
+        if (lawyerNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
 
         LawyerInfo info = lawyerInfoRepository.findById(lawyerNo)
                 .orElseGet(() -> {
@@ -92,6 +94,7 @@ public class LawyerProfileController {
             @RequestParam("file") MultipartFile file) throws IOException {
 
         Long lawyerNo = extractUserNo(token);
+        if (lawyerNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
 
         // 저장 폴더: 프로젝트 루트/uploads/
         String uploadDir = System.getProperty("user.dir") + "/uploads/";
@@ -112,9 +115,8 @@ public class LawyerProfileController {
         return ResultVO.ok("업로드 성공", imgUrl);
     }
 
-    // ─── 공통: 토큰에서 userNo 추출 ───────────────────────────────
+    // ─── 공통: Authorization 헤더에서 userNo 추출 ─────────────────
     private Long extractUserNo(String token) {
-        String t = (token != null && token.startsWith("Bearer ")) ? token.substring(7) : token;
-        return jwtTokenProvider.getUserNoFromToken(t);
+        return jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
     }
 }
