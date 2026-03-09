@@ -2,7 +2,6 @@ package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.entity.RefreshToken;
 import com.example.backend_main.common.entity.User;
-import com.example.backend_main.common.repository.RefreshTokenRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.util.Aes256Util;
@@ -41,7 +40,7 @@ public class AuthService {
     private final LawyerService lawyerService;
     private final RefreshTokenService refreshTokenService;
     private final HashUtil hashUtil;                    // 단방향 해시 처리 (검색용)
-    private final RefreshTokenRepository refreshTokenRepository;
+
 
     /*
      [회원가입] USR-01 요구사항 반영
@@ -185,7 +184,7 @@ public class AuthService {
             return dto.getNickNm();
         }
     }
-    
+
     // 아이디 중복 확인 로직
     public boolean isUserIdAvailable(String userId){
         // 나중에 "탈퇴한 회원 아이디는 30일간 재사용 금지" 같은 규칙이 생겨도 여기만 고치면 됨!
@@ -228,12 +227,11 @@ public class AuthService {
         }
 
         // 4. 저장소 대조 (보안 핵심!)
-        RefreshToken savedToken = refreshTokenRepository.findByUserNo(user.getUserNo())
-                .orElseThrow(() -> new IllegalArgumentException("로그아웃 된 사용자입니다. 다시 로그인해주세요."));
+        RefreshToken savedToken = refreshTokenService.findByUserNo(user.getUserNo());
 
         if (!savedToken.getTokenValue().equals(oldRefreshToken)) {
             // 탈취 의심 시 즉시 DB에서 해당 토큰을 날려버려 강제 로그아웃 처리
-            refreshTokenRepository.delete(savedToken);
+            refreshTokenService.deleteToken(savedToken);
             throw new IllegalArgumentException("탈취된 토큰이 의심됩니다. 다시 로그인해주세요.");
         }
 
@@ -258,4 +256,6 @@ public class AuthService {
         // 7. 새로 발급된 토큰 객체 딱 하나만 깔끔하게 반환!
         return newTokenDTO;
     }
+
+
 }

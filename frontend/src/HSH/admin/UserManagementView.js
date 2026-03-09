@@ -56,7 +56,6 @@ export default function UserManagementView({ users, setSelectedItem, setShowModa
                      user.statusCode === 'S99' ? <Badge variant="orange">탈퇴</Badge> :
                      <Badge variant="green">활동중</Badge>}
                   </td>
-                  {/* 🗑️ 상세 보기 버튼이 포함된 td 제거됨 */}
                 </tr>
               ))
             ) : (

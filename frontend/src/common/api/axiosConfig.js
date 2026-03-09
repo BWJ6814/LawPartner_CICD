@@ -34,7 +34,7 @@ api.interceptors.request.use(
 );
 
 // =================================================================
-// 3. 🚀 응답 인터셉터 (Response Interceptor) 설정 [이번에 추가하는 핵심 기능!]
+// 3. 🚀 응답 인터셉터 (Response Interceptor) 설정
 // -> 에러가 났을 때 가로채서 토큰 재발급 후 몰래 다시 요청하는 역할
 // =================================================================
 api.interceptors.response.use(
@@ -47,10 +47,9 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // 만약 에러 상태가 401(토큰 만료)이고, 아직 재시도를 안 한 요청이라면 작동!
-    // 코드 (401 뿐만 아니라 403, 500일 때도 일단 재발급을 시도해 본다!)
     if (error.response &&
-   error.response.status === 401 &&
-   !originalRequest._retry) {
+        error.response.status === 401 &&
+        !originalRequest._retry) {
       originalRequest._retry = true; // 무한 반복 방지용 도장
 
       try {
@@ -68,10 +67,12 @@ api.interceptors.response.use(
 
         // 성공적으로 새 토큰을 받았다면?
         if (res.data && res.data.success) {
-          const newAccessToken = res.data.data.accessToken; 
-          
+          const newAccessToken = res.data.data.accessToken;
+          const newRefreshToken = res.data.data.refreshToken; // ✅ 리프레시 토큰도 갱신
+
           // 새로 받은 토큰을 저장소에 업데이트
           localStorage.setItem('accessToken', newAccessToken);
+          localStorage.setItem('refreshToken', newRefreshToken); // ✅ 추가 (Rotation 대응)
 
           // 방금 실패했던 요청의 헤더를 '새 토큰'으로 교체
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
@@ -80,8 +81,8 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // 리프레시 서버가 401을 반환한 경우만 진짜 세션 만료로 처리
-        if (refreshError.response && refreshError.response.status === 401) {
+        // ✅ 400, 401 모두 세션 만료로 처리 (리프레시 토큰 만료 시 400 응답 가능)
+        if (refreshError.response && [400, 401].includes(refreshError.response.status)) {
           console.warn("세션이 만료되었습니다. 다시 로그인해 주세요.");
           localStorage.clear();
           window.location.href = '/login';
