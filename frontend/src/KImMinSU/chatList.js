@@ -88,7 +88,7 @@ const ChatList = () => {
 
         const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
         const client = Stomp.over(socket);
-        client.debug = null;
+        client.debug = () => {};
 
         client.connect(
             { Authorization: `Bearer ${token}` },
