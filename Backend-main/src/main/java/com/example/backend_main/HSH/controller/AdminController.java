@@ -155,7 +155,7 @@ public class AdminController {
     public ResultVO<Void> removeBlacklist(
             @PathVariable String ip,
             @RequestParam String reason) {
-        adminService.removeBlacklist(ip);
+        adminService.removeBlacklist(ip, reason);
         return ResultVO.ok("IP 차단이 해제되었습니다.", null);
     }
 

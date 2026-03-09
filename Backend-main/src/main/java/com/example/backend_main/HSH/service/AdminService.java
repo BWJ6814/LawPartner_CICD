@@ -6,7 +6,6 @@ import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.repository.*;
 import com.example.backend_main.common.spec.AccessLogSpecification;
-import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.HSH_DTO.AccessLogResponseDTO;
@@ -22,7 +21,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +38,6 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final AccessLogRepository accessLogRepository;
-    private final Aes256Util aes256Util;
     private final PasswordEncoder passwordEncoder;
     private final HashUtil hashUtil;
     private final BlacklistIpRepository blacklistIpRepository;
@@ -49,81 +46,85 @@ public class AdminService {
     private final BoardRepository boardRepository;
     private final AdminAuditRepository adminAuditRepository;
 
+    // ✅ Aes256Util 의존성 제거 — JPA Converter가 자동 암호화/복호화 처리
+
     // ==================================================================================
     // 👤 회원 관리
     // ==================================================================================
 
     @Transactional(readOnly = true)
-    public List<UserListDto> getAllUsers() { // 🔑 반환 타입이 User가 아니라 DTO입니다!
+    public List<UserListDto> getAllUsers() {
         return userRepository.findAllByStatusCodeNot("S99").stream()
                 .map(user -> UserListDto.builder()
                         .userNo(user.getUserNo())
                         .userId(user.getUserId())
                         .userNm(user.getUserNm())
                         .nickNm(user.getNickNm())
-                        .email(user.getEmail())
-                        .phone(user.getPhone())
+                        .email(user.getEmail())      // Converter가 자동 복호화된 평문 반환
+                        .phone(user.getPhone())      // Converter가 자동 복호화된 평문 반환
                         .roleCode(user.getRoleCode())
                         .statusCode(user.getStatusCode())
                         .joinDt(user.getJoinDt())
-                        .build()) // 여기서 조립된 DTO에는 LawyerInfo가 없으므로 무한루프 발생 안 함!
+                        .build())
                 .collect(Collectors.toList());
     }
 
     // ==================================================================================
-    // 👤 회원 상태 및 권한 관리 (Audit 무결성 적용)
+    // 👤 회원 상태 및 권한 관리
     // ==================================================================================
 
     @Transactional
     public void updateUserStatus(String userId, String targetStatusCode, String reason, String currentAdminId) {
-    // 1. 검증 및 예외 규격화
-    User targetUser = userRepository.findByUserId(userId)
-            .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "존재하지 않는 회원입니다."));
 
-    User admin = userRepository.findByUserId(currentAdminId)
-            .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "관리자 정보를 찾을 수 없습니다."));
+        // 1. 대상 유저 및 관리자 조회
+        User targetUser = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "존재하지 않는 회원입니다."));
 
-    String oldStatus = targetUser.getStatusCode();
+        User admin = userRepository.findByUserId(currentAdminId)
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "관리자 정보를 찾을 수 없습니다."));
 
-    if ("S03".equals(targetStatusCode) && "ROLE_SUPER_ADMIN".equals(targetUser.getRoleCode())) {
-        throw new CustomException(ErrorCode.ACCESS_DENIED, "슈퍼 관리자 계정은 시스템 보호를 위해 정지할 수 없습니다.");
-    }
+        String oldStatus = targetUser.getStatusCode();
 
-    // 2. 상태 변경(Dirty Checking) 및 내용 생성
-    targetUser.setStatusCode(targetStatusCode);
-    String actionDetail = "상태 변경: " + oldStatus + " -> " + targetStatusCode;
-
-    if ("S01".equals(targetStatusCode)) {
-        if ("ROLE_ASSOCIATE".equals(targetUser.getRoleCode())) {
-            targetUser.setRoleCode("ROLE_LAWYER");
-            lawyerInfoRepository.findById(targetUser.getUserNo()).ifPresent(LawyerInfo::approve);
-            actionDetail = "변호사 승인 (ROLE_ASSOCIATE -> ROLE_LAWYER)";
-        } else if ("S03".equals(oldStatus)) {
-            actionDetail = "계정 정지 해제 (복구)";
+        // 슈퍼 관리자 계정 보호
+        if ("S03".equals(targetStatusCode) && "ROLE_SUPER_ADMIN".equals(targetUser.getRoleCode())) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED, "슈퍼 관리자 계정은 시스템 보호를 위해 정지할 수 없습니다.");
         }
-    } else if ("S03".equals(targetStatusCode)) {
-        actionDetail = "계정 강제 정지 처리";
-    }
 
-    // 3. 완벽한 무결성을 위한 DB 감사 로그(Audit) 저장
-    AdminAudit auditLog = AdminAudit.builder()
-            .adminNo(admin.getUserNo()) // 🔑 시한폭탄 제거: nullable=false 필수 값 삽입
-            .adminId(currentAdminId)
-            .actionType("UPDATE_USER_STATUS")
-            .targetInfo("대상자 ID: " + userId + " | " + actionDetail) // 🔑 엔티티 필드에 맞춤
-            .reason(reason) // 🔑 프론트에서 받은 사유 삽입
-            .build();
-    // regDt는 엔티티의 @CreationTimestamp가 알아서 넣어줍니다.
+        // 2. 상태 변경 (Dirty Checking)
+        targetUser.setStatusCode(targetStatusCode);
+        String actionDetail = "상태 변경: " + oldStatus + " -> " + targetStatusCode;
 
-    adminAuditRepository.save(auditLog);
+        if ("S01".equals(targetStatusCode)) {
+            if ("ROLE_ASSOCIATE".equals(targetUser.getRoleCode())) {
+                targetUser.setRoleCode("ROLE_LAWYER");
+                lawyerInfoRepository.findById(targetUser.getUserNo()).ifPresent(LawyerInfo::approve);
+                actionDetail = "변호사 승인 (ROLE_ASSOCIATE -> ROLE_LAWYER)";
+            } else if ("S03".equals(oldStatus)) {
+                actionDetail = "계정 정지 해제 (복구)";
+            }
+        } else if ("S03".equals(targetStatusCode)) {
+            actionDetail = "계정 강제 정지 처리";
+        }
 
-    log.info("🛡️ [회원 상태 변경 완료] 실행: {}, 대상: {}, 상태: {} -> {}, 사유: {}",
-            currentAdminId, userId, oldStatus, targetStatusCode, reason);
+        // 3. 감사 로그 저장
+        AdminAudit auditLog = AdminAudit.builder()
+                .adminNo(admin.getUserNo())
+                .adminId(currentAdminId)
+                .actionType("UPDATE_USER_STATUS")
+                .targetInfo("대상자 ID: " + userId + " | " + actionDetail)
+                .reason(reason)
+                .build();
+
+        adminAuditRepository.save(auditLog);
+
+        log.info("🛡️ [회원 상태 변경 완료] 실행: {}, 대상: {}, 상태: {} -> {}, 사유: {}",
+                currentAdminId, userId, oldStatus, targetStatusCode, reason);
     }
 
     @Transactional
     public void updateUserRole(String targetUserId, String roleCode, String reason, String currentAdminId) {
-        // 1. 검증 및 예외 규격화 (IllegalArgumentException 제거)
+
+        // 1. 대상 유저 및 관리자 조회
         User targetUser = userRepository.findByUserId(targetUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "대상 회원을 찾을 수 없습니다."));
 
@@ -132,6 +133,7 @@ public class AdminService {
 
         String oldRole = targetUser.getRoleCode();
 
+        // 슈퍼 관리자 권한 보호
         if ("ROLE_SUPER_ADMIN".equals(roleCode) || "ROLE_SUPER_ADMIN".equals(oldRole)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED, "슈퍼 관리자 권한은 시스템에서 직접 조작할 수 없습니다.");
         }
@@ -139,7 +141,7 @@ public class AdminService {
         // 2. 권한 변경 (Dirty Checking)
         targetUser.setRoleCode(roleCode);
 
-        // 3. 권한 변경도 동일하게 Audit 로그 작성 (데이터 무결성)
+        // 3. 감사 로그 저장
         AdminAudit auditLog = AdminAudit.builder()
                 .adminNo(admin.getUserNo())
                 .adminId(currentAdminId)
@@ -154,43 +156,35 @@ public class AdminService {
                 currentAdminId, targetUserId, oldRole, roleCode, reason);
     }
 
-    // throws Exception 제거 — checked exception을 내부에서 unchecked로 변환
     @Transactional
     public void createSubAdmin(UserJoinRequestDto joinDto, String currentAdminId) {
 
         // 1. 요청자 슈퍼 관리자 확인
         User currentAdmin = userRepository.findByUserId(currentAdminId)
-                .orElseThrow(() -> new IllegalArgumentException("접근 권한이 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "접근 권한이 없습니다."));
 
         if (!"ROLE_SUPER_ADMIN".equals(currentAdmin.getRoleCode())) {
-            throw new IllegalArgumentException("하위 관리자 생성 권한이 없습니다. (슈퍼 관리자만 가능)");
+            throw new CustomException(ErrorCode.ACCESS_DENIED, "하위 관리자 생성 권한이 없습니다. (슈퍼 관리자만 가능)");
         }
 
         // 2. 아이디 중복 체크
         if (userRepository.existsByUserId(joinDto.getUserId())) {
-            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_DATA, "이미 사용 중인 아이디입니다.");
         }
 
-        // 3. PII 암호화 — checked exception을 IllegalStateException으로 변환
-        // (사용자 입력 오류가 아닌 시스템 내부 오류이므로 IllegalStateException 사용)
-        String encEmail, encPhone, emailHash, phoneHash;
-        try {
-            encEmail = aes256Util.encrypt(joinDto.getEmail());
-            encPhone = aes256Util.encrypt(joinDto.getPhone());
-            emailHash = hashUtil.generateHash(joinDto.getEmail());
-            phoneHash = hashUtil.generateHash(joinDto.getPhone());
-        } catch (Exception e) {
-            log.error("🚨 [암호화 실패] 관리자 생성 중 암호화 오류 발생", e);
-            throw new IllegalStateException("개인정보 암호화 처리 중 오류가 발생했습니다.");
-        }
+        // 3. 해시값 생성 (검색용)
+        String emailHash = hashUtil.generateHash(joinDto.getEmail());
+        String phoneHash = hashUtil.generateHash(joinDto.getPhone());
 
         // 4. 하위 관리자 엔티티 생성 및 저장
+        // ✅ 평문 그대로 삽입 — JPA Converter가 자동으로 AES-256 암호화 처리
+        // (기존 try-catch 블록 전체 삭제 — 수동 암호화 불필요)
         User subAdmin = User.builder()
                 .userId(joinDto.getUserId())
                 .userPw(passwordEncoder.encode(joinDto.getUserPw()))
                 .userNm(joinDto.getUserNm())
-                .email(encEmail)
-                .phone(encPhone)
+                .email(joinDto.getEmail())   // 🔑 평문 삽입 → Converter가 암호화
+                .phone(joinDto.getPhone())   // 🔑 평문 삽입 → Converter가 암호화
                 .emailHash(emailHash)
                 .phoneHash(phoneHash)
                 .roleCode("ROLE_OPERATOR")
@@ -375,7 +369,6 @@ public class AdminService {
     // 🚨 IP 블랙리스트 관리
     // ==================================================================================
 
-    // ✅ [추가] 컨트롤러에서 Repository 직접 호출하던 것을 Service로 이동
     @Transactional(readOnly = true)
     public List<BlacklistIp> getAllBlacklist() {
         return blacklistIpRepository.findAll();
@@ -384,11 +377,12 @@ public class AdminService {
     @Transactional
     public void addBlacklist(String ip, String reason, String adminId) {
         if (blacklistIpRepository.existsById(ip)) {
-            throw new IllegalArgumentException("이미 차단된 IP입니다.");
+            // ✅ IllegalArgumentException → CustomException 통일
+            throw new CustomException(ErrorCode.DUPLICATE_DATA, "이미 차단된 IP입니다.");
         }
 
         User admin = userRepository.findByUserId(adminId)
-                .orElseThrow(() -> new IllegalArgumentException("관리자 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "관리자 정보를 찾을 수 없습니다."));
 
         BlacklistIp blacklistIp = BlacklistIp.builder()
                 .ipAddress(ip)
@@ -398,28 +392,32 @@ public class AdminService {
                 .build();
 
         blacklistIpRepository.save(blacklistIp);
+        log.info("🚨 [IP 차단 완료] IP: {}, 사유: {}, 관리자: {}", ip, reason, adminId);
     }
 
     @Transactional
-    public void removeBlacklist(String ip) {
+    public void removeBlacklist(String ip, String reason) {
+        // ✅ reason 파라미터 추가 (기존 누락) — AdminController에서도 함께 전달 필요
         BlacklistIp target = blacklistIpRepository.findById(ip)
-                .orElseThrow(() -> new IllegalArgumentException("차단 목록에 없는 IP입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "차단 목록에 없는 IP입니다."));
+
         blacklistIpRepository.delete(target);
+        log.info("✅ [IP 차단 해제 완료] IP: {}, 사유: {}", ip, reason);
     }
 
     // ==================================================================================
     // 🔤 금지어 관리
     // ==================================================================================
-    
-    // 금지어 처리
+
     @Transactional
     public void addBannedWord(String word, String reason, String currentAdminId) {
         if (bannedWordRepository.existsByWord(word)) {
-            throw new IllegalArgumentException("이미 등록된 금지어입니다.");
+            // ✅ IllegalArgumentException → CustomException 통일
+            throw new CustomException(ErrorCode.DUPLICATE_DATA, "이미 등록된 금지어입니다.");
         }
 
         User admin = userRepository.findByUserId(currentAdminId)
-                .orElseThrow(() -> new IllegalArgumentException("관리자 정보 없음"));
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "관리자 정보를 찾을 수 없습니다."));
 
         BannedWord newWord = BannedWord.builder()
                 .word(word)
@@ -431,26 +429,25 @@ public class AdminService {
         log.info("🛡️ [금지어 등록 완료] [{}] by Admin: {} / 사유: {}", word, currentAdminId, reason);
     }
 
-    // ✅ [추가] 컨트롤러에서 Repository 직접 호출하던 것을 Service로 이동
     @Transactional
     public void deleteBannedWord(Long wordNo) {
         if (!bannedWordRepository.existsById(wordNo)) {
-            throw new IllegalArgumentException("존재하지 않는 금지어입니다.");
+            // ✅ IllegalArgumentException → CustomException 통일
+            throw new CustomException(ErrorCode.DATA_NOT_FOUND, "존재하지 않는 금지어입니다.");
         }
         bannedWordRepository.deleteById(wordNo);
         log.info("🛡️ [금지어 삭제 완료] wordNo: {}", wordNo);
     }
 
-    // 금지어 불러오기.
     @Transactional(readOnly = true)
     public List<BannedWord> getAllBannedWords() {
         return bannedWordRepository.findAll();
     }
+
     // ==================================================================================
     // 📝 게시글 관리
     // ==================================================================================
 
-    // ✅ [추가] 컨트롤러에서 Repository 직접 호출하던 것을 Service로 이동
     @Transactional(readOnly = true)
     public List<Board> getAllBoards() {
         return boardRepository.findAll();
@@ -459,7 +456,7 @@ public class AdminService {
     @Transactional
     public void toggleBoardBlind(Long boardNo, String reason, String currentAdminId) {
         Board board = boardRepository.findById(boardNo)
-                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "게시글이 존재하지 않습니다."));
 
         String currentBlind = board.getBlindYn() != null ? board.getBlindYn() : "N";
         String nextStatus = "Y".equals(currentBlind) ? "N" : "Y";

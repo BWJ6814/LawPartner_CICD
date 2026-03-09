@@ -97,7 +97,7 @@ export default function AdminPage() {
     const reason = prompt(`[${ip}] 차단 해제 사유를 입력하세요:`);
     if (!reason) return;
     try {
-      const res = await api.delete(`/api/admin/blacklist/${ip}?reason=${encodeURIComponent(reason)}`);
+      const res = await api.delete(`/api/admin/blacklist`, { params: { ip, reason } });
       if (res.data.success) {
         toast.success(res.data.message || "IP 차단이 해제되었습니다.");
         fetchBlacklist();
