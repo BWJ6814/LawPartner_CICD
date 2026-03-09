@@ -26,7 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserJoinRequestDTO {
+public class UserJoinRequestDto {
 
     @NotBlank(message = "아이디는 필수 입력 항목입니다.")
     private String userId;

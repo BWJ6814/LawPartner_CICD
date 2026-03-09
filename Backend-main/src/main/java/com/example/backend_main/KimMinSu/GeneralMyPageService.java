@@ -39,7 +39,8 @@ public class GeneralMyPageService {
     private final HashUtil hashUtil;
 
 
-
+    @org.springframework.beans.factory.annotation.Value("${file.profile.upload-dir}")
+    private String profileUploadDir;
 
     public GeneralMyPageDTO getDashboardData(Long userNo) {
         GeneralMyPageDTO dto = new GeneralMyPageDTO();
@@ -217,6 +218,7 @@ public class GeneralMyPageService {
             if (!newEmailHash.equals(user.getEmailHash()) && userRepository.existsByEmailHash(newEmailHash)) {
                 throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
             }
+
             user.setEmail(aes256Util.encrypt(newEmail));
             user.setEmailHash(newEmailHash);
         }
@@ -235,15 +237,10 @@ public class GeneralMyPageService {
         // 4. 프로필 이미지 저장 로직 (Z드라이브 연동 완료)
         if (profileImage != null && !profileImage.isEmpty()) {
             try {
-                // ★ 네가 만든 Z드라이브 경로 (역슬래시 2개 쳐야 자바가 인식함)
-                String uploadDir = "Z:\\profile_images\\";
-
-                // 폴더 없으면 자동으로 만들어줌 (친절함 ㅆㅅㅌㅊ)
-                java.io.File dir = new java.io.File(uploadDir);
+                java.io.File dir = new java.io.File(profileUploadDir);
                 if (!dir.exists()) {
                     dir.mkdirs();
                 }
-
                 // 파일명 중복되면 기존 이미지 날아가니까 UUID로 개명시킴
                 String originalFilename = profileImage.getOriginalFilename();
                 String extension = "";
@@ -253,7 +250,7 @@ public class GeneralMyPageService {
                 String savedFilename = java.util.UUID.randomUUID().toString() + extension;
 
                 // Z드라이브에 물리적으로 쾅! 저장
-                java.nio.file.Path filePath = java.nio.file.Paths.get(uploadDir + savedFilename);
+                java.nio.file.Path filePath = java.nio.file.Paths.get(profileUploadDir + savedFilename);
                 java.nio.file.Files.write(filePath, profileImage.getBytes());
 
                 // DB에는 웹에서 볼 수 있는 '/images/profiles/어쩌고.jpg' 형태의 가상 URL을 저장

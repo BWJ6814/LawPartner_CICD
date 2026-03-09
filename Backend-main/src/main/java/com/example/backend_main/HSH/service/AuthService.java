@@ -9,7 +9,7 @@ import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.dto.HSH_DTO.TokenDTO;
-import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
+import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDto;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +51,7 @@ public class AuthService {
  비밀번호는 BCrypt로, 이메일/폰은 AES-256으로 암호화하여 저장합니다.
  */
     @Transactional
-    public void join(UserJoinRequestDTO dto) {
+    public void join(UserJoinRequestDto dto) {
         // 1. 왜? 'throws Exception'이 사라짐으로써 메서드가 가벼워졌습니다.
         log.info("📝 [회원가입 시작] ID: {}", dto.getUserId());
 
@@ -158,7 +158,7 @@ public class AuthService {
     // =================================================================================
     // [내부 헬퍼 메서드] 닉네임 결정 로직
     // =================================================================================
-    private String determineNickname(UserJoinRequestDTO dto) {
+    private String determineNickname(UserJoinRequestDto dto) {
         // user의 isLawyer()을 못 쓰는 이유 : 분기가 다르기 때문에.
         // dto.isLawyer() : join - 새로 만들기 때문에, 만들 dto에서 처리하는 것이 분기에 적합.
         // user.isLawyer() : login - 이미 존재하는 계정이기 때문에 user의 엔티티 사용
@@ -168,7 +168,7 @@ public class AuthService {
         } else {
             // [일반 유저] 닉네임 = 입력값 (유효성 검사 필수)
             if (dto.getNickNm() == null || dto.getNickNm().trim().isEmpty()) {
-                throw new IllegalArgumentException("일반 회원은 닉네임을 반드시 입력해야 합니다.");
+                throw new CustomException(ErrorCode.INVALID_INPUT, "일반 회원은 닉네임을 반드시 입력해야 합니다.");
             }
             return dto.getNickNm();
         }

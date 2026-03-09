@@ -4,7 +4,6 @@ import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.common.annotation.ActionLog;
 import com.example.backend_main.common.entity.BannedWord;
 import com.example.backend_main.common.entity.BlacklistIp;
-import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.*;
@@ -45,7 +44,7 @@ public class AdminController {
     // ==================================================================================
 
     @GetMapping("/users")
-    public ResultVO<List<User>> getAllUsers() {
+    public ResultVO<List<UserListDto>> getAllUsers() {
         return ResultVO.ok("전체 회원 목록을 성공적으로 불러왔습니다.", adminService.getAllUsers());
     }
 
@@ -73,7 +72,7 @@ public class AdminController {
     @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
     @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER")
     public ResultVO<String> createOperator(
-            @Valid @RequestBody UserJoinRequestDTO joinDto,
+            @Valid @RequestBody UserJoinRequestDto joinDto,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         adminService.createSubAdmin(joinDto, userDetails.getUserId());
         return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.", null);
@@ -156,7 +155,7 @@ public class AdminController {
     public ResultVO<Void> removeBlacklist(
             @PathVariable String ip,
             @RequestParam String reason) {
-        adminService.removeBlacklist(ip);
+        adminService.removeBlacklist(ip, reason);
         return ResultVO.ok("IP 차단이 해제되었습니다.", null);
     }
 

@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// 공통: 백엔드 주소 (API 호출·WebSocket·이미지 URL 등 한 곳에서 관리)
 export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
 const api = axios.create({
@@ -37,7 +38,7 @@ api.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                // 🔑 핵심 2: 본문에 refreshToken을 담지 않습니다. 
+                // 🔑 핵심 2: 본문에 refreshToken을 담지 않습니다.
                 // 쿠키에 담겨 자동으로 날아가기 때문에 빈 객체{}만 보냅니다.
                 // 인터셉터가 없는 순수 axios를 사용합니다.
                 const res = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {}, {
@@ -55,10 +56,13 @@ api.interceptors.response.use(
                     return api(originalRequest);
                 }
             } catch (refreshError) {
-                // 재발급 실패 시 (리프레시 토큰까지 만료된 경우)
-                console.warn("🚨 세션이 만료되었습니다. 다시 로그인해 주세요.");
-                localStorage.clear();
-                window.location.href = '/login';
+                // ✅ 백엔드가 실제로 400/401 응답한 경우만 세션 만료 처리
+                // 네트워크 단절, 서버 다운 등의 에러는 로그아웃하지 않음
+                if (refreshError.response) {
+                    console.warn("🚨 세션이 만료되었습니다. 다시 로그인해 주세요.");
+                    localStorage.clear();
+                    window.location.href = '/login';
+                }
                 return Promise.reject(refreshError);
             }
         }
