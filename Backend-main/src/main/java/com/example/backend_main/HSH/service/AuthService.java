@@ -124,7 +124,7 @@ public class AuthService {
      [로그인] AUTH-01 & SEC-01 요구사항 반영
      아이디/비번을 검증하고 Access/Refresh Token을 발급합니다.
      */
-    @Transactional(readOnly = true) // 로그인 조회이므로 읽기 전용 트랜잭션 추천
+    @Transactional
     public TokenDTO login(String userId, String password) {
 
         // 1. 비즈니스 로직: 유저 찾기 (예외 메시지는 보안상 똑같이 맞춤)
@@ -141,24 +141,30 @@ public class AuthService {
             throw new IllegalStateException("해당 계정은 이용이 정지되었습니다. 관리자에게 문의하세요.");
         }
 
-        // 4. 복호화 처리 (★ 예외 처리 추가)
+        // 4. 복호화 처리
         String decryptedEmail;
         try {
             decryptedEmail = aes256Util.decrypt(user.getEmail());
         } catch (Exception e) {
-            // 복호화 실패 시, 보안 로그를 남기고 시스템 에러로 튕겨냄
             log.error("🚨 [Decryption Error] 유저명 '{}'의 이메일 복호화 실패: {}", user.getUserId(), e.getMessage());
             throw new RuntimeException("시스템 오류가 발생했습니다. 관리자에게 문의해주세요.");
         }
 
-        // 5. 토큰 생성 및 반환 (Subject를 복호화된 이메일로 세팅)
+        // 5. 토큰 생성
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                decryptedEmail, // ★ 파트너님의 설계 철학에 맞춰 토큰의 주인을 '이메일'로!
+                decryptedEmail,
                 null,
                 List.of(new SimpleGrantedAuthority(user.getRoleCode()))
         );
 
-        return jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm(), user.getNickNm());
+        TokenDTO tokenDTO = jwtTokenProvider.createToken(
+                authentication, user.getUserNo(), user.getUserNm(), user.getNickNm()
+        );
+
+        // 6. ✅ RefreshToken DB 저장 (토큰 재발급 검증용)
+        refreshTokenService.saveRefreshToken(user.getUserNo(), tokenDTO.getRefreshToken());
+
+        return tokenDTO;
     }
 
     // =================================================================================

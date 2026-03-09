@@ -58,7 +58,6 @@ public class AuthController {
 
     */
     @PostMapping("/login")
-    @ActionLog(action = "LOGIN", target = "TB_USER")
     public ResponseEntity<ResultVO<TokenDTO>> login(@Valid @RequestBody LoginRequestDto dto) {
         // 컨트롤러는 이제 "검증"을 하지 않습니다. 서비스에게 DTO의 값만 딱 넘겨줍니다.
         TokenDTO tokenDTO = authService.login(dto.getUserId(), dto.getUserPw());
