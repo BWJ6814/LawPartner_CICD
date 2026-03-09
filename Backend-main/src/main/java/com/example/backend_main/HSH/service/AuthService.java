@@ -7,8 +7,8 @@ import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil;
-import com.example.backend_main.dto.TokenDTO;
-import com.example.backend_main.dto.UserJoinRequestDTO;
+import com.example.backend_main.dto.HSH_DTO.TokenDTO;
+import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -124,65 +124,49 @@ public class AuthService {
      [로그인] AUTH-01 & SEC-01 요구사항 반영
      아이디/비번을 검증하고 Access/Refresh Token을 발급합니다.
      */
-    public TokenDTO login(String userId, String password) throws Exception {
-        // 1. 아이디로 유저 찾기 (로그인 입력값 활용)
-        // 입력받은 아이디로 DB에서 해당 시민(User 객체)을 가져오기
-        // 아이디가 없어도 아이디가 없습니다..! 라고 보내주는 것이 아닌 아이디/비밀번호 통째로 불일치 처리..
+    @Transactional
+    public TokenDTO login(String userId, String password) {
+
+        // 1. 비즈니스 로직: 유저 찾기 (예외 메시지는 보안상 똑같이 맞춤)
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 계정이거나 비밀번호가 틀렸습니다."));
 
-        // 2. 비밀번호 확인
-        // matches(방금 입력한 비번, DB에 저장된 비번)
-        // 이 두개를 넣으면 스프링이 같으면 true / 다르면 false를 알려줍니다.
+        // 2. 비즈니스 로직: 비밀번호 대조
         if (!passwordEncoder.matches(password, user.getUserPw())) {
-            throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("가입되지 않은 계정이거나 비밀번호가 틀렸습니다.");
         }
 
-        // 너.. 정지 된 계정이야..?! 체크
-        String status = user.getStatusCode();
-        // S03 : 정지된 회원
-        if ("S03".equals(status)) {
-            throw new IllegalStateException("운영 정책 위반으로 활동이 정지된 계정입니다. 고객센터에 문의하세요");
-        }
-        if("S02".equals(status)) {
-            throw new IllegalStateException("현재 가입 심사 대기중입니다. 승인 완료 후 이용 가능합니다.");
-        }
-        if("S99".equals(status)) {
-            throw new IllegalStateException("이미 탈퇴 처리된 계정입니다.");
+        // 3. 비즈니스 로직: 상태 검사
+        if ("S03".equals(user.getStatusCode())) {
+            throw new IllegalStateException("해당 계정은 이용이 정지되었습니다. 관리자에게 문의하세요.");
         }
 
+        // 4. 복호화 처리
+        String decryptedEmail;
+        try {
+            decryptedEmail = aes256Util.decrypt(user.getEmail());
+        } catch (Exception e) {
+            log.error("🚨 [Decryption Error] 유저명 '{}'의 이메일 복호화 실패: {}", user.getUserId(), e.getMessage());
+            throw new RuntimeException("시스템 오류가 발생했습니다. 관리자에게 문의해주세요.");
+        }
 
-        // 3. [핵심] 이메일 복호화 (JWT의 식별자로 사용하기 위해)
-        // DB에 잠겨있던 이메일을 해독기(decrypt)로 풀어서 꺼내기..
-        String decryptedEmail = aes256Util.decrypt(user.getEmail());
-
-        // 4. 복호화된 이메일을 담은 공식 명찰(Authentication) 생성
-        // user.getUserId() 대신 decryptedEmail을 첫 번째 인자로 넣습니다.
-        // 스프링 시큐리티가 이해할 수 있는 규격의 임시 명찰 만들기..! (사용자의 권한 정보도 함께)
+        // 5. 토큰 생성
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                // 신분증 주인 이름(이메일)
                 decryptedEmail,
                 null,
-                // 부여할 권한 배지 (예: ROLE_ADMIN)
                 List.of(new SimpleGrantedAuthority(user.getRoleCode()))
         );
 
-        // 5. 토큰 발급 후 추가 정보를 주머니에 담기!
-        TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm(),user.getNickNm());
-        tokenDTO.setUserNm(user.getUserNm()); // 이제 리액트에서 undefined가 안 뜹니다!
-        tokenDTO.setRole(user.getRoleCode()); // RBAC 설계도에 따른 권한 전송
-        tokenDTO.setEmail(decryptedEmail);  // 복호화된 진짜 이메일
-        tokenDTO.setUserNo(user.getUserNo()); // DB 고유 번호
-        tokenDTO.setNickNm(user.getNickNm() != null ? user.getNickNm() : user.getUserNm());
+        TokenDTO tokenDTO = jwtTokenProvider.createToken(
+                authentication, user.getUserNo(), user.getUserNm(), user.getNickNm()
+        );
 
-        // ★ [REQ-SEC-02] 중복 로그인 차단 및 토큰 DB 저장은 추후 활성화 예정
-        // 현재는 토큰 발급 후 리액트로 전달만 하고, DB 기록은 생략합니다.
+        // 6. ✅ RefreshToken DB 저장 (토큰 재발급 검증용)
         refreshTokenService.saveRefreshToken(user.getUserNo(), tokenDTO.getRefreshToken());
 
-        log.info("★ 로그인 성공 ★ : {} ({})", user.getUserId(), user.getUserNm());
-        // 6. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
         return tokenDTO;
     }
+
     // =================================================================================
     // [내부 헬퍼 메서드] 닉네임 결정 로직
     // =================================================================================
@@ -231,11 +215,12 @@ public class AuthService {
             throw new IllegalArgumentException("리프레시 토큰이 만료되었거나 유효하지 않습니다.");
         }
 
-        // 2. 토큰에서 유저 ID(문자열) 추출
-        String userId = jwtTokenProvider.parseClaims(oldRefreshToken).getSubject();
+        // 2. 토큰에서 추출 (★ 수정: 이제 토큰의 주인은 userId가 아니라 '이메일'입니다!)
+        String email = jwtTokenProvider.parseClaims(oldRefreshToken).getSubject();
 
-        // 3. DB에서 유저 최신 정보 조회 (★ userNo를 알아내기 위해 가장 먼저 실행해야 합니다!)
-        User user = userRepository.findByUserId(userId)
+        // 3. DB에서 유저 최신 정보 조회 (★ 수정: 평문 이메일을 해시로 변환하여 DB와 대조!)
+        String emailHash = hashUtil.generateHash(email);
+        User user = userRepository.findByEmailHash(emailHash)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         if ("S03".equals(user.getStatusCode()) || "S99".equals(user.getStatusCode())) {
@@ -243,7 +228,6 @@ public class AuthService {
         }
 
         // 4. 저장소 대조 (보안 핵심!)
-        // 문자열 userId가 아니라, 방금 조회한 user 객체의 Long userNo를 사용합니다!
         RefreshToken savedToken = refreshTokenRepository.findByUserNo(user.getUserNo())
                 .orElseThrow(() -> new IllegalArgumentException("로그아웃 된 사용자입니다. 다시 로그인해주세요."));
 
@@ -253,28 +237,25 @@ public class AuthService {
             throw new IllegalArgumentException("탈취된 토큰이 의심됩니다. 다시 로그인해주세요.");
         }
 
-        // 5. 새로운 권한 객체 생성
+        // 5. 새로운 권한 객체 생성 (★ 수정: 새로운 토큰의 주인도 똑같이 '이메일'로 박아줍니다!)
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
                 new SimpleGrantedAuthority(user.getRoleCode())
         );
         UsernamePasswordAuthenticationToken auth =
-                new UsernamePasswordAuthenticationToken(user.getUserId(), null, authorities);
+                new UsernamePasswordAuthenticationToken(email, null, authorities);
 
-
-        // 5. 새로운 토큰 세트(Access + Refresh) 발급
+        // 6. 새로운 토큰 세트(Access + Refresh) 발급
         TokenDTO newTokenDTO = jwtTokenProvider.createToken(
                 auth, user.getUserNo(), user.getUserNm(), user.getNickNm()
         );
 
         // ==========================================================
-        // ★ 피드백 3번 반영: Refresh Token Rotation (기존 토큰 폐기)
+        // ★ Refresh Token Rotation (기존 토큰 폐기)
         // ==========================================================
-        // 파트너님이 엔티티에 만들어두신 updateToken 메서드를 활용합니다! (JPA 더티체킹)
-        // 만료일은 프로젝트 정책에 맞게 수정하세요 (예: 7일 뒤)
         LocalDateTime newExpireDt = LocalDateTime.now().plusDays(7);
         savedToken.updateToken(newTokenDTO.getRefreshToken(), newExpireDt);
 
-        // 6. 새로 발급된 토큰 객체 딱 하나만 깔끔하게 반환!
+        // 7. 새로 발급된 토큰 객체 딱 하나만 깔끔하게 반환!
         return newTokenDTO;
     }
 }

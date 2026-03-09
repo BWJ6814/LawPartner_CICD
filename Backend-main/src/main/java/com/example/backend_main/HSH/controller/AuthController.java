@@ -1,23 +1,19 @@
 package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AuthService;
-import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.annotation.ActionLog;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
-import com.example.backend_main.dto.TokenDTO;
-import com.example.backend_main.dto.UserJoinRequestDTO;
+import com.example.backend_main.dto.HSH_DTO.LoginRequestDto;
+import com.example.backend_main.dto.HSH_DTO.RefreshTokenRequestDto;
+import com.example.backend_main.dto.HSH_DTO.TokenDTO;
+import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /*
  [AuthController]
@@ -62,16 +58,11 @@ public class AuthController {
 
     */
     @PostMapping("/login")
-    public ResultVO<TokenDTO> login(@RequestBody Map<String, String> loginData) throws Exception {
-        // 리액트에서 보낸 id와 pw를 꺼냅니다.
-        // userID / userPw
-        String userId = loginData.get("userId");
-        String password = loginData.get("userPw");
+    public ResponseEntity<ResultVO<TokenDTO>> login(@Valid @RequestBody LoginRequestDto dto) {
+        // 컨트롤러는 이제 "검증"을 하지 않습니다. 서비스에게 DTO의 값만 딱 넘겨줍니다.
+        TokenDTO tokenDTO = authService.login(dto.getUserId(), dto.getUserPw());
 
-        // 서비스를 통해 로그인을 진행하고 토큰을 받습니다.
-        TokenDTO token = authService.login(userId, password);
-        // 로그인 성공 코드 "LOGIN-SUCCESS" 부여
-        return ResultVO.ok("LOGIN-SUCCESS","로그인에 성공하였습니다.", token);
+        return ResponseEntity.ok(ResultVO.ok("로그인 성공", tokenDTO));
     }
 
     @GetMapping("/check-id")
@@ -119,26 +110,11 @@ public class AuthController {
     // 프론트에서 보낸 JSON 데이터{refreshToken:"...")를 자바의 Map 형태로 가져오겠습니당! 
     // 즉, Key : Value형태
     @PostMapping("/refresh")
-    public ResponseEntity<ResultVO<TokenDTO>> refreshToken(@RequestBody Map<String, String> payload) {
-        String refreshToken = payload.get("refreshToken");
+    public ResponseEntity<ResultVO<TokenDTO>> refreshToken(@Valid @RequestBody RefreshTokenRequestDto dto) {
+        // 복잡했던 if(refreshToken == null) 로직이 다 사라졌습니다!
+        TokenDTO newTokenDTO = authService.refresh(dto.getRefreshToken());
 
-        if (refreshToken == null || refreshToken.trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ResultVO.fail("AUTH-400", "요청에 리프레시 토큰이 없습니다."));
-        }
-
-        try {
-            // ★ 모든 복잡한 검증과 재발급 로직을 서비스에게 위임!
-            TokenDTO newTokenDTO = authService.refresh(refreshToken);
-
-            // 성공 시 새 토큰을 프론트로 전달
-            return ResponseEntity.ok(ResultVO.ok("토큰이 성공적으로 재발급되었습니다.", newTokenDTO));
-
-        } catch (IllegalArgumentException e) {
-            // ★ 서비스에서 던진 예외를 캐치해서 프론트엔드에게 401(미인증)로 깔끔하게 전달!
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ResultVO.fail("AUTH-401", e.getMessage()));
-        }
+        return ResponseEntity.ok(ResultVO.ok("토큰 재발급 성공", newTokenDTO));
     }
 
 }
