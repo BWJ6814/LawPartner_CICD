@@ -73,7 +73,6 @@ export default function CustomerListPage() {
     return (
         <main style={page}>
             <div style={container}>
-
                 <div style={topArea}>
                     <div>
                         <h1 style={title}>문의 내역</h1>

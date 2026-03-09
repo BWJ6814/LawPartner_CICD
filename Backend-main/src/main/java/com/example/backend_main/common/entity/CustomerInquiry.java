@@ -19,6 +19,9 @@ public class CustomerInquiry {
     @Column(name = "ID")
     private Long id;
 
+    @Column(name = "WRITER_NO", nullable = false)
+    private Long writerNo;
+
     @Column(name = "TYPE", nullable = false, length = 100)
     private String type;
 

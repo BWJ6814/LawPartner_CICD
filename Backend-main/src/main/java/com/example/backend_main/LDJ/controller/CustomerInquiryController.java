@@ -16,8 +16,8 @@ public class CustomerInquiryController {
     private final CustomerInquiryService customerInquiryService;
 
     @GetMapping
-    public List<CustomerInquiry> getAllInquiries() {
-        return customerInquiryService.getAllInquiries();
+    public List<CustomerInquiry> getMyInquiries() {
+        return customerInquiryService.getMyInquiries();
     }
 
     @PostMapping

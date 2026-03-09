@@ -75,7 +75,6 @@ export default function CustomerWritePage() {
                     </div>
                 ) : (
                     <form onSubmit={onSubmit} style={card}>
-
                         <div style={field}>
                             <label style={label}>문의 유형</label>
                             <select
@@ -131,7 +130,6 @@ export default function CustomerWritePage() {
                             <strong>안내</strong><br />
                             등록 후 상태는 기본 “대기”로 표시됩니다.
                         </div>
-
                     </form>
                 )}
             </div>
