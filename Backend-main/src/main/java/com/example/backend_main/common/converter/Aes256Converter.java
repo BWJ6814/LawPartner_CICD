@@ -48,7 +48,8 @@ public class Aes256Converter implements AttributeConverter<String, String> {
             return aes256Util.decrypt(dbData);
         } catch (Exception e) {
             // 🔑 조회 시 뻗어버리는 것을 막기 위해 에러를 던지지 않고 경고만 남긴 뒤 원본 반환
-            log.warn("⚠️ [복호화 스킵] 암호문이 아니거나 구형 데이터입니다: {}", dbData);
+            // 필요시 추가 하기..
+            // log.warn("⚠️ [복호화 스킵] 암호문이 아니거나 구형 데이터입니다: {}", dbData);
             return dbData;
         }
     }
