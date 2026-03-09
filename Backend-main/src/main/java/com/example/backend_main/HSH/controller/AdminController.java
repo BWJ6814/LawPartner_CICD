@@ -8,16 +8,15 @@ import com.example.backend_main.common.entity.BannedWord;
 import com.example.backend_main.BWJ.BoardRepository;
 import com.example.backend_main.common.repository.BannedWordRepository;
 import com.example.backend_main.common.repository.UserRepository;
-import com.example.backend_main.dto.Board;
+import com.example.backend_main.dto.*;
 
 import com.example.backend_main.common.entity.BlacklistIp;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.BlacklistIpRepository;
 import com.example.backend_main.common.security.CustomUserDetails; // ★ 최적화용
 import com.example.backend_main.common.vo.ResultVO;
-import com.example.backend_main.dto.AccessLogResponseDTO;
-import com.example.backend_main.dto.UserJoinRequestDTO;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -85,42 +84,19 @@ public class AdminController {
         나중에 AdminService에 로직 추가하여 완성할 예정
     */
     @PutMapping("/user/status")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')") // 슈퍼 관리자, 일반 관리자
-    @ActionLog(action = "CHANGE_STATUS", target = "TB_USER") // 감시 로그 기록
-    public ResultVO<String> changeUserStatus(@RequestBody Map<String, String> requestBody,
-                                             Principal principal) { // ★ 1. 범용 Principal 객체 추가
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @ActionLog(action = "CHANGE_STATUS", target = "TB_USER")
+    public ResultVO<String> changeUserStatus(
+            @Valid @RequestBody UserStatusDto dto, // @Valid로 자동 검증 (if문 제거)
+            Principal principal) {
 
-        // 🚨 S급 방어 로직: 로그인 정보가 없으면 튕기지 않고 우아하게 에러 반환
-        if (principal == null) {
-            return ResultVO.fail("AUTH-401", "로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요.");
-        }
+        // 1. 시큐리티가 검증하므로 principal null 체크 생략 (코드 간결화)
+        String currentAdminId = principal.getName();
 
-        // 1. 필수 파라미터 추출 (사유 포함)
-        String userId = requestBody.get("userId");
-        String statusCode = requestBody.get("statusCode");
-        String reason = requestBody.get("reason"); // 프론트에서 보낸 상세 사유 낚아채기
+        // 2. 비즈니스 로직만 집중 (try-catch는 GlobalExceptionHandler가 처리)
+        adminService.changeUserStatus(dto.getUserId(), dto.getStatusCode(), dto.getReason(), currentAdminId);
 
-        // 2. S급 보안 검증: 사유가 없으면 로직 진행 자체를 차단 (ADM-02 준수)
-        if (userId == null || statusCode == null || reason == null || reason.trim().isEmpty()) {
-            return ResultVO.fail("PARAM-ERROR", "상태 변경 사유는 필수 입력 사항입니다.");
-        }
-
-        try {
-            // ★ 2. 안전하게 현재 실행 중인 관리자 아이디 추출
-            String currentAdminId = principal.getName();
-
-            // ★ 3. 비즈니스 로직 수행 (관리자 ID와 사유도 같이 넘겨줌!)
-            adminService.changeUserStatus(userId, statusCode, reason, currentAdminId);
-
-            // 성공 응답 (성공 시 AOP가 'reason'을 포함해 감사 로그 저장)
-            return ResultVO.ok("회원 상태가 성공적으로 변경되었습니다.", null);
-
-        } catch (IllegalArgumentException e) {
-            return ResultVO.fail("BAD-REQUEST", e.getMessage());
-        } catch (Exception e) {
-            log.error("회원 상태 변경 중 오류 - TraceID: {}", MDC.get("TRACE_ID"), e);
-            return ResultVO.fail("SYS-ERROR", "시스템 오류가 발생했습니다.");
-        }
+        return ResultVO.ok("회원 상태가 성공적으로 변경되었습니다.", null);
     }
 
     /*
@@ -286,34 +262,43 @@ public class AdminController {
         }
     }
 
-    // 보안 정책 관리 (금지어 API)
-    @PostMapping("/security/banned-words")
+    // [추가] 금지어 목록 조회 (SecurityPolicyView 연동)
+    @GetMapping("/banned-words")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    public ResultVO<List<BannedWord>> getAllBannedWords() {
+        return ResultVO.ok(bannedWordRepository.findAll());
+    }
+
+    // [추가] 금지어 삭제 (SecurityPolicyView 연동)
+    @DeleteMapping("/banned-words/{wordNo}")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
-    @ActionLog(action = "금지어 등록", target = "TB_BANNED_WORD")
-    public ResultVO<Void> addBannedWord(@RequestBody Map<String, String> payload, Principal principal) {
-        String word = payload.get("word");
-
-        try {
-            // 서비스로 단어와 관리자 아이디만 토스!
-            adminService.addBannedWord(word, principal.getName());
-            return ResultVO.ok("금지어가 등록되었습니다.", null);
-        } catch (IllegalArgumentException e) {
-            return ResultVO.fail("BW-400", e.getMessage());
-        }
+    @ActionLog(action = "DELETE_BANNED_WORD", target = "TB_BANNED_WORD")
+    public ResultVO<Void> deleteBannedWord(@PathVariable Long wordNo) {
+        bannedWordRepository.deleteById(wordNo);
+        return ResultVO.ok("금지어가 삭제되었습니다.", null);
     }
 
-    // 콘텐츠 보안 관리 (게시물 블라인드 API) 리뷰 및 개선
-    @PutMapping("/content/boards/{boardNo}/blind")
+    // [추가] 전체 게시글 조회 (ContentSecurityView 연동)
+    @GetMapping("/boards")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    public ResultVO<List<Board>> getAllBoards() {
+        // 관리자용이므로 페이징 없이 전체 리스트 또는 최신순 조회
+        return ResultVO.ok(boardRepository.findAll());
+    }
+
+    // 콘텐츠 보안 관리 (게시물 블라인드 API) 리팩토링 버전
+    @PutMapping("/board/blind")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
-    @ActionLog(action = "게시글 블라인드 상태 변경", target = "TB_BOARD")
-    public ResultVO<Void> toggleBoardBlind(@PathVariable Long boardNo, @RequestBody Map<String, String> payload, Principal principal) {
-        String reason = payload.get("reason");
+    @ActionLog(action = "TOGGLE_BLIND", target = "TB_BOARD")
+    public ResultVO<Void> toggleBoardBlind(
+            @Valid @RequestBody BoardBlindDto dto, // 1. 자동 검증 및 객체 매핑
+            Principal principal) {
 
-        try {
-            adminService.toggleBoardBlind(boardNo, reason, principal.getName());
-            return ResultVO.ok("블라인드 상태가 변경되었습니다.", null);
-        } catch (IllegalArgumentException e) {
-            return ResultVO.fail("BOARD-400", e.getMessage());
-        }
+        // 2. dto에서 바로 꺼내 쓰기 (Long 변환 필요 없음)
+        adminService.toggleBoardBlind(dto.getBoardNo(), dto.getReason(), principal.getName());
+
+        return ResultVO.ok("게시글 상태가 변경되었습니다.", null);
     }
+
+
 }
