@@ -802,3 +802,7 @@ select * from TB_IP_BLACKLIST;
 select * from tb_lawyer_info;
 
 commit;
+
+select * from tb_user
+where user_no = 42;
+

@@ -17,12 +17,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // 1. 이메일로 DB에서 회원 찾기
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("해당 이메일의 사용자를 찾을 수 없습니다: " + email));
-
-        // 2. 찾아온 회원 정보를 파트너님이 만들어둔 'CustomUserDetails(명찰)'에 담아서 반환!
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // 발급된 jwt 토큰에서 아이디에 저장한 이메일을 가져와 찾기.
+        User user = userRepository.findByUserId(username)
+                .orElseThrow(() -> new UsernameNotFoundException("해당 이메일의 사용자를 찾을 수 없습니다: " + username));
         return new CustomUserDetails(user);
     }
 }
