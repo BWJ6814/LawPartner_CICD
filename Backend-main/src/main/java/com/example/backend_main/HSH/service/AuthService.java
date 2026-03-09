@@ -2,6 +2,8 @@ package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.entity.RefreshToken;
 import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.exception.CustomException;
+import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.util.Aes256Util;
@@ -43,80 +45,83 @@ public class AuthService {
 
 
     /*
-     [회원가입] USR-01 요구사항 반영
-     비밀번호는 BCrypt로, 이메일/폰은 AES-256으로 암호화하여 저장합니다.
-     */
+ [회원가입] USR-01 요구사항 반영
+ 비밀번호는 BCrypt로, 이메일/폰은 AES-256으로 암호화하여 저장합니다.
+ */
     @Transactional
-    public void join(UserJoinRequestDTO dto) throws Exception {
-
+    public void join(UserJoinRequestDTO dto) {
+        // 1. 왜? 'throws Exception'이 사라짐으로써 메서드가 가벼워졌습니다.
+        log.info("📝 [회원가입 시작] ID: {}", dto.getUserId());
 
         // 1-1. 아이디 중복 체크
-        // DB창고 userRepository에 가서 아이디(UserId)를 이미 사용하는 사람이 있는지 확인하기..
         if (userRepository.existsByUserId(dto.getUserId())) {
-            // IllegalArgumentException : 너가 보낸 데이터가 우리 시스템 규칙에 안 맞아!
-            // RuntimeException         : 원인은 모르겠지만 실행 중에 터졌다
-            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_USER_ID);
         }
-        // 1-2. 중복 체크를 해시값으로 수행하기
+
+        // 1-2. 이메일/폰 중복 체크 (해시값 기준)
         String inputEmailHash = hashUtil.generateHash(dto.getEmail());
         String inputPhoneHash = hashUtil.generateHash(dto.getPhone());
 
         if (userRepository.existsByEmailHash(inputEmailHash)) {
-            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
         if (userRepository.existsByPhoneHash(inputPhoneHash)) {
-            throw new IllegalArgumentException("이미 가입된 휴대폰 번호입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_PHONE);
         }
 
-        // 1-3 닉네임 결정 및 중복 체크 로직
+        // 1-3 닉네임 중복 체크 및 결정
         String finalNickname = determineNickname(dto);
-
-        // 결정된 닉네임이 DB에 있는지 확인
         if (userRepository.existsByNickNm(finalNickname)) {
-            // 변호사의 경우 실명이 중복된 것이므로 메시지를 다르게 줄 수도 있음
-            throw new IllegalArgumentException("이미 사용 중인 닉네임(또는 이름)입니다.");
+            throw new CustomException(ErrorCode.INVALID_INPUT, "이미 사용 중인 닉네임입니다.");
         }
 
+        // 2. 보안 데이터 암호화 (PII)
+        String hashedPw = passwordEncoder.encode(dto.getUserPw());
+        String encryptedEmail;
+        String encryptedPhone;
 
+        try {
+            encryptedEmail = aes256Util.encrypt(dto.getEmail());
+            encryptedPhone = aes256Util.encrypt(dto.getPhone());
+        } catch (Exception e) {
+            log.error("🚨 [암호화 실패] ID: {}, 사유: {}", dto.getUserId(), e.getMessage());
+            throw new CustomException(ErrorCode.ENCRYPTION_ERROR);
+        }
 
-        // 2. 암호화 도구(CryptoUtil/BCrypt)를 사용해 데이터 변환
-        // 비밀번호 : 해싱 (복호화 불가능)
-        // 이메일/전화번호 : AES-256 암호화 (복호화 가능)
-        String hashedPw = passwordEncoder.encode(dto.getUserPw()); // 비번 으깨기 (BCrypt)
-        String encryptedEmail = aes256Util.encrypt(dto.getEmail()); // 이메일 잠그기 (AES)
-        String encryptedPhone = aes256Util.encrypt(dto.getPhone()); // 전화번호 잠그기 (AES)
-
-        // 분기처리 하기 위한 코드 설정
+        // 3. 권한 및 상태 결정 로직 (변수 선언 포함)
+        // 파트너님, 이 변수들은 여기서 선언되어 빌더에 들어갑니다.
         String initialRole = dto.getRoleCode();
         String initialStatus = "S01"; // 기본: 정상 활동
 
-        // 변호사(ROLE_LAWYER)로 가입 신청 시 -> '준회원'으로 강등 및 '대기' 상태로 설정
+        // 변호사(ROLE_LAWYER)로 가입 신청 시 -> '준회원'으로 권한 조정 및 '대기' 상태 설정
         if ("ROLE_LAWYER".equals(dto.getRoleCode())) {
-            initialRole = "ROLE_ASSOCIATE"; // 준회원 (권한 없음)
-            initialStatus = "S02";          // 승인 대기 상태
+            initialRole = "ROLE_ASSOCIATE";
+            initialStatus = "S02";
         }
-        // 3. 시민 명부(Entity)에 담기
+
+        // 4. Entity 생성 및 저장 (불필요한 try-catch 제거로 가독성 향상)
         User user = User.builder()
-                .userId(dto.getUserId())    // 아이디
-                .userPw(hashedPw)           // 해시 처리된 비번
-                .userNm(dto.getUserNm())    // 이름
-                .nickNm(finalNickname)      // 닉네임
-                .email(encryptedEmail)      // 암호화된 이메일
-                .emailHash(inputEmailHash)  // Hash 값 (검색용)
-                .phone(encryptedPhone)      // 암호화된 휴대폰 번호
-                .phoneHash(inputPhoneHash)  // Hash 값 (검색용)
-                .roleCode(initialRole)      // ROLE_USER 또는 ROLE_LAWYER
-                .statusCode(initialStatus)  // 상태 (정상)
+                .userId(dto.getUserId())
+                .userPw(hashedPw)
+                .userNm(dto.getUserNm())
+                .nickNm(finalNickname)
+                .email(encryptedEmail)
+                .emailHash(inputEmailHash)
+                .phone(encryptedPhone)
+                .phoneHash(inputPhoneHash)
+                .roleCode(initialRole)
+                .statusCode(initialStatus)
                 .build();
 
         userRepository.save(user);
+
+        // 5. 후속 처리
         if (user.isLawyer()) {
-            log.info("⚖️ [변호사 회원가입] 상세 정보 및 전문 분야 등록을 시작합니다. (대상: {})", user.getUserId());
-            // 변호사일 때만 실행되므로, 일반 유저 가입 시에는 IMG_URL 등을 건드리지 않습니다.
+            log.info("⚖️ [변호사 회원가입] 상세 정보 등록 시작: {}", user.getUserId());
             lawyerService.registerLawyerInfo(user, dto);
-        } else {
-            log.info("👤 [일반 회원가입] 추가 상세 정보 없이 가입을 완료합니다. (대상: {})", user.getUserId());
         }
+
+        log.info("✅ [회원가입 완료] 유저 No: {}", user.getUserNo());
     }
 
     /*
