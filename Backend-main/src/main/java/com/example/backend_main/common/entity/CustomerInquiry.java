@@ -76,4 +76,9 @@ public class CustomerInquiry {
         this.answeredAt = LocalDateTime.now();
         this.status = "답변완료";
     }
+    public void update(String type, String title, String content) {
+        this.type = type;
+        this.title = title;
+        this.content = content;
+    }
 }
