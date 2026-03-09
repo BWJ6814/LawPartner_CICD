@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../common/api/axiosConfig';
+import api, { API_BASE_URL } from '../../common/api/axiosConfig';
 import ProfileTab from './ProfileTab';
 import PasswordTab from './PasswordTab';
 import PaymentTab from './PaymentTab';
@@ -43,7 +43,7 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
                         bio: kd.bio || ''
                     }));
                     if (kd.imgUrl) {
-                        setProfileImage(`http://localhost:8080${kd.imgUrl}`);
+                        setProfileImage(`${API_BASE_URL}${kd.imgUrl}`);
                     }
                 } catch (err) {
                     console.error('변호사 프로필 로딩 실패:', err);

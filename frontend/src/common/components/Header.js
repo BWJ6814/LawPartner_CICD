@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Settings } from 'lucide-react';
-import api from '../api/axiosConfig';
+import api, { API_BASE_URL } from '../api/axiosConfig';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
 
@@ -171,7 +171,7 @@ const Header = ({auth, onLoginUpdate}) => {
 
             if (userNo) {
                 // 네 백엔드 웹소켓 주소 (ws-stomp)
-                const socket = new SockJS('http://localhost:8080/ws-stomp');
+                const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
                 stompClient = Stomp.over(socket);
 
                 // 콘솔에 웹소켓 로그 너무 많이 찍히는 거 보기 싫으면 아래 줄 주석 해제해라
@@ -254,9 +254,7 @@ const Header = ({auth, onLoginUpdate}) => {
         try {
             const token = localStorage.getItem('accessToken');
             // 서버에 "나 다 읽었음" 찌르기
-            await api.put('/api/mypage/notifications/read', null, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.put('/api/mypage/notifications/read');
 
             // 화면에서 빨간 숫자 0으로 증발시킴
             setNotificationCount(0);

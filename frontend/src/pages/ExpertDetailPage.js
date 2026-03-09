@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../common/api/axiosConfig";
 import { useNavigate, useParams } from "react-router-dom";
 
 function safeImage(url) {
@@ -31,8 +31,8 @@ export default function ExpertDetailPage() {
             setIsLoading(true);
             setLoadMsg("");
             try {
-                const res = await axios.get(`http://localhost:8080/api/lawyers/${id}`);
-                const d = res.data;
+                const res = await api.get(`/api/lawyers/${id}`);
+                const d = res.data?.data ?? res.data;
 
                 // ✅ 백엔드 DTO 필드명에 따라 여기만 맞추면 됨
                 const userNo = d.userNo ?? d.user_no ?? d.USER_NO ?? Number(id);

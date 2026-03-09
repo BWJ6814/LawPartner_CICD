@@ -577,7 +577,8 @@ CREATE TABLE TB_BANNED_WORD (
 );
 
 select * from TB_BANNED_WORD;
-
+ALTER TABLE TB_BANNED_WORD ADD REASON VARCHAR2(200);
+commit;
 -- 일병 통계 (대시보드용)
 CREATE TABLE TB_DAILY_STATS (
     -- 날짜 (20260205)
@@ -679,6 +680,7 @@ select * from TB_ACCESS_LOG;
 DELETE FROM TB_ACCESS_LOG WHERE STATUS_CODE IS NULL OR EXEC_TIME IS NULL;
 COMMIT;
 
+select * from TB_BANNED_WORD;
 
 -- 2. 6일 전 (2월 17일) - 2명 접속
 INSERT INTO TB_ACCESS_LOG (TRACE_ID, REQ_IP, REQ_URI, USER_AGENT, USER_NO, STATUS_CODE, EXEC_TIME, ERROR_MSG, REG_DT)
@@ -804,3 +806,4 @@ select * from tb_lawyer_info;
 commit;
 
 select * from tb_user;
+

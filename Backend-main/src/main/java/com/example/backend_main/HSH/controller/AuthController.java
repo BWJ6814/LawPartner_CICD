@@ -1,23 +1,15 @@
 package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AuthService;
-import com.example.backend_main.common.entity.User;
-import com.example.backend_main.common.repository.UserRepository;
-import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
-import com.example.backend_main.dto.TokenDTO;
-import com.example.backend_main.dto.UserJoinRequestDTO;
+import com.example.backend_main.dto.HSH_DTO.LoginRequestDto;
+import com.example.backend_main.dto.HSH_DTO.RefreshTokenRequestDto;
+import com.example.backend_main.dto.HSH_DTO.TokenDTO;
+import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /*
  [AuthController]
@@ -34,8 +26,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository userRepository;
 
     /*
         [회원 가입 API] - USR-01
@@ -44,7 +34,7 @@ public class AuthController {
         UserJoinRequestDTO : 사용자가 보낸 DTO
     */
     @PostMapping("/join")
-    public ResultVO<Void> join(@Valid @ModelAttribute UserJoinRequestDTO dto) throws Exception {
+    public ResultVO<Void> join(@Valid @ModelAttribute UserJoinRequestDTO dto){
         // AuthService : 데이터를 넘기는 곳, BCrypt와 AES-256 처리의 보안 작업..
         // "SUCCESS" 코드와 상세 메시지를 담아 반환
         authService.join(dto);
@@ -62,31 +52,23 @@ public class AuthController {
 
     */
     @PostMapping("/login")
-    public ResultVO<TokenDTO> login(@RequestBody Map<String, String> loginData) throws Exception {
-        // 리액트에서 보낸 id와 pw를 꺼냅니다.
-        // userID / userPw
-        String userId = loginData.get("userId");
-        String password = loginData.get("userPw");
-
-        // 서비스를 통해 로그인을 진행하고 토큰을 받습니다.
-        TokenDTO token = authService.login(userId, password);
-        // 로그인 성공 코드 "LOGIN-SUCCESS" 부여
-        return ResultVO.ok("LOGIN-SUCCESS","로그인에 성공하였습니다.", token);
+    public ResultVO<TokenDTO> login(@Valid @RequestBody LoginRequestDto dto) {
+        // 서비스에서 인증 실패 시 예외를 던지면 GlobalExceptionHandler가 캐치합니다.
+        TokenDTO tokenDTO = authService.login(dto.getUserId(), dto.getUserPw());
+        // 1. 왜? 상태 코드는 Handler가 관리하므로 여기선 비즈니스 결과만 집중합니다.
+        // 2. 흐름: 서비스 성공 -> ResultVO 생성 -> 프론트로 JSON 전달
+        return ResultVO.ok("로그인 성공", tokenDTO);
     }
 
     @GetMapping("/check-id")
-    public ResultVO<Boolean> checkId(@RequestParam("userId") String userId){
-        // DB에 해당 아이디가 없어야 (exists == false) 사용 가능
+    public ResultVO<Boolean> checkId(@RequestParam("userId") String userId) {
         boolean isAvailable = authService.isUserIdAvailable(userId);
 
-        // ★  ResponseEntity 대신 표준 식판 ResultVO로 통일!
-        if (isAvailable) {
-            return ResultVO.ok("ID-AVAILABLE", "사용 가능한 아이디입니다.", true);
-        } else {
-            // 중복된 경우 success: false와 전용 코드 반환
-            return ResultVO.fail("ID-DUPLICATE", "이미 사용 중인 아이디입니다.");
-        }
+        return isAvailable
+                ? ResultVO.ok("ID-AVAILABLE", "사용 가능한 아이디입니다.", true)
+                : ResultVO.fail("ID-DUPLICATE", "이미 사용 중인 아이디입니다.");
     }
+
     @GetMapping("/check-email")
     public ResultVO<Boolean> checkEmail(@RequestParam("email") String email) {
         // HashUtil을 사용해 해시값으로 변환 후 DB 조회 (AuthService의 로직 활용 추천)
@@ -94,11 +76,9 @@ public class AuthController {
         // 암호화를 해서 찾든, 그냥 찾든 컨트롤러는 몰라도 됩니다. (캡슐화)
         boolean isAvailable = authService.isEmailAvailable(email);
 
-        if (isAvailable) {
-            return ResultVO.ok("EMAIL-AVAILABLE", "사용 가능한 이메일입니다.", true);
-        } else {
-            return ResultVO.fail("EMAIL-DUPLICATE", "이미 가입된 이메일입니다.");
-        }
+        return isAvailable
+                ? ResultVO.ok("EMAIL-AVAILABLE", "사용 가능한 이메일입니다.", true)
+                : ResultVO.fail("EMAIL-DUPLICATE", "이미 가입된 이메일입니다.");
     }
 
     @GetMapping("/check-phone")
@@ -107,38 +87,20 @@ public class AuthController {
 
         boolean isAvailable = authService.isPhoneAvailable(phone);
 
-        if (isAvailable) {
-            return ResultVO.ok("PHONE-AVAILABLE", "사용 가능한 번호입니다.", true);
-        } else {
-            return ResultVO.fail("PHONE-DUPLICATE", "이미 가입된 번호입니다.");
-        }
-
+        return isAvailable
+                ? ResultVO.ok("PHONE-AVAILABLE", "사용 가능한 번호입니다.", true)
+                : ResultVO.fail("PHONE-DUPLICATE", "이미 가입된 번호입니다.");
     }
 
     // @RequestBody Map<String, String> payload
     // 프론트에서 보낸 JSON 데이터{refreshToken:"...")를 자바의 Map 형태로 가져오겠습니당! 
     // 즉, Key : Value형태
     @PostMapping("/refresh")
-    public ResponseEntity<ResultVO<TokenDTO>> refreshToken(@RequestBody Map<String, String> payload) {
-        String refreshToken = payload.get("refreshToken");
+    public ResultVO<TokenDTO> refreshToken(@Valid @RequestBody RefreshTokenRequestDto dto) {
+        // JwtTokenProvider를 컨트롤러에서 직접 부르지 않고 서비스를 통합니다.
+        TokenDTO newTokenDTO = authService.refresh(dto.getRefreshToken());
 
-        if (refreshToken == null || refreshToken.trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ResultVO.fail("AUTH-400", "요청에 리프레시 토큰이 없습니다."));
-        }
-
-        try {
-            // ★ 모든 복잡한 검증과 재발급 로직을 서비스에게 위임!
-            TokenDTO newTokenDTO = authService.refresh(refreshToken);
-
-            // 성공 시 새 토큰을 프론트로 전달
-            return ResponseEntity.ok(ResultVO.ok("토큰이 성공적으로 재발급되었습니다.", newTokenDTO));
-
-        } catch (IllegalArgumentException e) {
-            // ★ 서비스에서 던진 예외를 캐치해서 프론트엔드에게 401(미인증)로 깔끔하게 전달!
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ResultVO.fail("AUTH-401", e.getMessage()));
-        }
+        return ResultVO.ok("토큰 재발급 성공", newTokenDTO);
     }
 
 }

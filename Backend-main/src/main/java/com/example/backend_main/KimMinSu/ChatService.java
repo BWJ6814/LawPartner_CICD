@@ -143,7 +143,7 @@ public class ChatService {
 
         // ② 알림 로직 (상대방 번호 찾아서 쏘기)
         ChatRoom room = chatRoomRepository.findById(dto.getRoomId()).orElse(null);
-        if (room != null) {
+        if (room != null && !"FILE".equals(dto.getMsgType())) {
             Long targetUserNo = dto.getSenderNo().equals(room.getUserNo()) ? room.getLawyerNo() : room.getUserNo();
 
             String title = "새 메시지";
@@ -163,8 +163,9 @@ public class ChatService {
             notificationRepository.save(noti);
 
             Map<String, String> notiData = new HashMap<>();
-            notiData.put("title", title);
+            notiData.put("title", senderName);
             notiData.put("content", content);
+            notiData.put("roomId", dto.getRoomId()); // ✅ 이거 추가
             messagingTemplate.convertAndSend("/sub/user/" + targetUserNo + "/notification", notiData);
         }
     }
@@ -204,6 +205,14 @@ public class ChatService {
         }
 
         room.setProgressCode("ST02");
+
+        // ✅ 추가: 상태 변경을 방 전체에 브로드캐스트
+        ChatMessageDTO statusMsg = ChatMessageDTO.builder()
+                .roomId(roomId)
+                .msgType("STATUS_CHANGE")
+                .message("ST02")
+                .build();
+        messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, statusMsg);
     }
 
     // ------------------------------------------------------------------
@@ -308,6 +317,13 @@ public class ChatService {
             throw new RuntimeException("변호사만 종료할 수 있습니다.");
         }
         room.setProgressCode("ST05"); // 종료 상태로 변경
+
+        ChatMessageDTO statusMsg = ChatMessageDTO.builder()
+                .roomId(roomId)
+                .msgType("STATUS_CHANGE")
+                .message("ST05")
+                .build();
+        messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, statusMsg);
     }
 
     // 2. 캘린더 동시 저장 로직

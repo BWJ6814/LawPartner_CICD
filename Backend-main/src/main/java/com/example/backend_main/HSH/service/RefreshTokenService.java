@@ -46,4 +46,16 @@ public class RefreshTokenService {
         refreshTokenRepository.findByUserNo(userNo)
                 .ifPresent(refreshTokenRepository::delete);
     }
+
+    // RefreshTokenService에 추가
+    @Transactional(readOnly = true)
+    public RefreshToken findByUserNo(Long userNo) {
+        return refreshTokenRepository.findByUserNo(userNo)
+                .orElseThrow(() -> new IllegalArgumentException("로그아웃 된 사용자입니다. 다시 로그인해주세요."));
+    }
+
+    @Transactional
+    public void deleteToken(RefreshToken token) {
+        refreshTokenRepository.delete(token);
+    }
 }

@@ -4,8 +4,7 @@ import FullCalendar from '@fullcalendar/react';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import DashboardSidebar from '../common/components/DashboardSidebar';
-import axios from 'axios';
-import api from "../common/api/axiosConfig"; // ★ axios import 필수
+import api from "../common/api/axiosConfig";
 
 const GeneralMyPage = () => {
     const navigate = useNavigate();
@@ -44,11 +43,7 @@ const GeneralMyPage = () => {
 
             try {
                 // ★ 백엔드 API 호출 (포트번호 확인 필요)
-                const response = await axios.get('http://localhost:8080/api/mypage/general', {
-                    headers: {
-                        Authorization: `Bearer ${token}` // JWT 토큰 전송
-                    }
-                });
+                const response = await api.get('/api/mypage/general');
 
                 setDashboardData(response.data.data); // 받아온 데이터 저장
                 setLoading(false);
@@ -118,15 +113,11 @@ const GeneralMyPage = () => {
           if (modalMode === 'create'){
               // HTTP 'POST' 메서드는 서버에 새로운 데이터를 만들어달라고 요청할 때 씁니다.
               // 전송할 데이터로 제목, 날짜, 색상을 객체 형태로 묶어서 보냅니다.
-              const response = await axios.post('http://localhost:8080/api/mypage/calendar', {
+              const response = await api.post('/api/mypage/calendar', {
                   title: eventInput.title,
                   start: eventInput.start,
                   backgroundColor: eventInput.backgroundColor,
                   allDay: true
-              },{
-                  headers : {
-                      Authorization : `Bearer ${token}`
-                  }
               });
 
               const newEvent = {
@@ -145,14 +136,10 @@ const GeneralMyPage = () => {
           } else {
               // HTTP 'PUT' 또는 'PATCH' 메서드는 '기존 데이터를 수정해달라'고 요청 할 때 씁니다.
               // 어떤 일정을 수정할 지 서버가 알아야 하므로 URL 끝에 해당 일정의 고유 ID를 붙여서 보냅니다.
-              await axios.put(`http://localhost:8080/api/mypage/calendar/${eventInput.id}`, {
+              await api.put(`/api/mypage/calendar/${eventInput.id}`, {
                   title: eventInput.title,
                   backgroundColor: eventInput.backgroundColor,
                   start: eventInput.start
-              },{
-                  headers : {
-                      Authorization : `Bearer ${token}`
-                  }
               });
 
               // 화면 업데이트
@@ -188,11 +175,7 @@ const GeneralMyPage = () => {
        try {
            // HTTP 'DELETE' 메서드는 데이터를 삭제할 때 씁니다.
            // URL에 삭제할 ID만 명시해서 보내면 되기 때문에, 별도의 전송 데이터가 필요없습니다.
-           await axios.delete(`http://localhost:8080/api/mypage/calendar/${eventInput.id}`,{
-               headers : {
-                   Authorization : `Bearer ${token}`
-               }
-           });
+           await api.delete(`/api/mypage/calendar/${eventInput.id}`);
 
            // 프론트엔드 화면에서 해당 일정 날리기
            setDashboardData(prevData =>({

@@ -46,7 +46,8 @@ public class ChatController {
             @PathVariable String roomId,
             @RequestHeader("Authorization") String token
     ){
-        Long lawyerNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        Long lawyerNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (lawyerNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
         chatService.acceptChat(roomId, lawyerNo);
         return ResultVO.ok("상담 수락 완료!", null);
     }
@@ -56,7 +57,8 @@ public class ChatController {
     public ResultVO<Void> markRoomAsRead(
             @PathVariable String roomId,
             @RequestHeader("Authorization") String token) {
-        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
         notificationRepository.markAllReadByUserNoAndRoomId(userNo, roomId);
         return ResultVO.ok("읽음 처리 완료", null);
     }
@@ -73,7 +75,8 @@ public class ChatController {
 
     @GetMapping("/rooms")
     public ResultVO<List<ChatRoomDTO>> getRooms(@RequestHeader("Authorization") String token) {
-        Long myUserNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        Long myUserNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (myUserNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
         return ResultVO.ok("내 채팅방 목록 조회 성공", chatService.getMyChatRooms(myUserNo));
     }
 
@@ -83,8 +86,8 @@ public class ChatController {
             @PathVariable("roomId") String roomId,
             @RequestHeader("Authorization") String token
     ) {
-        // (선택) 토큰 까서 이 방에 입장할 권한이 있는 유저인지 검증하는 로직 추가하면 완벽함
-        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
 
         List<ChatMessageDTO> history = chatService.getChatHistory(roomId, userNo);
         return ResultVO.ok("과거 채팅 내역 조회 성공", history);
@@ -97,7 +100,8 @@ public class ChatController {
             @RequestParam("roomId") String roomId,
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file
     ) {
-        Long senderNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        Long senderNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (senderNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
         chatService.uploadChatFile(roomId, senderNo, file);
         return ResultVO.ok("파일 업로드 완료", null);
     }
@@ -115,7 +119,8 @@ public class ChatController {
             @PathVariable String roomId,
             @RequestHeader("Authorization") String token
     ){
-        Long lawyerNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        Long lawyerNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (lawyerNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
         chatService.closeChat(roomId, lawyerNo);
         return ResultVO.ok("상담이 종료되었습니다.", null);
     }

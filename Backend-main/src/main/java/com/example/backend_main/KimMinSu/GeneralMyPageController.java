@@ -38,18 +38,10 @@ public class GeneralMyPageController {
     public ResultVO<GeneralMyPageDTO> getGeneralDashboard(
             @RequestHeader(value = "Authorization", required = false) String token
     ) {
-        // 1. "Bearer " 글자 떼어내기 (순수 토큰만 추출)
-        String actualToken = token;
-        if(token != null && token.startsWith("Bearer ")) {
-            actualToken = token.substring(7);
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) {
+            return ResultVO.fail("AUTH-401", "로그인이 필요합니다.");
         }
-
-        // 2. 신분증에서 진짜 로그인한 유저 번호(userNo) 꺼내기
-        Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
-
-        System.out.println("마이페이지 데이터 요청 들어옴! 진짜 UserNo: " + userNo);
-
-        // 3. 서비스 호출 (진짜 DB 데이터 가져오기)
         GeneralMyPageDTO data = myPageService.getDashboardData(userNo);
 
         // 4. ResultVO 표준 식판에 담아서 반환
@@ -61,12 +53,8 @@ public class GeneralMyPageController {
             @RequestHeader(value = "Authorization", required = false) String token,
             @Valid @RequestBody GeneralMyPageDTO.CalendarEventDTO dto
     ){
-        // 1. token에서 실제 userNo를 추출한다.
-        String actualToken = token;
-        if(token != null && token.startsWith("Bearer ")) {
-            actualToken = token.substring(7);
-        }
-        Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "로그인이 필요합니다.");
 
         // 2. Service 클래스의 메서드를 호출하여 userNo와 dto를 넘겨준다
         // DB에 저장된 진짜 일정 번호(eventNo)를 리턴받습니다.
@@ -83,9 +71,8 @@ public class GeneralMyPageController {
             @RequestHeader(value = "Authorization", required = false) String token,
             @Valid @RequestBody GeneralMyPageDTO.CalendarEventDTO dto
     ){
-        // 1. 토큰 까서 유저 번호 꺼내기
-        String actualToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : null;
-        Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "로그인이 필요합니다.");
 
         myPageService.updateCalendarEvent(eventNo, userNo, dto);
         return ResultVO.ok("일정 수정 성공", null);
@@ -96,8 +83,8 @@ public class GeneralMyPageController {
             @PathVariable("eventNo") Long eventNo,
             @RequestHeader(value = "Authorization", required = false) String token
     ){
-        String actualToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : null;
-        Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "로그인이 필요합니다.");
 
         myPageService.deleteCalendarEvent(eventNo, userNo);
         return ResultVO.ok("일정 삭제 성공", null);
@@ -110,14 +97,10 @@ public class GeneralMyPageController {
             @RequestHeader(value = "Authorization", required = false) String token // ★ 헤더에서 직접 토큰 받기!
     ) throws Exception {
 
-        // 1. 토큰이 없으면 입구컷
-        if (token == null || !token.startsWith("Bearer ")) {
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) {
             throw new RuntimeException("로그인이 필요한 서비스입니다.");
         }
-
-        // 2. 신분증(Token) 직접 까서 진짜 유저 번호 추출
-        String actualToken = token.substring(7);
-        Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
 
         // 3. 서비스 호출 (내가 직접 찾은 userNo 넘겨줌)
         myPageService.updateProfileData(
@@ -137,7 +120,8 @@ public class GeneralMyPageController {
     public ResultVO<String> updatePassword(
             @RequestHeader(value = "Authorization" , required = false) String token,
             @RequestBody java.util.Map<String, String> body) {
-        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "로그인이 필요합니다.");
         myPageService.updatePassword(userNo, body.get("oldPassword"), body.get("newPassword"));
         return ResultVO.ok("비밀번호 수정 성공", null);
     }
@@ -146,7 +130,8 @@ public class GeneralMyPageController {
     @DeleteMapping("/account")
     public ResultVO<String> deleteAccount(
             @RequestHeader(value = "Authorization", required = false) String token) {
-        Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "로그인이 필요합니다.");
         myPageService.deleteAccount(userNo);
         return ResultVO.ok("회원 탈퇴 성공", null);
     }
@@ -158,11 +143,11 @@ public class GeneralMyPageController {
     public ResponseEntity<?> getUnreadNotificationCount(
             @RequestHeader(value = "Authorization", required = false) String token
     ) {
-        if (token == null || !token.startsWith("Bearer ")) {
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(0);
         }
         try {
-            Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
 
             // ★ 과거의 쓰레기 로직(ChatRoom 상태로 세기) 버리고 진짜 Notification DB에서 센다!
             int count = (int) notificationRepository.countByUserNoAndReadYn(userNo, "N");
@@ -179,10 +164,10 @@ public class GeneralMyPageController {
     @PutMapping("/notifications/read")
     public ResponseEntity<?> markNotificationsAsRead(
             @RequestHeader(value = "Authorization", required = false) String token) {
-        if (token == null || !token.startsWith("Bearer ")) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         try {
-            Long userNo = jwtTokenProvider.getUserNoFromToken(token.substring(7));
             // DB에 있는 내 알림을 전부 'Y'로 바꾼다.
             notificationRepository.markAllAsRead(userNo);
             return ResponseEntity.ok("처리 완료");
@@ -195,13 +180,12 @@ public class GeneralMyPageController {
     public ResponseEntity<?> getNotificationList(
             @RequestHeader(value = "Authorization", required = false) String token) {
 
-        if (token == null || !token.startsWith("Bearer ")) {
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         try {
-            String actualToken = token.substring(7);
-            Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
 
             // ★ [핵심] 아까 수정한 레포지토리 메서드 사용 (안 읽은 알림 'N'만 가져오기)
             List<Notification> notis = notificationRepository.findTop10ByUserNoOrderByRegDtDesc(userNo);
@@ -231,14 +215,10 @@ public class GeneralMyPageController {
             // ★ 여기도 토큰 직접 받기
             @RequestHeader(value = "Authorization", required = false) String token) {
 
-        // 1. 토큰 유무 팩트 체크
-        if (token == null || !token.startsWith("Bearer ")) {
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) {
             throw new RuntimeException("로그인이 필요한 서비스입니다. (토큰 없음)");
         }
-
-        // 2. 수동으로 유저 번호 해독
-        String actualToken = token.substring(7);
-        Long userNo = jwtTokenProvider.getUserNoFromToken(actualToken);
 
         // 3. 서비스 호출
         myPageService.deleteChatRoom(roomId, userNo);
