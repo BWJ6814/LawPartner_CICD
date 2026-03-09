@@ -21,6 +21,10 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.NoSuchElementException;
 
+/*
+사고를 처리하는 [중앙 통제실]
+- 신고서를 보고 병원에 보낼지, 경찰을 보낼지 결정하기..
+*/
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
@@ -175,4 +179,16 @@ public class GlobalExceptionHandler {
                 .status(ErrorCode.SYSTEM_ERROR.getHttpStatus())
                 .body(ResultVO.fail(ErrorCode.SYSTEM_ERROR)); // 500은 절대 내부 메시지 노출 금지
     }
+
+    // CustomException을 인식할 수 있도록 핸들러에 메서드
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<ResultVO<Void>> handleCustomException(CustomException e) {
+        ErrorCode errorCode = e.getErrorCode();
+        log.warn("⚠️ [Business Error] 코드: {}, 메시지: {}", errorCode.getCode(), e.getMessage());
+
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(ResultVO.fail(errorCode, e.getMessage()));
+    }
+
 }
