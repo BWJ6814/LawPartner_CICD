@@ -16,7 +16,7 @@ const ChatList = () => {
     const [currentRoomStatus, setCurrentRoomStatus] = useState(null);
     const [targetName, setTargetName] = useState('상대방');
     const [currentRoom, setCurrentRoom] = useState(null);
-    const [wsConnected, setWsConnected] = useState(false); // ★ 연결 상태 표시용
+    const [wsConnected, setWsConnected] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('ALL');
@@ -24,7 +24,7 @@ const ChatList = () => {
     const stompClient = useRef(null);
     const chatContainerRef = useRef(null);
     const reconnectTimer = useRef(null);
-    const currentRoomIdRef = useRef(roomId); // ★ 클로저 문제 방지용
+    const currentRoomIdRef = useRef(roomId);
     const chatSubRef = useRef(null);
 
     const userNo = Number(localStorage.getItem('userNo'));
@@ -36,28 +36,28 @@ const ChatList = () => {
     const initialMessageRef = useRef('');
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState('');
-
-
-    // 토스트 알림 상태 추가 (상단 useState 부분에 추가)
     const [toastMsg, setToastMsg] = useState(null);
 
-    // 토스트 표시 함수
+    // ★ [핵심 1] 모든 API 요청에 신분증(토큰)을 자동으로 붙여주는 도구
+    const getAuthHeader = useCallback(() => {
+        return { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } };
+    }, []);
+
     const showNotification = useCallback((msg) => {
         setToastMsg(msg);
         setTimeout(() => setToastMsg(null), 3000);
     }, []);
 
-    // roomId 변경 시 ref 동기화
     useEffect(() => {
         currentRoomIdRef.current = roomId;
     }, [roomId]);
 
-    // 1. 채팅방 목록 불러오기
+    // 1. 채팅방 목록 불러오기 (헤더 추가 완료)
     const loadRooms = useCallback(() => {
-        api.get('/api/chat/rooms')
+        api.get('/api/chat/rooms', getAuthHeader())
             .then(res => setRooms(res.data.data || []))
             .catch(() => setRooms([]));
-    }, []);
+    }, [getAuthHeader]);
 
     useEffect(() => {
         loadRooms();
@@ -76,21 +76,19 @@ const ChatList = () => {
         }
     }, [roomId, rooms, userNo]);
 
-
-
-
-    // 4. 방 변경 시 과거 내역 + 웹소켓 연결
+    // 4. 방 변경 시 과거 내역 + 웹소켓 연결 (헤더 추가 완료)
     useEffect(() => {
         if (!roomId) return;
 
         setChatLog([]);
         setWsConnected(false);
 
-        api.get(`/api/chat/history/${roomId}`)
+        // ★ [핵심 2] 여기서 토큰 안 보내서 공통 헤더 누락 에러 났던 거임
+        api.get(`/api/chat/history/${roomId}`, getAuthHeader())
             .then(res => setChatLog(res.data.data || []))
             .catch(() => setChatLog([]));
 
-        api.post(`/api/chat/room/${roomId}/read`).catch(() => {});
+        api.post(`/api/chat/room/${roomId}/read`, {}, getAuthHeader()).catch(() => {});
 
         let isMounted = true;
         const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
@@ -102,12 +100,10 @@ const ChatList = () => {
             if (!isMounted) { client.disconnect(); return; }
             setWsConnected(true);
 
-            // ▼▼▼ [핵심] 기존에 걸려있던 유령 구독이 있으면 모가지 비틀기 ▼▼▼
             if (chatSubRef.current) {
                 chatSubRef.current.unsubscribe();
             }
 
-            // ▼▼▼ 새 구독을 걸면서 Ref에 저장해둔다 ▼▼▼
             chatSubRef.current = client.subscribe(`/sub/chat/room/${roomId}`, (response) => {
                 if (!isMounted) return;
                 const newMsg = JSON.parse(response.body);
@@ -120,7 +116,6 @@ const ChatList = () => {
                 }
             });
 
-            // (알림 채널은 방이 바뀌어도 계속 유지해야 하니까 냅둔다)
             client.subscribe(`/sub/user/${userNo}/notification`, (response) => {
                 if (!isMounted) return;
                 const noti = JSON.parse(response.body);
@@ -138,7 +133,6 @@ const ChatList = () => {
         return () => {
             isMounted = false;
 
-            // ▼▼▼ 방 나갈 때 구독 찌꺼기 날리기 ▼▼▼
             if (chatSubRef.current) {
                 chatSubRef.current.unsubscribe();
                 chatSubRef.current = null;
@@ -151,22 +145,17 @@ const ChatList = () => {
             if (recognitionRef.current) recognitionRef.current.stop();
             setWsConnected(false);
         };
-    }, [roomId]); // ← roomId만! 이게 핵심
+    }, [roomId, getAuthHeader, loadRooms, showNotification, userNo]);
 
     const isLawyer = currentRoom && Number(currentRoom.lawyerNo) === Number(userNo);
 
-    // ★ 상태 변경 API 호출 (수락 or 종료)
+    // ★ 상태 변경 API 호출 (헤더 추가 완료)
     const handleStatusChange = async (type) => {
         try {
             const endpoint = type === 'ACCEPT' ? `/api/chat/room/accept/${roomId}` : `/api/chat/room/close/${roomId}`;
-            // 메서드는 둘 다 PUT
-            await api.put(endpoint, {}, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
-            });
+            await api.put(endpoint, {}, getAuthHeader());
 
             alert(type === 'ACCEPT' ? "상담을 수락했습니다." : "상담을 종료했습니다.");
-
-            // 상태 업데이트 및 목록 새로고침
             setCurrentRoomStatus(type === 'ACCEPT' ? 'ST02' : 'ST05');
             loadRooms();
         } catch (error) {
@@ -174,7 +163,7 @@ const ChatList = () => {
         }
     };
 
-    // ★ 메시지 전송 (연결 끊겼으면 재연결 후 재시도)
+    // ★ 메시지 전송 (웹소켓 전송 시에도 헤더 추가 완료)
     const handleSendMessage = useCallback((typeOverride, msgOverride) => {
         const msgType = typeOverride || 'TEXT';
         const msgContent = msgOverride !== undefined ? msgOverride : message;
@@ -185,7 +174,11 @@ const ChatList = () => {
             return;
         }
 
-        stompClient.current.send("/pub/chat/message", {}, JSON.stringify({ roomId, senderNo: userNo, message: msgContent, msgType }));
+        const chatDTO = { roomId, senderNo: userNo, message: msgContent, msgType };
+        const token = localStorage.getItem('accessToken');
+
+        // ★ [핵심 3] STOMP 전송 시에도 헤더에 신분증 꽂아줌!
+        stompClient.current.send("/pub/chat/message", { Authorization: `Bearer ${token}` }, JSON.stringify(chatDTO));
         if (msgType === 'TEXT') setMessage('');
     }, [message, roomId, userNo]);
 
@@ -199,7 +192,8 @@ const ChatList = () => {
     const acceptCalendarProposal = async (dateStr) => {
         if (!window.confirm(`[${dateStr}] 일정으로 확정하시겠습니까?`)) return;
         try {
-            await api.post('/api/chat/calendar/confirm', { roomId, date: dateStr });
+            // 헤더 추가 완료
+            await api.post('/api/chat/calendar/confirm', { roomId, date: dateStr }, getAuthHeader());
             handleSendMessage('TEXT', `[시스템] ${dateStr} 으로 일정이 확정되었습니다.`);
         } catch { alert("일정 확정에 실패했습니다."); }
     };
@@ -213,7 +207,11 @@ const ChatList = () => {
         formData.append("file", file);
         formData.append("roomId", roomId);
         try {
-            await api.post('/api/chat/files', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+            const token = localStorage.getItem('accessToken');
+            // 헤더 추가 완료
+            await api.post('/api/chat/files', formData, {
+                headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` }
+            });
         } catch { alert("파일 업로드에 실패했습니다."); }
         finally {
             setIsUploading(false);
