@@ -2,11 +2,14 @@ fastapi
 uvicorn
 pydantic
 python-dotenv
-langchain>=0.3.0
-langchain-community>=0.3.0
-langchain-core>=0.3.0
+langchain>=0.3.0,<1.0.0
+langchain-community>=0.3.0,<1.0.0
+langchain-core>=0.3.0,<1.0.0
+langchain-text-splitters>=0.3.0,<1.0.0
 langchain-google-genai>=2.0.10
 langchain-openai
 datasets
 tiktoken
 faiss-cpu
+chromadb
+google-generativeai

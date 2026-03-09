@@ -10,6 +10,8 @@ import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.dto.HSH_DTO.TokenDTO;
 import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -75,45 +77,35 @@ public class AuthService {
             throw new CustomException(ErrorCode.INVALID_INPUT, "이미 사용 중인 닉네임입니다.");
         }
 
-        // 2. 보안 데이터 암호화 (PII)
+        // 2. 비밀번호 해싱 (BCrypt는 단방향이라 컨버터 대신 여기서 처리하는 게 맞습니다)
         String hashedPw = passwordEncoder.encode(dto.getUserPw());
-        String encryptedEmail;
-        String encryptedPhone;
 
-        try {
-            encryptedEmail = aes256Util.encrypt(dto.getEmail());
-            encryptedPhone = aes256Util.encrypt(dto.getPhone());
-        } catch (Exception e) {
-            log.error("🚨 [암호화 실패] ID: {}, 사유: {}", dto.getUserId(), e.getMessage());
-            throw new CustomException(ErrorCode.ENCRYPTION_ERROR);
-        }
+        // ⚠️ aes256Util.encrypt() 하던 try-catch 블록은 통째로 삭제했습니다!
 
-        // 3. 권한 및 상태 결정 로직 (변수 선언 포함)
-        // 파트너님, 이 변수들은 여기서 선언되어 빌더에 들어갑니다.
+        // 3. 권한 및 상태 결정 로직
         String initialRole = dto.getRoleCode();
-        String initialStatus = "S01"; // 기본: 정상 활동
+        String initialStatus = "S01";
 
-        // 변호사(ROLE_LAWYER)로 가입 신청 시 -> '준회원'으로 권한 조정 및 '대기' 상태 설정
         if ("ROLE_LAWYER".equals(dto.getRoleCode())) {
             initialRole = "ROLE_ASSOCIATE";
             initialStatus = "S02";
         }
 
-        // 4. Entity 생성 및 저장 (불필요한 try-catch 제거로 가독성 향상)
+        // 4. Entity 생성 및 저장
         User user = User.builder()
                 .userId(dto.getUserId())
                 .userPw(hashedPw)
                 .userNm(dto.getUserNm())
                 .nickNm(finalNickname)
-                .email(encryptedEmail)
+                .email(dto.getEmail())         // 🔑 평문 그대로 삽입! (엔티티의 컨버터가 알아서 암호화함)
                 .emailHash(inputEmailHash)
-                .phone(encryptedPhone)
+                .phone(dto.getPhone())         // 🔑 평문 그대로 삽입! (엔티티의 컨버터가 알아서 암호화함)
                 .phoneHash(inputPhoneHash)
                 .roleCode(initialRole)
                 .statusCode(initialStatus)
                 .build();
 
-        userRepository.save(user);
+        userRepository.save(user); // Insert 쿼리가 날아갈 때 자동으로 암호화됩니다
 
         // 5. 후속 처리
         if (user.isLawyer()) {
@@ -131,36 +123,28 @@ public class AuthService {
     @Transactional
     public TokenDTO login(String userId, String password) {
 
-        // 1. 비즈니스 로직: 유저 찾기 (예외 메시지는 보안상 똑같이 맞춤)
+        // 1. 유저 찾기 및 비번 대조 (ErrorCode.INVALID_INPUT 또는 별도 LOGIN_FAIL 사용)
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 계정이거나 비밀번호가 틀렸습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_INPUT, "아이디 또는 비밀번호가 일치하지 않습니다."));
 
-        // 2. 비즈니스 로직: 비밀번호 대조
         if (!passwordEncoder.matches(password, user.getUserPw())) {
-            throw new IllegalArgumentException("가입되지 않은 계정이거나 비밀번호가 틀렸습니다.");
+            throw new CustomException(ErrorCode.INVALID_INPUT, "아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
-        // 3. 비즈니스 로직: 상태 검사
+        // 2. 상태 검사 (ErrorCode.ACCESS_DENIED 또는 ILLEGAL_STATE)
         if ("S03".equals(user.getStatusCode())) {
-            throw new IllegalStateException("해당 계정은 이용이 정지되었습니다. 관리자에게 문의하세요.");
+            throw new CustomException(ErrorCode.ACCESS_DENIED, "이용이 정지된 계정입니다.");
         }
 
-        // 4. 복호화 처리
-        String decryptedEmail;
-        try {
-            decryptedEmail = aes256Util.decrypt(user.getEmail());
-        } catch (Exception e) {
-            log.error("🚨 [Decryption Error] 유저명 '{}'의 이메일 복호화 실패: {}", user.getUserId(), e.getMessage());
-            throw new RuntimeException("시스템 오류가 발생했습니다. 관리자에게 문의해주세요.");
-        }
 
-        // 5. 토큰 생성
+        // 4. 토큰 생성
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                decryptedEmail,
+                user.getEmail(), // 🔑 그냥 getEmail()을 부르면 JPA가 알아서 복호화된 평문을 줍니다!
                 null,
                 List.of(new SimpleGrantedAuthority(user.getRoleCode()))
         );
 
+        // 5. 토큰 만들기
         TokenDTO tokenDTO = jwtTokenProvider.createToken(
                 authentication, user.getUserNo(), user.getUserNm(), user.getNickNm()
         );
@@ -211,54 +195,60 @@ public class AuthService {
 
 
     // 리프레시 토큰 재발급 처리.
-    @Transactional // DB 조작이 들어가므로 트랜잭션 필수!
-    public TokenDTO refresh(String oldRefreshToken) {
-
-        // 1. 토큰 자체의 유효성 검사 (서명, 만료)
-        if (!jwtTokenProvider.validateToken(oldRefreshToken)) {
-            throw new IllegalArgumentException("리프레시 토큰이 만료되었거나 유효하지 않습니다.");
+    @Transactional
+    public TokenDTO refresh(HttpServletRequest request) {
+        // 1. 쿠키에서 refreshToken 찾기
+        String oldRefreshToken = null;
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    oldRefreshToken = cookie.getValue();
+                }
+            }
         }
 
-        // 2. 토큰에서 추출 (★ 수정: 이제 토큰의 주인은 userId가 아니라 '이메일'입니다!)
+        // 쿠키가 없거나 유효하지 않으면 컷!
+        if (oldRefreshToken == null || !jwtTokenProvider.validateToken(oldRefreshToken)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED, "세션이 만료되었습니다. 다시 로그인해주세요.");
+        }
+
+        // 2. 토큰에서 이메일 추출
         String email = jwtTokenProvider.parseClaims(oldRefreshToken).getSubject();
 
-        // 3. DB에서 유저 최신 정보 조회 (★ 수정: 평문 이메일을 해시로 변환하여 DB와 대조!)
+        // 3. DB에서 유저 대조
         String emailHash = hashUtil.generateHash(email);
         User user = userRepository.findByEmailHash(emailHash)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "사용자를 찾을 수 없습니다.")); // ✅ 수정
 
         if ("S03".equals(user.getStatusCode()) || "S99".equals(user.getStatusCode())) {
-            throw new IllegalArgumentException("이용이 정지되거나 탈퇴한 계정입니다.");
+            throw new CustomException(ErrorCode.ACCESS_DENIED, "이용이 정지되거나 탈퇴한 계정입니다."); // ✅ 수정
         }
 
-        // 4. 저장소 대조 (보안 핵심!)
+        // 4. 저장소 토큰 대조 (탈취 방지)
         RefreshToken savedToken = refreshTokenService.findByUserNo(user.getUserNo());
 
         if (!savedToken.getTokenValue().equals(oldRefreshToken)) {
-            // 탈취 의심 시 즉시 DB에서 해당 토큰을 날려버려 강제 로그아웃 처리
             refreshTokenService.deleteToken(savedToken);
-            throw new IllegalArgumentException("탈취된 토큰이 의심됩니다. 다시 로그인해주세요.");
+            throw new CustomException(ErrorCode.ACCESS_DENIED, "비정상적인 접근이 감지되었습니다. 다시 로그인해주세요."); // ✅ 수정
         }
 
-        // 5. 새로운 권한 객체 생성 (★ 수정: 새로운 토큰의 주인도 똑같이 '이메일'로 박아줍니다!)
+        // 5. 권한 객체 생성
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
                 new SimpleGrantedAuthority(user.getRoleCode())
         );
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(email, null, authorities);
 
-        // 6. 새로운 토큰 세트(Access + Refresh) 발급
+        // 6. 새로운 토큰 세트 발급
         TokenDTO newTokenDTO = jwtTokenProvider.createToken(
                 auth, user.getUserNo(), user.getUserNm(), user.getNickNm()
         );
 
-        // ==========================================================
-        // ★ Refresh Token Rotation (기존 토큰 폐기)
-        // ==========================================================
+        // 7. RTR (Refresh Token Rotation) - 기존 토큰 폐기 후 새 토큰 덮어쓰기
         LocalDateTime newExpireDt = LocalDateTime.now().plusDays(7);
         savedToken.updateToken(newTokenDTO.getRefreshToken(), newExpireDt);
 
-        // 7. 새로 발급된 토큰 객체 딱 하나만 깔끔하게 반환!
         return newTokenDTO;
     }
 

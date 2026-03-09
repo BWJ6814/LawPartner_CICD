@@ -1,23 +1,11 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 
-const STORAGE_KEY = "customer_inquiries";
 const TOKEN_KEY = "accessToken";
 
 function isLoggedIn() {
     return !!localStorage.getItem(TOKEN_KEY);
-}
-
-function loadInquiries() {
-    try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-        return [];
-    }
-}
-
-function saveInquiries(list) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
 export default function CustomerWritePage() {
@@ -33,28 +21,25 @@ export default function CustomerWritePage() {
 
     const blocked = useMemo(() => !isLoggedIn(), []);
 
-    const onSubmit = (e) => {
+    const onSubmit = async (e) => {
         e.preventDefault();
 
         if (!title.trim()) return alert("문의 제목을 입력하세요.");
         if (!content.trim()) return alert("문의 내용을 입력하세요.");
 
-        const now = new Date();
+        try {
+            await axios.post("http://localhost:8080/api/customer/inquiries", {
+                type,
+                title: title.trim(),
+                content: content.trim(),
+            });
 
-        const newItem = {
-            id: String(now.getTime()),
-            type,
-            title: title.trim(),
-            content: content.trim(),
-            status: "대기",
-            createdAt: now.toISOString(),
-        };
-
-        const list = loadInquiries();
-        saveInquiries([newItem, ...list]);
-
-        alert("문의가 등록되었습니다.");
-        navigate("/customer/list");
+            alert("문의가 등록되었습니다.");
+            navigate("/customer/list");
+        } catch (err) {
+            console.error("문의 등록 실패:", err);
+            alert("문의 등록 중 오류가 발생했습니다.");
+        }
     };
 
     return (

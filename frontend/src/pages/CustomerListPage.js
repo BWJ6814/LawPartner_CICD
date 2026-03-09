@@ -1,19 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-const STORAGE_KEY = "customer_inquiries";
 const TOKEN_KEY = "accessToken";
 
 function isLoggedIn() {
     return !!localStorage.getItem(TOKEN_KEY);
-}
-
-function loadInquiries() {
-    try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-        return [];
-    }
 }
 
 function formatDate(iso) {
@@ -27,6 +19,31 @@ function formatDate(iso) {
 export default function CustomerListPage() {
     const navigate = useNavigate();
     const blocked = useMemo(() => !isLoggedIn(), []);
+
+    const [list, setList] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (blocked) {
+            setIsLoading(false);
+            return;
+        }
+
+        const fetchInquiries = async () => {
+            try {
+                setIsLoading(true);
+                const res = await axios.get("http://localhost:8080/api/customer/inquiries");
+                setList(Array.isArray(res.data) ? res.data : []);
+            } catch (err) {
+                console.error("문의 목록 조회 실패:", err);
+                setList([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchInquiries();
+    }, [blocked]);
 
     if (blocked) {
         return (
@@ -53,13 +70,10 @@ export default function CustomerListPage() {
         );
     }
 
-    const list = loadInquiries();
-
     return (
         <main style={page}>
             <div style={container}>
 
-                {/* 상단 */}
                 <div style={topArea}>
                     <div>
                         <h1 style={title}>문의 내역</h1>
@@ -78,9 +92,13 @@ export default function CustomerListPage() {
                     </div>
                 </div>
 
-                {/* 카드 */}
                 <div style={card}>
-                    {list.length === 0 ? (
+                    {isLoading ? (
+                        <div style={emptyState}>
+                            <div style={emptyTitle}>불러오는 중...</div>
+                            <div style={emptyDesc}>문의 내역을 조회하고 있습니다.</div>
+                        </div>
+                    ) : list.length === 0 ? (
                         <div style={emptyState}>
                             <div style={emptyTitle}>등록된 문의가 없습니다.</div>
                             <div style={emptyDesc}>첫 문의를 등록해 보세요.</div>
@@ -106,8 +124,7 @@ export default function CustomerListPage() {
                                     <tr
                                         key={it.id}
                                         style={row}
-                                        onClick={() => navigate(`/customer/detail/${it.id}`)
-                                        }
+                                        onClick={() => navigate(`/customer/detail/${it.id}`)}
                                         onMouseEnter={(e) =>
                                             (e.currentTarget.style.background = "rgba(255,255,255,0.04)")
                                         }
@@ -116,15 +133,15 @@ export default function CustomerListPage() {
                                         }
                                     >
                                         <td style={td}>
-                        <span
-                            style={
-                                it.status === "답변완료"
-                                    ? badgeDone
-                                    : badgeWait
-                            }
-                        >
-                          {it.status}
-                        </span>
+                                            <span
+                                                style={
+                                                    it.status === "답변완료"
+                                                        ? badgeDone
+                                                        : badgeWait
+                                                }
+                                            >
+                                                {it.status}
+                                            </span>
                                         </td>
                                         <td style={td}>{it.type}</td>
                                         <td style={tdTitle}>

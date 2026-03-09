@@ -1,23 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 
-const STORAGE_KEY = "customer_inquiries";
 const TOKEN_KEY = "accessToken";
 
 function isLoggedIn() {
     return !!localStorage.getItem(TOKEN_KEY);
-}
-
-function loadInquiries() {
-    try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-        return [];
-    }
-}
-
-function saveInquiries(list) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
 export default function CustomerEditPage() {
@@ -26,50 +14,75 @@ export default function CustomerEditPage() {
 
     const blocked = useMemo(() => !isLoggedIn(), []);
 
-    const original = useMemo(() => {
-        const list = loadInquiries();
-        return list.find((x) => String(x.id) === String(id));
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
+
+    const [type, setType] = useState("서비스 이용 문의");
+    const [title, setTitle] = useState("");
+    const [content, setContent] = useState("");
+
+    useEffect(() => {
+        async function fetchInquiry() {
+            try {
+                setLoading(true);
+                setLoadError("");
+
+                const res = await axios.get(`http://localhost:8080/api/customer/inquiries/${id}`);
+                const data = res.data;
+
+                setType(data.type || "서비스 이용 문의");
+                setTitle(data.title || "");
+                setContent(data.content || "");
+            } catch (err) {
+                console.error("문의 수정용 데이터 조회 실패:", err);
+                setLoadError("해당 문의를 찾을 수 없습니다.");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchInquiry();
     }, [id]);
 
-    const [type, setType] = useState(original?.type || "서비스 이용 문의");
-    const [title, setTitle] = useState(original?.title || "");
-    const [content, setContent] = useState(original?.content || "");
-
-    const onSubmit = (e) => {
+    const onSubmit = async (e) => {
         e.preventDefault();
 
-        if (!original) return alert("존재하지 않는 문의입니다.");
         if (!title.trim()) return alert("문의 제목을 입력하세요.");
         if (!content.trim()) return alert("문의 내용을 입력하세요.");
 
-        const list = loadInquiries();
-
-        const updated = list.map(item => {
-            if (String(item.id) !== String(id)) return item;
-            return {
-                ...item,
+        try {
+            await axios.put(`http://localhost:8080/api/customer/inquiries/${id}`, {
                 type,
                 title: title.trim(),
                 content: content.trim(),
-                // createdAt 유지
-                // status 유지
-            };
-        });
+            });
 
-        saveInquiries(updated);
-
-        alert("수정이 완료되었습니다.");
-        navigate(`/customer/detail/${id}`);
+            alert("수정이 완료되었습니다.");
+            navigate(`/customer/detail/${id}`);
+        } catch (err) {
+            console.error("문의 수정 실패:", err);
+            alert("수정 중 오류가 발생했습니다.");
+        }
     };
 
-    if (!original) {
+    if (loading) {
         return (
             <main style={main}>
                 <div style={container}>
                     <div style={card}>
-                        <p style={{ marginBottom: 20 }}>
-                            해당 문의를 찾을 수 없습니다.
-                        </p>
+                        <p style={{ marginBottom: 20 }}>불러오는 중입니다.</p>
+                    </div>
+                </div>
+            </main>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <main style={main}>
+                <div style={container}>
+                    <div style={card}>
+                        <p style={{ marginBottom: 20 }}>{loadError}</p>
                         <button
                             style={btnPrimary}
                             onClick={() => navigate("/customer/list")}
@@ -115,7 +128,6 @@ export default function CustomerEditPage() {
                     </div>
                 ) : (
                     <form onSubmit={onSubmit} style={card}>
-
                         <div style={field}>
                             <label style={label}>문의 유형</label>
                             <select
@@ -169,7 +181,6 @@ export default function CustomerEditPage() {
                             <strong>안내</strong><br />
                             작성일과 상태는 유지됩니다.
                         </div>
-
                     </form>
                 )}
             </div>
