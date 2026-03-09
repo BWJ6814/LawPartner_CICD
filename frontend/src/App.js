@@ -24,7 +24,7 @@ import CustomerWritePage from "./pages/CustomerWritePage";
 import CustomerListPage from "./pages/CustomerListPage";
 import CustomerDetailPage from "./pages/CustomerDetailPage";
 import CustomerEditPage from "./pages/CustomerEditPage";
-import AdminPage from './HSH/AdminPage';
+import AdminPage from './HSH/admin/AdminPage';
 
 // =====================================================================
 // ★ [S급 디테일] 현재 주소를 확인해서 헤더/푸터를 보여줄지 결정하는 내부 컴포넌트
