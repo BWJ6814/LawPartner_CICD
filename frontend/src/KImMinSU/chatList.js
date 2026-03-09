@@ -145,7 +145,8 @@ const ChatList = () => {
             if (recognitionRef.current) recognitionRef.current.stop();
             setWsConnected(false);
         };
-    }, [roomId, getAuthHeader, loadRooms, showNotification, userNo]);
+    }, [roomId]);
+
 
     const isLawyer = currentRoom && Number(currentRoom.lawyerNo) === Number(userNo);
 

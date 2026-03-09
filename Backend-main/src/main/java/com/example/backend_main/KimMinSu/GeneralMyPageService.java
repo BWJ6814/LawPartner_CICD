@@ -217,6 +217,7 @@ public class GeneralMyPageService {
             if (!newEmailHash.equals(user.getEmailHash()) && userRepository.existsByEmailHash(newEmailHash)) {
                 throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
             }
+
             user.setEmail(aes256Util.encrypt(newEmail));
             user.setEmailHash(newEmailHash);
         }
