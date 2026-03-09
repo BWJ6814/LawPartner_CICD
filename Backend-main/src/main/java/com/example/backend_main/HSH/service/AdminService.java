@@ -2,13 +2,16 @@ package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.BWJ.BoardRepository;
 import com.example.backend_main.common.entity.*;
+import com.example.backend_main.common.exception.CustomException;
+import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.repository.*;
 import com.example.backend_main.common.spec.AccessLogSpecification;
 import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.HSH_DTO.AccessLogResponseDTO;
-import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
+import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDto;
+import com.example.backend_main.dto.HSH_DTO.UserListDto;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,101 +47,116 @@ public class AdminService {
     private final LawyerInfoRepository lawyerInfoRepository;
     private final BannedWordRepository bannedWordRepository;
     private final BoardRepository boardRepository;
+    private final AdminAuditRepository adminAuditRepository;
 
     // ==================================================================================
     // 👤 회원 관리
     // ==================================================================================
 
     @Transactional(readOnly = true)
-    public List<User> getAllUsers() {
+    public List<UserListDto> getAllUsers() { // 🔑 반환 타입이 User가 아니라 DTO입니다!
         return userRepository.findAllByStatusCodeNot("S99").stream()
-                .map(user -> {
-                    try {
-                        String decryptedEmail = aes256Util.decrypt(user.getEmail());
-                        String decryptedPhone = aes256Util.decrypt(user.getPhone());
-                        return User.builder()
-                                .userNo(user.getUserNo())
-                                .userId(user.getUserId())
-                                .userNm(user.getUserNm())
-                                .nickNm(user.getNickNm())
-                                .email(decryptedEmail)
-                                .phone(decryptedPhone)
-                                .roleCode(user.getRoleCode())
-                                .statusCode(user.getStatusCode())
-                                .joinDt(user.getJoinDt())
-                                .build();
-                    } catch (Exception e) {
-                        // 복호화 실패 시 암호화된 원본 대신 안내 텍스트로 대체
-                        // → 관리자 화면에 깨진 글자가 노출되는 문제 방지
-                        log.error("🚨 [복호화 실패] User.No {}번", user.getUserNo());
-                        return User.builder()
-                                .userNo(user.getUserNo())
-                                .userId(user.getUserId())
-                                .userNm(user.getUserNm())
-                                .nickNm(user.getNickNm())
-                                .email("(복호화 실패)")
-                                .phone("(복호화 실패)")
-                                .roleCode(user.getRoleCode())
-                                .statusCode(user.getStatusCode())
-                                .joinDt(user.getJoinDt())
-                                .build();
-                    }
-                })
+                .map(user -> UserListDto.builder()
+                        .userNo(user.getUserNo())
+                        .userId(user.getUserId())
+                        .userNm(user.getUserNm())
+                        .nickNm(user.getNickNm())
+                        .email(user.getEmail())
+                        .phone(user.getPhone())
+                        .roleCode(user.getRoleCode())
+                        .statusCode(user.getStatusCode())
+                        .joinDt(user.getJoinDt())
+                        .build()) // 여기서 조립된 DTO에는 LawyerInfo가 없으므로 무한루프 발생 안 함!
                 .collect(Collectors.toList());
     }
 
+    // ==================================================================================
+    // 👤 회원 상태 및 권한 관리 (Audit 무결성 적용)
+    // ==================================================================================
+
     @Transactional
     public void updateUserStatus(String userId, String targetStatusCode, String reason, String currentAdminId) {
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+    // 1. 검증 및 예외 규격화
+    User targetUser = userRepository.findByUserId(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "존재하지 않는 회원입니다."));
 
-        String oldStatus = user.getStatusCode();
+    User admin = userRepository.findByUserId(currentAdminId)
+            .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "관리자 정보를 찾을 수 없습니다."));
 
-        if ("S03".equals(targetStatusCode) && "ROLE_SUPER_ADMIN".equals(user.getRoleCode())) {
-            throw new IllegalArgumentException("슈퍼 관리자 계정은 시스템 보호를 위해 정지할 수 없습니다.");
+    String oldStatus = targetUser.getStatusCode();
+
+    if ("S03".equals(targetStatusCode) && "ROLE_SUPER_ADMIN".equals(targetUser.getRoleCode())) {
+        throw new CustomException(ErrorCode.ACCESS_DENIED, "슈퍼 관리자 계정은 시스템 보호를 위해 정지할 수 없습니다.");
+    }
+
+    // 2. 상태 변경(Dirty Checking) 및 내용 생성
+    targetUser.setStatusCode(targetStatusCode);
+    String actionDetail = "상태 변경: " + oldStatus + " -> " + targetStatusCode;
+
+    if ("S01".equals(targetStatusCode)) {
+        if ("ROLE_ASSOCIATE".equals(targetUser.getRoleCode())) {
+            targetUser.setRoleCode("ROLE_LAWYER");
+            lawyerInfoRepository.findById(targetUser.getUserNo()).ifPresent(LawyerInfo::approve);
+            actionDetail = "변호사 승인 (ROLE_ASSOCIATE -> ROLE_LAWYER)";
+        } else if ("S03".equals(oldStatus)) {
+            actionDetail = "계정 정지 해제 (복구)";
         }
+    } else if ("S03".equals(targetStatusCode)) {
+        actionDetail = "계정 강제 정지 처리";
+    }
 
-        user.setStatusCode(targetStatusCode);
+    // 3. 완벽한 무결성을 위한 DB 감사 로그(Audit) 저장
+    AdminAudit auditLog = AdminAudit.builder()
+            .adminNo(admin.getUserNo()) // 🔑 시한폭탄 제거: nullable=false 필수 값 삽입
+            .adminId(currentAdminId)
+            .actionType("UPDATE_USER_STATUS")
+            .targetInfo("대상자 ID: " + userId + " | " + actionDetail) // 🔑 엔티티 필드에 맞춤
+            .reason(reason) // 🔑 프론트에서 받은 사유 삽입
+            .build();
+    // regDt는 엔티티의 @CreationTimestamp가 알아서 넣어줍니다.
 
-        if ("S01".equals(targetStatusCode)) {
-            if ("ROLE_ASSOCIATE".equals(user.getRoleCode())) {
-                user.setRoleCode("ROLE_LAWYER");
-                lawyerInfoRepository.findById(user.getUserNo()).ifPresent(LawyerInfo::approve);
-                log.info("🎉 [변호사 승인] 관리자[{}]에 의해 회원[{}]의 권한이 ROLE_LAWYER로 승격되었습니다. 사유: {}",
-                        currentAdminId, user.getUserId(), reason);
-            } else if ("S03".equals(oldStatus)) {
-                log.info("🔄 [계정 복구] 관리자[{}]에 의해 정지 처리되었던 회원[{}]이 정상 활동으로 복구되었습니다. 사유: {}",
-                        currentAdminId, user.getUserId(), reason);
-            }
-        } else if ("S03".equals(targetStatusCode)) {
-            log.warn("🚨 [계정 정지] 회원[{}]이 관리자[{}]에 의해 강제 정지(블랙리스트) 처리되었습니다. 사유: {}",
-                    user.getUserId(), currentAdminId, reason);
-        }
+    adminAuditRepository.save(auditLog);
 
-        log.info("🛡️ [회원 상태 변경 완료] 실행 관리자: {}, 대상 회원: {}, 상태: {} -> {}, 사유: {}",
-                currentAdminId, userId, oldStatus, targetStatusCode, reason);
+    log.info("🛡️ [회원 상태 변경 완료] 실행: {}, 대상: {}, 상태: {} -> {}, 사유: {}",
+            currentAdminId, userId, oldStatus, targetStatusCode, reason);
     }
 
     @Transactional
     public void updateUserRole(String targetUserId, String roleCode, String reason, String currentAdminId) {
+        // 1. 검증 및 예외 규격화 (IllegalArgumentException 제거)
         User targetUser = userRepository.findByUserId(targetUserId)
-                .orElseThrow(() -> new IllegalArgumentException("대상 회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "대상 회원을 찾을 수 없습니다."));
+
+        User admin = userRepository.findByUserId(currentAdminId)
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "관리자 정보를 찾을 수 없습니다."));
 
         String oldRole = targetUser.getRoleCode();
 
         if ("ROLE_SUPER_ADMIN".equals(roleCode) || "ROLE_SUPER_ADMIN".equals(oldRole)) {
-            throw new AccessDeniedException("슈퍼 관리자 권한은 시스템에서 직접 조작할 수 없습니다.");
+            throw new CustomException(ErrorCode.ACCESS_DENIED, "슈퍼 관리자 권한은 시스템에서 직접 조작할 수 없습니다.");
         }
 
+        // 2. 권한 변경 (Dirty Checking)
         targetUser.setRoleCode(roleCode);
 
-        log.info("🛡️ [회원 권한 변경 완료] 실행 관리자: {}, 대상 회원: {}, 권한: {} -> {}, 사유: {}",
+        // 3. 권한 변경도 동일하게 Audit 로그 작성 (데이터 무결성)
+        AdminAudit auditLog = AdminAudit.builder()
+                .adminNo(admin.getUserNo())
+                .adminId(currentAdminId)
+                .actionType("UPDATE_USER_ROLE")
+                .targetInfo("대상자 ID: " + targetUserId + " | 권한 변경: " + oldRole + " -> " + roleCode)
+                .reason(reason)
+                .build();
+
+        adminAuditRepository.save(auditLog);
+
+        log.info("🛡️ [회원 권한 변경 완료] 실행: {}, 대상: {}, 권한: {} -> {}, 사유: {}",
                 currentAdminId, targetUserId, oldRole, roleCode, reason);
     }
 
     // throws Exception 제거 — checked exception을 내부에서 unchecked로 변환
     @Transactional
-    public void createSubAdmin(UserJoinRequestDTO joinDto, String currentAdminId) {
+    public void createSubAdmin(UserJoinRequestDto joinDto, String currentAdminId) {
 
         // 1. 요청자 슈퍼 관리자 확인
         User currentAdmin = userRepository.findByUserId(currentAdminId)

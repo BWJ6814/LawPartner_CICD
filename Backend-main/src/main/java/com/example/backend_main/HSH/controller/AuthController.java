@@ -3,9 +3,8 @@ package com.example.backend_main.HSH.controller;
 import com.example.backend_main.HSH.service.AuthService;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.HSH_DTO.LoginRequestDto;
-import com.example.backend_main.dto.HSH_DTO.RefreshTokenRequestDto;
 import com.example.backend_main.dto.HSH_DTO.TokenDTO;
-import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
+import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -39,7 +38,7 @@ public class AuthController {
         UserJoinRequestDTO : 사용자가 보낸 DTO
     */
     @PostMapping("/join")
-    public ResultVO<Void> join(@Valid @ModelAttribute UserJoinRequestDTO dto){
+    public ResultVO<Void> join(@Valid @ModelAttribute UserJoinRequestDto dto){
         // AuthService : 데이터를 넘기는 곳, BCrypt와 AES-256 처리의 보안 작업..
         // "SUCCESS" 코드와 상세 메시지를 담아 반환
         authService.join(dto);

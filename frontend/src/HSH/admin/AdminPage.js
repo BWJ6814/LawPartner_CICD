@@ -21,6 +21,14 @@ import SecurityPolicyView from './SecurityPolicyView';
 import ContentSecurityView from './ContentSecurityView';
 import AdminInquiryManageView from './AdminInquiryManageView';
 
+const ROLES = {
+  USER: 'ROLE_USER',
+  LAWYER: 'ROLE_LAWYER',
+  OPERATOR: 'ROLE_OPERATOR',
+  ADMIN: 'ROLE_ADMIN',
+  SUPER_ADMIN: 'ROLE_SUPER_ADMIN'
+};
+
 
 export default function AdminPage() {
   // --- 상태 관리 (State) ---
@@ -51,7 +59,8 @@ export default function AdminPage() {
   });
 
   // --- 권한 체크 유틸리티 ---
-  const currentRole = localStorage.getItem('userRole');
+  // ✅ Step 2: useState의 초기값(Lazy initialization)으로 변경하여 렌더링 성능을 극대화합니다.
+  const [currentRole] = useState(() => localStorage.getItem('userRole'));
   const hasPermission = (allowedRoles) => currentRole && allowedRoles.includes(currentRole);
 
   // =================================================================
@@ -111,7 +120,7 @@ export default function AdminPage() {
   };
 
   const fetchDashboardData = async () => {
-    setLoading(true);
+    // ✅ Step 3: setLoading(true); 삭제
     try {
       const userRes = await api.get('/api/admin/users');
       if (userRes.data.success) setUsers(userRes.data.data);
@@ -120,7 +129,7 @@ export default function AdminPage() {
       const threatRes = await api.get('/api/admin/logs/threats');
       if (threatRes.data.success) setThreatLogs(threatRes.data.data);
     } catch (error) { console.error("데이터 로드 실패", error); }
-    finally { setLoading(false); }
+    // ✅ Step 3: finally { setLoading(false); } 삭제
   };
 
   const fetchAuditLogs = async (params = {}) => {
@@ -229,13 +238,32 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchBlacklist();
-    fetchContentBoards();
-    fetchBannedWords();
-    fetchAuditLogs();
+    const fetchInitialData = async () => {
+      setLoading(true);
+      try {
+        await Promise.all([
+          fetchDashboardData(),
+          fetchBlacklist(),
+          fetchContentBoards(),
+          fetchBannedWords(),
+          fetchAuditLogs(),
+          fetchDailyStats(period) // ✅ 1. 초기에 차트 데이터도 같이 불러오도록 추가!
+        ]);
+      } catch (error) {
+        console.error("초기 데이터 로딩 실패", error);
+        toast.error("일부 데이터를 불러오는 데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInitialData();
   }, []);
-  useEffect(() => { fetchDailyStats(period); }, [period]);
+
+  // ✅ 2. 삭제되었던 코드 복구! (7일, 30일 버튼 누를 때마다 차트 새로고침)
+  useEffect(() => { 
+    fetchDailyStats(period); 
+  }, [period]);
 
   // =================================================================
   // 🖥️ 화면 렌더링 (renderContent)
@@ -284,7 +312,7 @@ export default function AdminPage() {
           <MenuSection title="User Management" isOpen={isSidebarOpen} />
           <MenuItem icon={<Users size={20} />} label="회원 통합 관리" active={activeMenu === 'user-manage'} onClick={() => setActiveMenu('user-manage')} isOpen={isSidebarOpen} />
           <MenuItem icon={<FileText size={20} />} label="문의 답변 관리" active={activeMenu==='inquiry-manage'} onClick={()=>setActiveMenu('inquiry-manage')} isOpen={isSidebarOpen} />
-          {hasPermission(['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) && (
+          {hasPermission([ROLES.SUPER_ADMIN, ROLES.ADMIN]) && (
             <>
               <MenuItem icon={<UserCheck size={20} />} label="변호사 승인" active={activeMenu === 'lawyer-approve'} onClick={() => setActiveMenu('lawyer-approve')} isOpen={isSidebarOpen} />
               <MenuItem icon={<Ban size={20} />} label="블랙리스트 관리" active={activeMenu === 'blacklist'} onClick={() => setActiveMenu('blacklist')} isOpen={isSidebarOpen} />
