@@ -1,18 +1,12 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
-const STORAGE_KEY = "customer_inquiries";
-
-function loadInquiries() {
-    try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-        return [];
-    }
-}
+import axios from "axios";
 
 function formatDateTime(iso) {
+    if (!iso) return "-";
     const d = new Date(iso);
+    if (isNaN(d.getTime())) return "-";
+
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
@@ -54,22 +48,44 @@ export default function CustomerDetailPage() {
     const navigate = useNavigate();
     const { id } = useParams();
 
-    const item = useMemo(() => {
-        const list = loadInquiries();
-        return list.find((x) => x.id === id);
+    const [item, setItem] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        async function fetchInquiry() {
+            try {
+                setLoading(true);
+                setError("");
+
+                const res = await axios.get(`http://localhost:8080/api/customer/inquiries/${id}`);
+                setItem(res.data);
+            } catch (err) {
+                console.error("문의 상세 조회 실패:", err);
+                setError("해당 문의를 불러오지 못했습니다.");
+                setItem(null);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchInquiry();
     }, [id]);
 
-    function handleDelete() {
+    async function handleDelete() {
         if (!item) return;
+
         const ok = window.confirm("정말 삭제하시겠습니까?");
         if (!ok) return;
 
-        const list = loadInquiries();
-        const updated = list.filter((x) => x.id !== id);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-
-        alert("삭제되었습니다.");
-        navigate("/customer/list");
+        try {
+            await axios.delete(`http://localhost:8080/api/customer/inquiries/${id}`);
+            alert("삭제되었습니다.");
+            navigate("/customer/list");
+        } catch (err) {
+            console.error("문의 삭제 실패:", err);
+            alert("삭제 중 오류가 발생했습니다.");
+        }
     }
 
     function handleEdit() {
@@ -80,71 +96,105 @@ export default function CustomerDetailPage() {
         <main style={page}>
             <div style={container}>
                 <div style={backRow}>
-          <span style={backLink} onClick={() => navigate("/customer/list")}>
-            ← 문의 목록
-          </span>
+                    <span style={backLink} onClick={() => navigate("/customer/list")}>
+                        ← 문의 목록
+                    </span>
                 </div>
 
-                {!item ? (
-                    <section style={panel}>
-                        <h1 style={pageTitle}>문의 상세</h1>
+                <section style={panel}>
+                    <h1 style={pageTitle}>문의 상세</h1>
+
+                    {loading ? (
+                        <div style={emptyState}>
+                            <div style={emptyTitle}>불러오는 중...</div>
+                            <div style={emptyDesc}>문의 상세 데이터를 가져오고 있습니다.</div>
+                        </div>
+                    ) : error || !item ? (
                         <div style={emptyState}>
                             <div style={emptyTitle}>해당 문의를 찾을 수 없습니다.</div>
-                            <div style={emptyDesc}>목록으로 돌아가서 다른 문의를 선택해주세요.</div>
+                            <div style={emptyDesc}>
+                                {error || "목록으로 돌아가서 다른 문의를 선택해주세요."}
+                            </div>
                             <div style={{ marginTop: 18 }}>
                                 <button style={btnPrimary} onClick={() => navigate("/customer/list")}>
                                     목록으로 이동
                                 </button>
                             </div>
                         </div>
-                    </section>
-                ) : (
-                    <section style={panel}>
-                        <h1 style={pageTitle}>문의 상세</h1>
+                    ) : (
+                        <>
+                            <div style={subject}>{item.title}</div>
 
-                        <div style={subject}>{item.title}</div>
+                            <div style={metaRow}>
+                                <span style={getStatusBadgeStyle(item.status)}>{item.status}</span>
 
-                        <div style={metaRow}>
-                            <span style={getStatusBadgeStyle(item.status)}>{item.status}</span>
+                                <span style={metaDot}>•</span>
 
-                            <span style={metaDot}>•</span>
+                                <span style={metaText}>
+                                    <span style={metaKey}>유형</span>
+                                    <span style={metaValue}>{item.type}</span>
+                                </span>
 
-                            <span style={metaText}>
-                <span style={metaKey}>유형</span>
-                <span style={metaValue}>{item.type}</span>
-              </span>
+                                <span style={metaDot}>•</span>
 
-                            <span style={metaDot}>•</span>
+                                <span style={metaText}>
+                                    <span style={metaKey}>작성일</span>
+                                    <span style={metaValue}>{formatDateTime(item.createdAt)}</span>
+                                </span>
+                            </div>
 
-                            <span style={metaText}>
-                <span style={metaKey}>작성일</span>
-                <span style={metaValue}>{formatDateTime(item.createdAt)}</span>
-              </span>
-                        </div>
+                            <div style={divider} />
 
-                        <div style={divider} />
+                            <div style={sectionHeader}>
+                                <div style={sectionTitle}>문의 내용</div>
+                            </div>
 
-                        <div style={sectionHeader}>
-                            <div style={sectionTitle}>문의 내용</div>
-                        </div>
+                            <div style={contentBox}>{item.content}</div>
 
-                        <div style={contentBox}>{item.content}</div>
+                            <div style={divider} />
 
-                        <div style={footerRow}>
-                            <button style={btnDanger} onClick={handleDelete}>
-                                삭제
-                            </button>
+                            <div style={sectionHeader}>
+                                <div style={sectionTitle}>관리자 답변</div>
+                            </div>
 
-                            <button style={btnPrimaryAction} onClick={handleEdit}>
-                                수정
-                            </button>
+                            {item.answerContent ? (
+                                <div style={answerBox}>
+                                    <div style={answerMeta}>
+                                        <span style={answerBadge}>답변완료</span>
+                                        <span style={answerMetaText}>
+                답변자: {item.answeredBy || "-"}
+            </span>
+                                        <span style={answerMetaText}>
+                답변일: {formatDateTime(item.answeredAt)}
+            </span>
+                                    </div>
 
-                            <button style={btnGhost} onClick={() => navigate("/customer/list")}>
-                                목록으로
-                            </button>
-                        </div>
-                    </section>
-                )}
+                                    <div style={answerContentText}>
+                                        {item.answerContent}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={answerEmptyBox}>
+                                    아직 등록된 답변이 없습니다.
+                                </div>
+                            )}
+
+                            <div style={footerRow}>
+                                <button style={btnDanger} onClick={handleDelete}>
+                                    삭제
+                                </button>
+
+                                <button style={btnPrimaryAction} onClick={handleEdit}>
+                                    수정
+                                </button>
+
+                                <button style={btnGhost} onClick={() => navigate("/customer/list")}>
+                                    목록으로
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </section>
             </div>
         </main>
     );
@@ -324,4 +374,52 @@ const emptyTitle = {
 const emptyDesc = {
     fontSize: 14,
     opacity: 0.7,
+};
+
+const answerBox = {
+    background: "rgba(37,99,235,0.10)",
+    border: "1px solid rgba(37,99,235,0.25)",
+    borderRadius: 18,
+    padding: 22,
+    marginTop: 8,
+};
+
+const answerMeta = {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 12,
+    alignItems: "center",
+    marginBottom: 14,
+};
+
+const answerBadge = {
+    display: "inline-flex",
+    alignItems: "center",
+    height: 28,
+    padding: "0 12px",
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 900,
+    background: "rgba(34,197,94,0.18)",
+    border: "1px solid rgba(34,197,94,0.35)",
+    color: "#4ade80",
+};
+
+const answerMetaText = {
+    fontSize: 13,
+    opacity: 0.85,
+};
+
+const answerContentText = {
+    whiteSpace: "pre-wrap",
+    lineHeight: 1.8,
+};
+
+const answerEmptyBox = {
+    background: "#0b1224",
+    border: "1px solid rgba(255,255,255,0.06)",
+    borderRadius: 18,
+    padding: 20,
+    marginTop: 8,
+    color: "rgba(255,255,255,0.7)",
 };

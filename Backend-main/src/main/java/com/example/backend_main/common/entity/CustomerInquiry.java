@@ -37,4 +37,14 @@ public class CustomerInquiry {
 
     @Column(name = "UPDATED_AT", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Lob
+    @Column(name = "ANSWER_CONTENT")
+    private String answerContent;
+
+    @Column(name = "ANSWERED_AT")
+    private LocalDateTime answeredAt;
+
+    @Column(name = "ANSWERED_BY", length = 100)
+    private String answeredBy;
 }
