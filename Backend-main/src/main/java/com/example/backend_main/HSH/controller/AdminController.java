@@ -2,6 +2,7 @@ package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.common.annotation.ActionLog;
+import com.example.backend_main.common.entity.BannedWord;
 import com.example.backend_main.common.entity.BlacklistIp;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.security.CustomUserDetails;
@@ -180,6 +181,12 @@ public class AdminController {
         // ✅ bannedWordRepository.deleteById() → Service로 이동
         adminService.deleteBannedWord(wordNo);
         return ResultVO.ok("금지어가 삭제되었습니다.", null);
+    }
+
+    @GetMapping("/banned-words")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    public ResultVO<List<BannedWord>> getBannedWords() {
+        return ResultVO.ok("금지어 목록을 불러왔습니다.", adminService.getAllBannedWords());
     }
 
     // ==================================================================================

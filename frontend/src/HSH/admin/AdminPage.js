@@ -4,6 +4,8 @@ import {
   LayoutDashboard, Users, ShieldAlert, FileText, Settings, 
   LogOut, Terminal, UserCheck, Ban, FileSearch, ShieldCheck, ChevronRight, XCircle, Lock
 } from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import api from '../../common/api/axiosConfig';
 
 // [1] 공통 컴포넌트 및 분리된 뷰 임포트
@@ -70,13 +72,14 @@ export default function AdminPage() {
 
   const handleAddBlacklist = async (e) => {
     e.preventDefault();
-    if (!newIp.trim() || !newReason.trim()) return alert("차단할 IP와 사유를 입력해주세요.");
+    if (!newIp.trim() || !newReason.trim()) return toast.warn("차단할 IP와 사유를 입력해주세요.");
     try {
       const res = await api.post('/api/admin/blacklist', { ip: newIp, reason: newReason });
       if (res.data.success) {
-        alert(res.data.message); setNewIp(''); setNewReason(''); fetchBlacklist();
+        toast.success(res.data.message || "IP가 차단되었습니다.");
+        setNewIp(''); setNewReason(''); fetchBlacklist();
       }
-    } catch (error) { alert(error.response?.data?.message || "차단 실패"); }
+    } catch (error) { toast.error(error.response?.data?.message || "차단 중 오류가 발생했습니다."); }
   };
 
   const handleUnblock = async (ip) => {
@@ -84,8 +87,11 @@ export default function AdminPage() {
     if (!reason) return;
     try {
       const res = await api.delete(`/api/admin/blacklist/${ip}?reason=${encodeURIComponent(reason)}`);
-      if (res.data.success) { alert(res.data.message); fetchBlacklist(); }
-    } catch (error) { alert("해제 실패"); }
+      if (res.data.success) {
+        toast.success(res.data.message || "IP 차단이 해제되었습니다.");
+        fetchBlacklist();
+      }
+    } catch (error) { toast.error(error.response?.data?.message || "차단 해제 중 오류가 발생했습니다."); }
   };
 
   const fetchContentBoards = async () => {
@@ -125,13 +131,13 @@ export default function AdminPage() {
   const handleSearch = () => { fetchAuditLogs(searchParams); setSearchParams(prev => ({ ...prev, keyword: '' })); };
   const handleReset = () => {
     const init = { startDate: '', endDate: '', keywordType: 'IP', keyword: '', statusType: 'ALL' };
-    setSearchParams(init); fetchAuditLogs({}); 
+    setSearchParams(init); fetchAuditLogs({});
   };
   const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearch(); };
 
   const handleDownloadChart = async () => {
-    if(!chartRef.current) return;
-    const canvas = await html2canvas(chartRef.current, {backgroundColor: '#ffffff'});
+    if (!chartRef.current) return;
+    const canvas = await html2canvas(chartRef.current, { backgroundColor: '#ffffff' });
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
     link.download = `Admin_Dashboard_${new Date().toISOString().slice(0, 10)}.png`;
@@ -146,9 +152,10 @@ export default function AdminPage() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Audit_Log_${new Date().toISOString().slice(0,10)}.xlsx`);
+      link.setAttribute('download', `Audit_Log_${new Date().toISOString().slice(0, 10)}.xlsx`);
       document.body.appendChild(link); link.click(); link.remove();
-    } catch (error) { alert("다운로드 실패"); }
+      toast.success("엑셀 파일이 다운로드되었습니다.");
+    } catch (error) { toast.error(error.response?.data?.message || "다운로드 중 오류가 발생했습니다."); }
   };
 
   const handleUserStatusChange = async (userId, statusCode) => {
@@ -156,8 +163,11 @@ export default function AdminPage() {
     if (!reason) return;
     try {
       const res = await api.put('/api/admin/user/status', { userId, statusCode, reason });
-      if (res.data.success) { alert("처리 완료"); fetchDashboardData(); setShowModal(false); }
-    } catch (e) { alert("처리 실패"); }
+      if (res.data.success) {
+        toast.success(res.data.message || "회원 상태가 변경되었습니다.");
+        fetchDashboardData(); setShowModal(false);
+      }
+    } catch (e) { toast.error(e.response?.data?.message || "상태 변경 중 오류가 발생했습니다."); }
   };
 
   const handleRoleChange = async (userId, roleCode) => {
@@ -165,25 +175,42 @@ export default function AdminPage() {
     if (!reason) return;
     try {
       const res = await api.put('/api/admin/user/role', { userId, roleCode, reason });
-      if (res.data.success) { alert("변경 완료"); fetchDashboardData(); setShowModal(false); }
-    } catch (e) { alert("변경 실패"); }
+      if (res.data.success) {
+        toast.success(res.data.message || "회원 권한이 변경되었습니다.");
+        fetchDashboardData(); setShowModal(false);
+      }
+    } catch (e) { toast.error(e.response?.data?.message || "권한 변경 중 오류가 발생했습니다."); }
   };
 
   const handleAddBannedWord = async (e) => {
     e.preventDefault();
     if (!newWord.trim()) return;
+
+    const reason = prompt("금지어 등록 사유를 입력해주세요:");
+    if (!reason) return;
+
     try {
-      const res = await api.post('/api/admin/banned-words', { word: newWord });
-      if (res.data.success) { setNewWord(''); fetchBannedWords(); }
-    } catch (e) { alert("등록 실패"); }
+      const res = await api.post('/api/admin/banned-words', { word: newWord, reason });
+      if (res.data.success) {
+        toast.success(res.data.message || "금지어가 등록되었습니다.");
+        setNewWord(''); fetchBannedWords();
+      }
+    } catch (e) { toast.error(e.response?.data?.message || "등록 중 오류가 발생했습니다."); }
   };
 
   const handleDeleteBannedWord = async (wordNo) => {
     if (!window.confirm("삭제하시겠습니까?")) return;
+
+    const reason = prompt("금지어 삭제 사유를 입력해주세요:");
+    if (!reason) return;
+
     try {
-      const res = await api.delete(`/api/admin/banned-words/${wordNo}`);
-      if (res.data.success) fetchBannedWords();
-    } catch (e) { alert("삭제 실패"); }
+      const res = await api.delete(`/api/admin/banned-words/${wordNo}?reason=${encodeURIComponent(reason)}`);
+      if (res.data.success) {
+        toast.success(res.data.message || "금지어가 삭제되었습니다.");
+        fetchBannedWords();
+      }
+    } catch (e) { toast.error(e.response?.data?.message || "삭제 중 오류가 발생했습니다."); }
   };
 
   const handleToggleBlind = async (boardNo, currentBlindYn) => {
@@ -192,20 +219,20 @@ export default function AdminPage() {
     if (!reason) return;
     try {
       const res = await api.put(`/api/admin/board/blind`, { boardNo, blindYn: nextStatus, reason });
-      if (res.data.success) { alert("완료"); fetchContentBoards(); }
-    } catch (e) { alert("실패"); }
+      if (res.data.success) {
+        toast.success(res.data.message || "게시글 상태가 변경되었습니다.");
+        fetchContentBoards();
+      }
+    } catch (e) { toast.error(e.response?.data?.message || "블라인드 처리 중 오류가 발생했습니다."); }
   };
 
   useEffect(() => {
-  // 기존 로직들
-  fetchDashboardData();
-  fetchBlacklist();
-  fetchContentBoards();
-  fetchBannedWords();
-  
-  // ✅ 추가: 감사 로그를 초기 화면 진입 시 자동으로 리스트업합니다.
-  fetchAuditLogs(); 
-}, []); // 대괄호가 비어있으므로 페이지 접속 시 1회 실행됨
+    fetchDashboardData();
+    fetchBlacklist();
+    fetchContentBoards();
+    fetchBannedWords();
+    fetchAuditLogs();
+  }, []);
   useEffect(() => { fetchDailyStats(period); }, [period]);
 
   // =================================================================
@@ -214,7 +241,7 @@ export default function AdminPage() {
 
   const renderContent = () => {
     if (loading) return <div className="p-10 font-bold text-slate-500">데이터 로딩 중...</div>;
-    
+
     const commonProps = { summary, dailyStats, period, setPeriod, chartRef, handleDownloadChart, threatLogs, setActiveMenu, hasPermission };
 
     switch (activeMenu) {
@@ -232,6 +259,17 @@ export default function AdminPage() {
   // --- 레이아웃 (SideBar & Header) ---
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+
+      {/* 토스트 컨테이너 — 화면 우측 하단에 표시, 3초 후 자동 제거 */}
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+        theme="light"
+      />
+
       <aside className={`bg-[#0f172a] text-white transition-all duration-300 flex-shrink-0 flex flex-col ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
         <div className="p-6 flex items-center gap-3 cursor-pointer" onClick={() => window.location.href = '/'}>
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black italic">AI</div>
@@ -239,22 +277,22 @@ export default function AdminPage() {
         </div>
         <nav className="flex-grow px-3 py-4 space-y-1 overflow-y-auto">
           <MenuSection title="Main" isOpen={isSidebarOpen} />
-          <MenuItem icon={<LayoutDashboard size={20} />} label="대시보드" active={activeMenu==='dashboard'} onClick={()=>setActiveMenu('dashboard')} isOpen={isSidebarOpen} />
+          <MenuItem icon={<LayoutDashboard size={20} />} label="대시보드" active={activeMenu === 'dashboard'} onClick={() => setActiveMenu('dashboard')} isOpen={isSidebarOpen} />
           <MenuSection title="User Management" isOpen={isSidebarOpen} />
-          <MenuItem icon={<Users size={20} />} label="회원 통합 관리" active={activeMenu==='user-manage'} onClick={()=>setActiveMenu('user-manage')} isOpen={isSidebarOpen} />
+          <MenuItem icon={<Users size={20} />} label="회원 통합 관리" active={activeMenu === 'user-manage'} onClick={() => setActiveMenu('user-manage')} isOpen={isSidebarOpen} />
           {hasPermission(['ROLE_SUPER_ADMIN', 'ROLE_ADMIN']) && (
             <>
-              <MenuItem icon={<UserCheck size={20} />} label="변호사 승인" active={activeMenu==='lawyer-approve'} onClick={()=>setActiveMenu('lawyer-approve')} isOpen={isSidebarOpen} />
-              <MenuItem icon={<Ban size={20} />} label="블랙리스트 관리" active={activeMenu==='blacklist'} onClick={()=>setActiveMenu('blacklist')} isOpen={isSidebarOpen} />
+              <MenuItem icon={<UserCheck size={20} />} label="변호사 승인" active={activeMenu === 'lawyer-approve'} onClick={() => setActiveMenu('lawyer-approve')} isOpen={isSidebarOpen} />
+              <MenuItem icon={<Ban size={20} />} label="블랙리스트 관리" active={activeMenu === 'blacklist'} onClick={() => setActiveMenu('blacklist')} isOpen={isSidebarOpen} />
             </>
           )}
           <MenuSection title="Security Center" isOpen={isSidebarOpen} highlight />
-          <MenuItem icon={<Terminal size={20} />} label="시스템 감사 로그" active={activeMenu==='audit-log'} onClick={()=>setActiveMenu('audit-log')} isOpen={isSidebarOpen} />
-          <MenuItem icon={<ShieldCheck size={20} />} label="보안 정책 설정" active={activeMenu==='security-policy'} onClick={()=>setActiveMenu('security-policy')} isOpen={isSidebarOpen} />
-          <MenuItem icon={<FileSearch size={20} />} label="콘텐츠 보안 관리" active={activeMenu==='content-security'} onClick={()=>setActiveMenu('content-security')} isOpen={isSidebarOpen} />
+          <MenuItem icon={<Terminal size={20} />} label="시스템 감사 로그" active={activeMenu === 'audit-log'} onClick={() => setActiveMenu('audit-log')} isOpen={isSidebarOpen} />
+          <MenuItem icon={<ShieldCheck size={20} />} label="보안 정책 설정" active={activeMenu === 'security-policy'} onClick={() => setActiveMenu('security-policy')} isOpen={isSidebarOpen} />
+          <MenuItem icon={<FileSearch size={20} />} label="콘텐츠 보안 관리" active={activeMenu === 'content-security'} onClick={() => setActiveMenu('content-security')} isOpen={isSidebarOpen} />
         </nav>
         <div className="p-4 border-t border-slate-800">
-          <button onClick={() => { localStorage.clear(); window.location.href='/login'; }} className="flex items-center gap-3 text-slate-400 hover:text-white w-full px-4 py-2">
+          <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="flex items-center gap-3 text-slate-400 hover:text-white w-full px-4 py-2">
             <LogOut size={20} />
             {isSidebarOpen && <span className="text-sm font-bold">로그아웃</span>}
           </button>
@@ -280,7 +318,7 @@ export default function AdminPage() {
         <div className="flex-grow p-8 overflow-y-auto">{renderContent()}</div>
       </main>
 
-      {/* 회원 상세 모달 (로직 유지) */}
+      {/* 회원 상세 모달 */}
       {showModal && selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl">

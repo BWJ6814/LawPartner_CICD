@@ -392,7 +392,8 @@ public class AdminService {
     // ==================================================================================
     // 🔤 금지어 관리
     // ==================================================================================
-
+    
+    // 금지어 처리
     @Transactional
     public void addBannedWord(String word, String reason, String currentAdminId) {
         if (bannedWordRepository.existsByWord(word)) {
@@ -405,6 +406,7 @@ public class AdminService {
         BannedWord newWord = BannedWord.builder()
                 .word(word)
                 .adminNo(admin.getUserNo())
+                .reason(reason)
                 .build();
 
         bannedWordRepository.save(newWord);
@@ -421,6 +423,11 @@ public class AdminService {
         log.info("🛡️ [금지어 삭제 완료] wordNo: {}", wordNo);
     }
 
+    // 금지어 불러오기.
+    @Transactional(readOnly = true)
+    public List<BannedWord> getAllBannedWords() {
+        return bannedWordRepository.findAll();
+    }
     // ==================================================================================
     // 📝 게시글 관리
     // ==================================================================================
