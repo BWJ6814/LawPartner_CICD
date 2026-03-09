@@ -3,7 +3,7 @@ package com.example.backend_main.HSH.service;
 import com.example.backend_main.common.entity.LawyerInfo;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.LawyerInfoRepository;
-import com.example.backend_main.dto.UserJoinRequestDTO;
+import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika; // ★ Tika 추가

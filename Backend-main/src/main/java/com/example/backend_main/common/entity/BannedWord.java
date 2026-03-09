@@ -18,6 +18,9 @@ public class BannedWord {
     @Column(name = "ADMIN_NO", nullable = false)
     private Long adminNo;
 
+    @Column(name = "REASON", length = 500)  // ✅ 추가
+    private String reason;
+
     @Column(name = "REG_DT", insertable = false, updatable = false)
     private Date regDt;
 }

@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import axios from "axios";
+import api from "../common/api/axiosConfig";
 import {
     Sparkles,
     Gavel,
@@ -115,7 +115,8 @@ function inferMainCategory(tags) {
 function safeImage(url) {
     const u = (url || "").trim();
     if (!u) return "";
-    if (u.startsWith("/")) return `http://localhost:8080${u}`;
+    const base = process.env.REACT_APP_API_URL || "http://localhost:8080";
+    if (u.startsWith("/")) return `${base}${u}`;
     return u;
 }
 
@@ -228,7 +229,7 @@ export default function ExpertsPage() {
         const fetchLawyers = async () => {
             setIsLoading(true);
             try {
-                const res = await axios.get("http://localhost:8080/api/lawyers");
+                const res = await api.get("/api/lawyers");
                 const list = pickArray(res.data);
 
                 if (!Array.isArray(list) || list.length === 0) {

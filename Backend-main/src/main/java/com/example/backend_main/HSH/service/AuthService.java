@@ -2,13 +2,14 @@ package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.entity.RefreshToken;
 import com.example.backend_main.common.entity.User;
-import com.example.backend_main.common.repository.RefreshTokenRepository;
+import com.example.backend_main.common.exception.CustomException;
+import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil;
-import com.example.backend_main.dto.TokenDTO;
-import com.example.backend_main.dto.UserJoinRequestDTO;
+import com.example.backend_main.dto.HSH_DTO.TokenDTO;
+import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -41,148 +42,135 @@ public class AuthService {
     private final LawyerService lawyerService;
     private final RefreshTokenService refreshTokenService;
     private final HashUtil hashUtil;                    // 단방향 해시 처리 (검색용)
-    private final RefreshTokenRepository refreshTokenRepository;
+
 
     /*
-     [회원가입] USR-01 요구사항 반영
-     비밀번호는 BCrypt로, 이메일/폰은 AES-256으로 암호화하여 저장합니다.
-     */
+ [회원가입] USR-01 요구사항 반영
+ 비밀번호는 BCrypt로, 이메일/폰은 AES-256으로 암호화하여 저장합니다.
+ */
     @Transactional
-    public void join(UserJoinRequestDTO dto) throws Exception {
-
+    public void join(UserJoinRequestDTO dto) {
+        // 1. 왜? 'throws Exception'이 사라짐으로써 메서드가 가벼워졌습니다.
+        log.info("📝 [회원가입 시작] ID: {}", dto.getUserId());
 
         // 1-1. 아이디 중복 체크
-        // DB창고 userRepository에 가서 아이디(UserId)를 이미 사용하는 사람이 있는지 확인하기..
         if (userRepository.existsByUserId(dto.getUserId())) {
-            // IllegalArgumentException : 너가 보낸 데이터가 우리 시스템 규칙에 안 맞아!
-            // RuntimeException         : 원인은 모르겠지만 실행 중에 터졌다
-            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_USER_ID);
         }
-        // 1-2. 중복 체크를 해시값으로 수행하기
+
+        // 1-2. 이메일/폰 중복 체크 (해시값 기준)
         String inputEmailHash = hashUtil.generateHash(dto.getEmail());
         String inputPhoneHash = hashUtil.generateHash(dto.getPhone());
 
         if (userRepository.existsByEmailHash(inputEmailHash)) {
-            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
         if (userRepository.existsByPhoneHash(inputPhoneHash)) {
-            throw new IllegalArgumentException("이미 가입된 휴대폰 번호입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_PHONE);
         }
 
-        // 1-3 닉네임 결정 및 중복 체크 로직
+        // 1-3 닉네임 중복 체크 및 결정
         String finalNickname = determineNickname(dto);
-
-        // 결정된 닉네임이 DB에 있는지 확인
         if (userRepository.existsByNickNm(finalNickname)) {
-            // 변호사의 경우 실명이 중복된 것이므로 메시지를 다르게 줄 수도 있음
-            throw new IllegalArgumentException("이미 사용 중인 닉네임(또는 이름)입니다.");
+            throw new CustomException(ErrorCode.INVALID_INPUT, "이미 사용 중인 닉네임입니다.");
         }
 
+        // 2. 보안 데이터 암호화 (PII)
+        String hashedPw = passwordEncoder.encode(dto.getUserPw());
+        String encryptedEmail;
+        String encryptedPhone;
 
+        try {
+            encryptedEmail = aes256Util.encrypt(dto.getEmail());
+            encryptedPhone = aes256Util.encrypt(dto.getPhone());
+        } catch (Exception e) {
+            log.error("🚨 [암호화 실패] ID: {}, 사유: {}", dto.getUserId(), e.getMessage());
+            throw new CustomException(ErrorCode.ENCRYPTION_ERROR);
+        }
 
-        // 2. 암호화 도구(CryptoUtil/BCrypt)를 사용해 데이터 변환
-        // 비밀번호 : 해싱 (복호화 불가능)
-        // 이메일/전화번호 : AES-256 암호화 (복호화 가능)
-        String hashedPw = passwordEncoder.encode(dto.getUserPw()); // 비번 으깨기 (BCrypt)
-        String encryptedEmail = aes256Util.encrypt(dto.getEmail()); // 이메일 잠그기 (AES)
-        String encryptedPhone = aes256Util.encrypt(dto.getPhone()); // 전화번호 잠그기 (AES)
-
-        // 분기처리 하기 위한 코드 설정
+        // 3. 권한 및 상태 결정 로직 (변수 선언 포함)
+        // 파트너님, 이 변수들은 여기서 선언되어 빌더에 들어갑니다.
         String initialRole = dto.getRoleCode();
         String initialStatus = "S01"; // 기본: 정상 활동
 
-        // 변호사(ROLE_LAWYER)로 가입 신청 시 -> '준회원'으로 강등 및 '대기' 상태로 설정
+        // 변호사(ROLE_LAWYER)로 가입 신청 시 -> '준회원'으로 권한 조정 및 '대기' 상태 설정
         if ("ROLE_LAWYER".equals(dto.getRoleCode())) {
-            initialRole = "ROLE_ASSOCIATE"; // 준회원 (권한 없음)
-            initialStatus = "S02";          // 승인 대기 상태
+            initialRole = "ROLE_ASSOCIATE";
+            initialStatus = "S02";
         }
-        // 3. 시민 명부(Entity)에 담기
+
+        // 4. Entity 생성 및 저장 (불필요한 try-catch 제거로 가독성 향상)
         User user = User.builder()
-                .userId(dto.getUserId())    // 아이디
-                .userPw(hashedPw)           // 해시 처리된 비번
-                .userNm(dto.getUserNm())    // 이름
-                .nickNm(finalNickname)      // 닉네임
-                .email(encryptedEmail)      // 암호화된 이메일
-                .emailHash(inputEmailHash)  // Hash 값 (검색용)
-                .phone(encryptedPhone)      // 암호화된 휴대폰 번호
-                .phoneHash(inputPhoneHash)  // Hash 값 (검색용)
-                .roleCode(initialRole)      // ROLE_USER 또는 ROLE_LAWYER
-                .statusCode(initialStatus)  // 상태 (정상)
+                .userId(dto.getUserId())
+                .userPw(hashedPw)
+                .userNm(dto.getUserNm())
+                .nickNm(finalNickname)
+                .email(encryptedEmail)
+                .emailHash(inputEmailHash)
+                .phone(encryptedPhone)
+                .phoneHash(inputPhoneHash)
+                .roleCode(initialRole)
+                .statusCode(initialStatus)
                 .build();
 
         userRepository.save(user);
+
+        // 5. 후속 처리
         if (user.isLawyer()) {
-            log.info("⚖️ [변호사 회원가입] 상세 정보 및 전문 분야 등록을 시작합니다. (대상: {})", user.getUserId());
-            // 변호사일 때만 실행되므로, 일반 유저 가입 시에는 IMG_URL 등을 건드리지 않습니다.
+            log.info("⚖️ [변호사 회원가입] 상세 정보 등록 시작: {}", user.getUserId());
             lawyerService.registerLawyerInfo(user, dto);
-        } else {
-            log.info("👤 [일반 회원가입] 추가 상세 정보 없이 가입을 완료합니다. (대상: {})", user.getUserId());
         }
+
+        log.info("✅ [회원가입 완료] 유저 No: {}", user.getUserNo());
     }
 
     /*
      [로그인] AUTH-01 & SEC-01 요구사항 반영
      아이디/비번을 검증하고 Access/Refresh Token을 발급합니다.
      */
-    public TokenDTO login(String userId, String password) throws Exception {
-        // 1. 아이디로 유저 찾기 (로그인 입력값 활용)
-        // 입력받은 아이디로 DB에서 해당 시민(User 객체)을 가져오기
-        // 아이디가 없어도 아이디가 없습니다..! 라고 보내주는 것이 아닌 아이디/비밀번호 통째로 불일치 처리..
+    @Transactional
+    public TokenDTO login(String userId, String password) {
+
+        // 1. 비즈니스 로직: 유저 찾기 (예외 메시지는 보안상 똑같이 맞춤)
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 계정이거나 비밀번호가 틀렸습니다."));
 
-        // 2. 비밀번호 확인
-        // matches(방금 입력한 비번, DB에 저장된 비번)
-        // 이 두개를 넣으면 스프링이 같으면 true / 다르면 false를 알려줍니다.
+        // 2. 비즈니스 로직: 비밀번호 대조
         if (!passwordEncoder.matches(password, user.getUserPw())) {
-            throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("가입되지 않은 계정이거나 비밀번호가 틀렸습니다.");
         }
 
-        // 너.. 정지 된 계정이야..?! 체크
-        String status = user.getStatusCode();
-        // S03 : 정지된 회원
-        if ("S03".equals(status)) {
-            throw new IllegalStateException("운영 정책 위반으로 활동이 정지된 계정입니다. 고객센터에 문의하세요");
-        }
-        if("S02".equals(status)) {
-            throw new IllegalStateException("현재 가입 심사 대기중입니다. 승인 완료 후 이용 가능합니다.");
-        }
-        if("S99".equals(status)) {
-            throw new IllegalStateException("이미 탈퇴 처리된 계정입니다.");
+        // 3. 비즈니스 로직: 상태 검사
+        if ("S03".equals(user.getStatusCode())) {
+            throw new IllegalStateException("해당 계정은 이용이 정지되었습니다. 관리자에게 문의하세요.");
         }
 
+        // 4. 복호화 처리
+        String decryptedEmail;
+        try {
+            decryptedEmail = aes256Util.decrypt(user.getEmail());
+        } catch (Exception e) {
+            log.error("🚨 [Decryption Error] 유저명 '{}'의 이메일 복호화 실패: {}", user.getUserId(), e.getMessage());
+            throw new RuntimeException("시스템 오류가 발생했습니다. 관리자에게 문의해주세요.");
+        }
 
-        // 3. [핵심] 이메일 복호화 (JWT의 식별자로 사용하기 위해)
-        // DB에 잠겨있던 이메일을 해독기(decrypt)로 풀어서 꺼내기..
-        String decryptedEmail = aes256Util.decrypt(user.getEmail());
-
-        // 4. 복호화된 이메일을 담은 공식 명찰(Authentication) 생성
-        // user.getUserId() 대신 decryptedEmail을 첫 번째 인자로 넣습니다.
-        // 스프링 시큐리티가 이해할 수 있는 규격의 임시 명찰 만들기..! (사용자의 권한 정보도 함께)
+        // 5. 토큰 생성
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                // 신분증 주인 이름(이메일)
                 decryptedEmail,
                 null,
-                // 부여할 권한 배지 (예: ROLE_ADMIN)
                 List.of(new SimpleGrantedAuthority(user.getRoleCode()))
         );
 
-        // 5. 토큰 발급 후 추가 정보를 주머니에 담기!
-        TokenDTO tokenDTO = jwtTokenProvider.createToken(authentication, user.getUserNo(), user.getUserNm(),user.getNickNm());
-        tokenDTO.setUserNm(user.getUserNm()); // 이제 리액트에서 undefined가 안 뜹니다!
-        tokenDTO.setRole(user.getRoleCode()); // RBAC 설계도에 따른 권한 전송
-        tokenDTO.setEmail(decryptedEmail);  // 복호화된 진짜 이메일
-        tokenDTO.setUserNo(user.getUserNo()); // DB 고유 번호
-        tokenDTO.setNickNm(user.getNickNm() != null ? user.getNickNm() : user.getUserNm());
+        TokenDTO tokenDTO = jwtTokenProvider.createToken(
+                authentication, user.getUserNo(), user.getUserNm(), user.getNickNm()
+        );
 
-        // ★ [REQ-SEC-02] 중복 로그인 차단 및 토큰 DB 저장은 추후 활성화 예정
-        // 현재는 토큰 발급 후 리액트로 전달만 하고, DB 기록은 생략합니다.
+        // 6. ✅ RefreshToken DB 저장 (토큰 재발급 검증용)
         refreshTokenService.saveRefreshToken(user.getUserNo(), tokenDTO.getRefreshToken());
 
-        log.info("★ 로그인 성공 ★ : {} ({})", user.getUserId(), user.getUserNm());
-        // 6. 마지막으로 이메일이 담긴 명찰로 토큰 발급!
         return tokenDTO;
     }
+
     // =================================================================================
     // [내부 헬퍼 메서드] 닉네임 결정 로직
     // =================================================================================
@@ -201,7 +189,7 @@ public class AuthService {
             return dto.getNickNm();
         }
     }
-    
+
     // 아이디 중복 확인 로직
     public boolean isUserIdAvailable(String userId){
         // 나중에 "탈퇴한 회원 아이디는 30일간 재사용 금지" 같은 규칙이 생겨도 여기만 고치면 됨!
@@ -231,11 +219,12 @@ public class AuthService {
             throw new IllegalArgumentException("리프레시 토큰이 만료되었거나 유효하지 않습니다.");
         }
 
-        // 2. 토큰에서 유저 ID(문자열) 추출
-        String userId = jwtTokenProvider.parseClaims(oldRefreshToken).getSubject();
+        // 2. 토큰에서 추출 (★ 수정: 이제 토큰의 주인은 userId가 아니라 '이메일'입니다!)
+        String email = jwtTokenProvider.parseClaims(oldRefreshToken).getSubject();
 
-        // 3. DB에서 유저 최신 정보 조회 (★ userNo를 알아내기 위해 가장 먼저 실행해야 합니다!)
-        User user = userRepository.findByUserId(userId)
+        // 3. DB에서 유저 최신 정보 조회 (★ 수정: 평문 이메일을 해시로 변환하여 DB와 대조!)
+        String emailHash = hashUtil.generateHash(email);
+        User user = userRepository.findByEmailHash(emailHash)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         if ("S03".equals(user.getStatusCode()) || "S99".equals(user.getStatusCode())) {
@@ -243,38 +232,35 @@ public class AuthService {
         }
 
         // 4. 저장소 대조 (보안 핵심!)
-        // 문자열 userId가 아니라, 방금 조회한 user 객체의 Long userNo를 사용합니다!
-        RefreshToken savedToken = refreshTokenRepository.findByUserNo(user.getUserNo())
-                .orElseThrow(() -> new IllegalArgumentException("로그아웃 된 사용자입니다. 다시 로그인해주세요."));
+        RefreshToken savedToken = refreshTokenService.findByUserNo(user.getUserNo());
 
         if (!savedToken.getTokenValue().equals(oldRefreshToken)) {
             // 탈취 의심 시 즉시 DB에서 해당 토큰을 날려버려 강제 로그아웃 처리
-            refreshTokenRepository.delete(savedToken);
+            refreshTokenService.deleteToken(savedToken);
             throw new IllegalArgumentException("탈취된 토큰이 의심됩니다. 다시 로그인해주세요.");
         }
 
-        // 5. 새로운 권한 객체 생성
+        // 5. 새로운 권한 객체 생성 (★ 수정: 새로운 토큰의 주인도 똑같이 '이메일'로 박아줍니다!)
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
                 new SimpleGrantedAuthority(user.getRoleCode())
         );
         UsernamePasswordAuthenticationToken auth =
-                new UsernamePasswordAuthenticationToken(user.getUserId(), null, authorities);
+                new UsernamePasswordAuthenticationToken(email, null, authorities);
 
-
-        // 5. 새로운 토큰 세트(Access + Refresh) 발급
+        // 6. 새로운 토큰 세트(Access + Refresh) 발급
         TokenDTO newTokenDTO = jwtTokenProvider.createToken(
                 auth, user.getUserNo(), user.getUserNm(), user.getNickNm()
         );
 
         // ==========================================================
-        // ★ 피드백 3번 반영: Refresh Token Rotation (기존 토큰 폐기)
+        // ★ Refresh Token Rotation (기존 토큰 폐기)
         // ==========================================================
-        // 파트너님이 엔티티에 만들어두신 updateToken 메서드를 활용합니다! (JPA 더티체킹)
-        // 만료일은 프로젝트 정책에 맞게 수정하세요 (예: 7일 뒤)
         LocalDateTime newExpireDt = LocalDateTime.now().plusDays(7);
         savedToken.updateToken(newTokenDTO.getRefreshToken(), newExpireDt);
 
-        // 6. 새로 발급된 토큰 객체 딱 하나만 깔끔하게 반환!
+        // 7. 새로 발급된 토큰 객체 딱 하나만 깔끔하게 반환!
         return newTokenDTO;
     }
+
+
 }

@@ -10,6 +10,7 @@ import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.CustomUserDetails;
 import org.slf4j.MDC;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -33,94 +34,72 @@ import java.util.UUID;
 public class LogingAspect {
 
     private final AccessLogRepository accessLogRepository;
-    private final UserRepository userRepository; // USER_NO 조회를 위해 추가
+    private final UserRepository userRepository;
     private final AdminAuditRepository adminAuditRepository;
 
+    // ==================================================================================
+    // 1. 📢 [기본 접속 로그] 모든 컨트롤러 요청 시 작동
+    // ==================================================================================
 
-    /*
-    1. [기본 접속 로그] 모든 컨트롤러 요청 시 작동
-    누가 - 언제 - 어디로 - 접속했는가?
-    변경: 프로젝트 내의 모든 Controller 하위 메서드 감시
-
-    누구를 타겟으로 하는가?
-    모든 컨트롤러와 채팅(STOMP) 통신의 입출력을 감시
-
-    @Around : 메서드의 시작 전과 끝난 후 모두를 감싸서 통제하겠다는 뜻
-    execution(...) : 감시할 타겟 정하기
-    물리적주소.*Controller.*(..) : 이름이 Controller로 끝나는 모든 클래스의 모든 메서드(일반 API와 채팅 컨트롤러 포함)
-    */
     @Around("execution(* com.example.backend_main..*Controller.*(..))")
     public Object logAccess(ProceedingJoinPoint joinPoint) throws Throwable {
 
-        // 1. [TRACE_ID] 요청 고유 식별자 생성 (UUID 8자리)
+        // 1. 요청 고유 식별자 생성 및 MDC 등록
         String traceId = UUID.randomUUID().toString().substring(0, 8);
-        // 1.1 입구에서부터 쓰레드 명찰(MDC), 달기!
         MDC.put("TRACE_ID", traceId);
-
-        // 1.2 요청 시작 시간 기록
         long startTime = System.currentTimeMillis();
 
-        // 2. HTTP/WebSocket 분기 처리를 위한 Attributes 안전하게 가져오기
-        // ★ currentRequestAttributes() 대신 getRequestAttributes()를 사용하여 에러 방지!
-        // currentRequestAttributes() : 웹 소켓처럼 HTTP 요청이 없을 때 에러를 발생시킴
-        // getRequestAttributes() : HTTP 요청이 없으면 NULL을 반환
+        // 2. 기본값 설정 — 변수 선언 시 미리 초기화하여 NPE 방지
+        String ip = "Unknown";
+        String uri = "Unknown";
+        String userAgent = "Unknown";
+        HttpServletResponse httpResponse = null;
+
         RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
 
-        String ip;
-        String uri;
-        String userAgent;
-
         if (attributes != null) {
-            // ==========================================
-            // [A] 일반 HTTP (REST API) 요청일 경우
-            // attributes : 범용 상자에 요청 정보를 담은 객체
-            // ServletRequestAttributes : 웹 요청인지 확인했으니, 해당 상자를 열어
-            // HttpServletRequest : HTTP 편지의 원본을 꺼내달라!
-            // 그것을 request 라는 변수명으로 활용하겠다는 뜻
-            // ==========================================
+            // [A] 일반 HTTP (REST API) 요청
             HttpServletRequest request = ((ServletRequestAttributes) attributes).getRequest();
+            httpResponse = ((ServletRequestAttributes) attributes).getResponse();
 
-            // 헤더가 없을 경우(NULL 방지)
-            // 헤더 머리말 부분에 적힌 User-Agent 라는 값을 읽어오기
+            ip = getClientIp(request);
+            uri = request.getRequestURI();
             userAgent = request.getHeader("User-Agent");
             if (userAgent != null && userAgent.length() > 200) {
-                //
                 userAgent = userAgent.substring(0, 200);
             }
-            ip = getClientIp(request); // 헬퍼 메서드로 변경
-            uri = request.getRequestURI();
         } else {
-            // ==========================================
-            // [B] 웹소켓 (STOMP 채팅 등) 통신일 경우
-            // ==========================================
+            // [B] WebSocket (STOMP 채팅 등) 통신
             String className = joinPoint.getSignature().getDeclaringType().getSimpleName();
             String methodName = joinPoint.getSignature().getName();
-
             uri = "[STOMP] /" + className + "/" + methodName;
             ip = "WebSocket Client";
             userAgent = "WebSocket Session";
         }
 
-        // 3. 사용자 번호 가져오기
         Long userNo = getCurrentUserNo();
 
         Object result;
         String errorMsg = null;
-        int status = 200; // 기본 성공
 
         try {
-            // ★ 비즈니스 로직(API 또는 채팅 전송) 실행
             result = joinPoint.proceed();
         } catch (Exception e) {
-            status = 500;
             errorMsg = e.getMessage();
             if (errorMsg != null && errorMsg.length() > 500) {
                 errorMsg = errorMsg.substring(0, 500);
             }
             throw e;
         } finally {
-            // 4. 종료 시간 계산 및 DB 저장
             long duration = System.currentTimeMillis() - startTime;
+
+            // ✅ [핵심 수정] GlobalExceptionHandler가 예외를 처리한 후의 실제 상태코드를 읽어옴
+            // 기존: catch에서 무조건 500으로 고정 → 400, 403, 404 등이 전부 500으로 기록되는 문제
+            // 변경: response에서 직접 읽기 → GlobalExceptionHandler가 설정한 실제 코드 반영
+            int status = 200; // 기본값
+            if (httpResponse != null) {
+                status = httpResponse.getStatus();
+            }
 
             log.info("📢 [Audit] TraceID: {}, URI: {}, Status: {}, Time: {}ms", traceId, uri, status, duration);
 
@@ -136,20 +115,16 @@ public class LogingAspect {
                     .regDt(LocalDateTime.now())
                     .build());
 
-            MDC.clear(); // 퇴근 시 명찰 반납
+            MDC.clear();
         }
 
         return result;
     }
-    /*
-     2. [커스텀 행위 로그] @ActionLog가 붙은 메소드만 골라서 작동
-     "관리자가 엑셀을 다운로드했다", "승인했다" 등 중요 행위 추적용
-     
-     누구를 감시하는가?
-     @ActionLog 어노테이션이 붙은 메서드만 골라서 감시하기
-     
-     해당 어노테이션에 적어둔 acton이나 target 같은 글자들을 쏙쏙 뽑아오기..
-     */
+
+    // ==================================================================================
+    // 2. 👀 [커스텀 행위 로그] @ActionLog가 붙은 메서드만 작동
+    // ==================================================================================
+
     @Around("@annotation(com.example.backend_main.common.annotation.ActionLog)")
     public Object logAdminAction(ProceedingJoinPoint joinPoint) throws Throwable {
 
@@ -159,24 +134,22 @@ public class LogingAspect {
         String actionType = actionLog.action();
         String targetInfo = actionLog.target();
 
-        // 1. 관리자 정보 가져오기 (S급 최적화 적용)
+        // 1. 관리자 정보
         Long adminNo = getCurrentUserNo();
         String adminId = "UNKNOWN";
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        // 토큰이 존재하고 정상적으로 인증된 상태라면 범용 인터페이스(getName)를 통해 ID 추출
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             adminId = auth.getName();
         }
 
-        // 2. 환경 정보 및 TraceID
+        // 2. 요청 환경 정보
         RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
         String ip = "Unknown IP";
         String userAgent = "Unknown Agent";
 
         if (attributes != null) {
             HttpServletRequest request = ((ServletRequestAttributes) attributes).getRequest();
-            ip = getClientIp(request); // 헬퍼 메서드 사용!
+            ip = getClientIp(request);
             userAgent = request.getHeader("User-Agent");
             if (userAgent != null && userAgent.length() > 200) userAgent = userAgent.substring(0, 200);
         }
@@ -184,10 +157,8 @@ public class LogingAspect {
         String traceId = MDC.get("TRACE_ID");
         if (traceId == null) traceId = "SYSTEM";
 
-        // ⭐ 파라미터에서 사유(Reason) 낚아채기!
-        String reason = "사유 미입력"; // 기본값
-        // joinPoint.getArgs() : 이 호출을 통해 전달되는 모든 파라미터를 싹 다 뒤져서 
-        // 어떤 방식으로 보냈던 "reason"이라는 이름의 데이터를 무조건 낚사채서 추출하기
+        // 3. ✅ [개선] reason 추출 — Map, @RequestParam, DTO 필드까지 모두 커버
+        String reason = "사유 미입력";
         Object[] args = joinPoint.getArgs();
         String[] parameterNames = signature.getParameterNames();
 
@@ -195,34 +166,41 @@ public class LogingAspect {
             Object arg = args[i];
             if (arg == null) continue;
 
-            /*
-                케이스 A와 B로 나눈 이유
-            - 케이스 A
-            [상태 변경 / 승인] - PUT 또는 POST 방식
-            데이터를 숨겨서 Body(JSON) 담아 보냄 -
-            백엔드 : @RequestBody Map<String, String> 또는 DTO로 받음
-
-            - 케이스 B
-            [엑셀 다운로드 / 삭제] - GET 또는 DELETE 방식
-            Get 요청은 Body(JSON)를 가질 수 없는 것이 웹의 표준 규칙
-            따라서 URL 뒤에 파라미터를 붙여서 보내기 (/api/admin/logs/download?reason=이유)
-            백엔드 : @RequestParam("reason") String reason
-            */
-
-            // 케이스 A: 프론트에서 Map으로 보냈을 때 (예: @RequestBody Map<String, String>)
+            // 케이스 A: @RequestBody Map<String, String>
             if (arg instanceof java.util.Map<?, ?> mapArg) {
                 if (mapArg.containsKey("reason") && mapArg.get("reason") != null) {
                     reason = String.valueOf(mapArg.get("reason"));
                     break;
                 }
             }
-            // 케이스 B: 파라미터 이름 자체가 "reason"일 때 (예: @RequestParam String reason)
+            // 케이스 B: @RequestParam String reason
             else if (parameterNames != null && "reason".equals(parameterNames[i])) {
                 reason = String.valueOf(arg);
                 break;
             }
+            // ✅ 케이스 C: [추가] DTO 안에 reason 필드가 있을 때 (리플렉션으로 꺼내기)
+            else {
+                try {
+                    var field = arg.getClass().getDeclaredField("reason");
+                    field.setAccessible(true);
+                    Object val = field.get(arg);
+                    if (val != null) {
+                        reason = String.valueOf(val);
+                        break;
+                    }
+                } catch (NoSuchFieldException ignored) {
+                    // reason 필드가 없는 DTO는 그냥 넘어감
+                }
+            }
         }
-        // =================================================================
+
+        // 4. adminNo 검증 — try 진입 전에 처리
+        // @PreAuthorize가 정상 작동하는 한 도달 불가
+        // 만약 도달한다면 Security 설정에 구멍이 생긴 것 → 즉시 차단
+        if (adminNo == null) {
+            log.error("🚨 [보안 경고] @ActionLog 메서드에 미인증 접근 감지! TraceID: {}, Action: {}", traceId, actionType);
+            throw new IllegalStateException("감사 로그 저장 실패: 인증된 관리자 정보가 없습니다.");
+        }
 
         log.info("👀 [Admin Action Start] Admin: {}({}), Action: {}, Target: {}, Reason: {}",
                 adminId, adminNo, actionType, targetInfo, reason);
@@ -241,91 +219,89 @@ public class LogingAspect {
             log.error("❌ [Admin Action Fail] Admin: {}, Action: {}, Error: {}", adminId, actionType, e.getMessage());
             throw e;
         } finally {
-            // DB 저장! (reason 포함)
-            if (adminNo != null) {
-                adminAuditRepository.save(AdminAudit.builder()
-                        .adminNo(adminNo)
-                        .adminId(adminId)
-                        .actionType(actionType)
-                        .targetInfo(targetInfo)
-                        .reason(reason) // ★ 낚아챈 사유를 DB에 저장!
-                        .traceId(traceId)
-                        .errorYn(errorYn)
-                        .errorMsg(errorMsg)
-                        .reqIp(ip)
-                        .userAgent(userAgent)
-                        .build());
-            }
+            // 여기 도달하면 adminNo는 무조건 존재 (위에서 검증 완료)
+            adminAuditRepository.save(AdminAudit.builder()
+                    .adminNo(adminNo)
+                    .adminId(adminId)
+                    .actionType(actionType)
+                    .targetInfo(targetInfo)
+                    .reason(reason)
+                    .traceId(traceId)
+                    .errorYn(errorYn)
+                    .errorMsg(errorMsg)
+                    .reqIp(ip)
+                    .userAgent(userAgent)
+                    .build());
         }
 
         return result;
     }
 
+    // ==================================================================================
+    // 🔧 헬퍼 메서드
+    // ==================================================================================
+
     /*
-     SecurityContext에서 현재 로그인한 유저의 PK(USER_NO)를 찾는 헬퍼 메서드
-     CustomUserDetails를 사용하여 DB 조회를 피하기
+     SecurityContext에서 현재 로그인한 유저의 PK(USER_NO)를 가져오는 메서드
+     3단계 폴백: JWT details → CustomUserDetails → DB 조회 (최후의 보루)
      */
     private Long getCurrentUserNo() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        // 로그인하지 않은 경우(비회원) 처리
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             return null;
         }
 
         try {
-            // 🌟 1. [S급 최적화] JwtTokenProvider가 가방 안쪽 주머니(details)에 넣어둔 userNo를 0.001초 만에 꺼내기!
+            // 1단계: JWT details에서 꺼내기 (DB 조회 없음 — 가장 빠름)
             Object details = auth.getDetails();
             if (details instanceof java.util.Map<?, ?> mapDetails) {
                 if (mapDetails.containsKey("userNo") && mapDetails.get("userNo") != null) {
-                    // Integer로 올 수 있는 경우를 대비해 Number로 캐스팅 후 longValue() 호출 (안전한 형변환)
                     return ((Number) mapDetails.get("userNo")).longValue();
                 }
             }
 
-            // 2. [방어 로직] 폼 로그인 등 다른 방식으로 로그인해서 Principal 자체가 CustomUserDetails인 경우
+            // 2단계: Principal이 CustomUserDetails인 경우
             Object principal = auth.getPrincipal();
             if (principal instanceof CustomUserDetails customDetails) {
                 return customDetails.getUserNo();
             }
 
-            // 3. [최후의 보루] 위 두 방법이 모두 실패했다면 어쩔 수 없이 DB 조회 (기존 로직 유지)
-            String email = auth.getName();
-            return userRepository.findByEmail(email)
+            // 3단계: 최후의 보루 — DB 조회 (폼 로그인 등 예외 케이스)
+            return userRepository.findByEmail(auth.getName())
                     .map(User::getUserNo)
                     .orElse(null);
 
         } catch (Exception e) {
-            log.warn("⚠️ 사용자 번호 조회 중 오류 발생: {}", e.getMessage());
+            log.warn("⚠️ [사용자 번호 조회 실패] {}", e.getMessage());
             return null;
         }
     }
 
-
+    /*
+     실제 클라이언트 IP를 추출하는 메서드
+     프록시/로드밸런서 환경을 고려해 헤더를 순서대로 확인
+     */
     private String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
 
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
             ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty()  || "unknown".equalsIgnoreCase(ip)) {
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
             ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty()  || "unknown".equalsIgnoreCase(ip)) {
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
             ip = request.getRemoteAddr();
-        }
 
-        // 다중 프록시를 거쳤을 경우, 첫 번째 IP가 진짜 클라이언트 IP임
+        // 다중 프록시 환경: 첫 번째 IP가 진짜 클라이언트 IP
         if (ip != null && ip.contains(",")) {
             ip = ip.split(",")[0].trim();
         }
 
-        // ★ 대망의 IPv6 로컬호스트 변환!
+        // IPv6 로컬호스트 → IPv4로 변환
         if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
             ip = "127.0.0.1";
         }
 
         return ip;
     }
-
 }

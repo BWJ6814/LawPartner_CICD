@@ -1,4 +1,4 @@
-package com.example.backend_main.dto;
+package com.example.backend_main.dto.HSH_DTO;
 
 import com.example.backend_main.common.entity.AccessLog;
 import lombok.Builder;
