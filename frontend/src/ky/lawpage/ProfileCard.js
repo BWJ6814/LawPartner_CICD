@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SettingsModal from '../modal/SettingsModal';
-import api from '../../common/api/axiosConfig';
+import api, { API_BASE_URL } from '../../common/api/axiosConfig';
 
 const ProfileCard = () => {
     const navigate = useNavigate();
@@ -29,7 +29,7 @@ const ProfileCard = () => {
         api.get('/api/ky/profile')
             .then(res => {
                 const imgUrl = res.data?.data?.imgUrl;
-                if (imgUrl) setProfileImage(`http://localhost:8080${imgUrl}`);
+                if (imgUrl) setProfileImage(`${API_BASE_URL}${imgUrl}`);
             })
             .catch(() => {});
     }, [userRole]);

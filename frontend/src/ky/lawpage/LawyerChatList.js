@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import api from '../../common/api/axiosConfig';
+import api, { API_BASE_URL } from '../../common/api/axiosConfig';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
 
@@ -75,7 +75,7 @@ const LawyerChatList = () => {
             .then(res => setChatLog(res.data.data || []))
             .catch(() => setChatLog([]));
 
-        const socket = new SockJS('http://localhost:8080/ws-stomp');
+        const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
         const client = Stomp.over(socket);
         const token = localStorage.getItem('accessToken');
 

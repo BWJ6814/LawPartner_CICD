@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import api from '../common/api/axiosConfig';
 
 const AIChatPage = () => {
     const [input, setInput] = useState('');
@@ -26,15 +26,15 @@ const AIChatPage = () => {
 
         try {
             const userId = localStorage.getItem('userId') || 'GUEST';
-            const res = await axios.post('http://localhost:8080/api/ai/consult', {
+            const res = await api.post('/api/ai/consult', {
                 question: userMsg.text,
                 userId: userId
             });
-
+            const data = res.data?.data ?? res.data;
             const aiMsg = {
-                text: res.data.answer,
+                text: data?.answer ?? res.data?.answer,
                 isUser: false,
-                sources: res.data.related_cases || []
+                sources: data?.related_cases ?? res.data?.related_cases ?? []
             };
             setMessages(prev => [...prev, aiMsg]);
         } catch (error) {
