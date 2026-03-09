@@ -36,6 +36,15 @@ const ChatList = () => {
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState('');
 
+    // 토스트 알림 상태 추가 (상단 useState 부분에 추가)
+    const [toastMsg, setToastMsg] = useState(null);
+
+    // 토스트 표시 함수
+    const showNotification = useCallback((msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(null), 3000);
+    }, []);
+
     // roomId 변경 시 ref 동기화
     useEffect(() => {
         currentRoomIdRef.current = roomId;
@@ -68,46 +77,55 @@ const ChatList = () => {
     // 3. ★★★ 웹소켓 연결 함수 (핵심 수정)
     // - Authorization 헤더에 JWT 토큰 포함 → 백엔드 인터셉터에서 검증
     // - 연결 실패 시 3초 후 자동 재연결
+    // connectWebSocket 전체 교체
     const connectWebSocket = useCallback((targetRoomId) => {
-        if (stompClient.current && stompClient.current.connected) {
+        if (stompClient.current?.connected) {
             stompClient.current.disconnect();
         }
 
         const token = localStorage.getItem('accessToken');
-        if (!token) {
-            console.warn("[WS] 토큰 없음 → 연결 스킵");
-            return;
-        }
+        if (!token) { console.warn("[WS] 토큰 없음"); return; }
 
         const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
         const client = Stomp.over(socket);
-        // client.debug = null; // 콘솔 로그 줄이려면 주석 해제
+        client.debug = null;
 
         client.connect(
-            { Authorization: `Bearer ${token}` }, // ★ 핵심: 토큰 전달
+            { Authorization: `Bearer ${token}` },
             () => {
                 console.log(`✅ WS 연결 성공 | roomId: ${targetRoomId}`);
                 setWsConnected(true);
 
+                // ✅ 채팅방 구독 - else 분기 제거
                 client.subscribe(`/sub/chat/room/${targetRoomId}`, (response) => {
                     const newMsg = JSON.parse(response.body);
-                    // ★ ref로 현재 방 확인 → 다른 방 메시지는 무시
-                    if (String(newMsg.roomId) === String(currentRoomIdRef.current)) {
+
+                    if (newMsg.msgType === 'STATUS_CHANGE') {
+                        setCurrentRoomStatus(newMsg.message);
+                        loadRooms();
+                    } else {
                         setChatLog(prev => [...prev, newMsg]);
+                        loadRooms();
                     }
-                    loadRooms(); // 방 목록 마지막 메시지 갱신
+                });
+
+                // ✅ 개인 알림 채널 - 다른 방 메시지 알림은 여기서만 처리
+                client.subscribe(`/sub/user/${userNo}/notification`, (response) => {
+                    const noti = JSON.parse(response.body);
+                    // ✅ 현재 보고 있는 방의 알림은 무시
+                    if (noti.roomId && String(noti.roomId) === String(currentRoomIdRef.current)) return;
+                    showNotification({ senderName: noti.title, message: noti.content });
                 });
             },
             (error) => {
                 console.error("❌ WS 연결 실패:", error);
                 setWsConnected(false);
-                // ★ 3초 후 자동 재연결
                 reconnectTimer.current = setTimeout(() => connectWebSocket(targetRoomId), 3000);
             }
         );
 
         stompClient.current = client;
-    }, [loadRooms]);
+    }, [loadRooms, showNotification, userNo]);
 
     // 4. 방 변경 시 과거 내역 + 웹소켓 연결
     useEffect(() => {
@@ -394,6 +412,18 @@ const ChatList = () => {
                                 <button onClick={() => { setIsCalendarOpen(false); setSelectedDate(''); }} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">취소</button>
                                 <button onClick={sendCalendarProposal} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-md hover:bg-blue-700">상대방에게 제안</button>
                             </div>
+                        </div>
+                    </div>
+                )}
+                {/* 토스트 알림 */}
+                {toastMsg && (
+                    <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce">
+                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-black text-sm shrink-0">
+                            {toastMsg.senderName?.substring(0, 1) || '알'}
+                        </div>
+                        <div>
+                            <p className="text-xs font-black">{toastMsg.senderName || '새 메시지'}</p>
+                            <p className="text-xs text-slate-300 truncate max-w-[200px]">{toastMsg.message}</p>
                         </div>
                     </div>
                 )}
