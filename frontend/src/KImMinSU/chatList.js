@@ -25,6 +25,7 @@ const ChatList = () => {
     const chatContainerRef = useRef(null);
     const reconnectTimer = useRef(null);
     const currentRoomIdRef = useRef(roomId); // ★ 클로저 문제 방지용
+    const chatSubRef = useRef(null);
 
     const userNo = Number(localStorage.getItem('userNo'));
 
@@ -35,6 +36,7 @@ const ChatList = () => {
     const initialMessageRef = useRef('');
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState('');
+
 
     // 토스트 알림 상태 추가 (상단 useState 부분에 추가)
     const [toastMsg, setToastMsg] = useState(null);
@@ -74,96 +76,102 @@ const ChatList = () => {
         }
     }, [roomId, rooms, userNo]);
 
-    // 3. ★★★ 웹소켓 연결 함수 (핵심 수정)
-    // - Authorization 헤더에 JWT 토큰 포함 → 백엔드 인터셉터에서 검증
-    // - 연결 실패 시 3초 후 자동 재연결
-    // connectWebSocket 전체 교체
-    const connectWebSocket = useCallback((targetRoomId) => {
-        if (stompClient.current?.connected) {
-            stompClient.current.disconnect();
-        }
 
-        const token = localStorage.getItem('accessToken');
-        if (!token) { console.warn("[WS] 토큰 없음"); return; }
 
-        const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
-        const client = Stomp.over(socket);
-        client.debug = () => {};
-
-        client.connect(
-            { Authorization: `Bearer ${token}` },
-            () => {
-                console.log(`✅ WS 연결 성공 | roomId: ${targetRoomId}`);
-                setWsConnected(true);
-
-                // ✅ 채팅방 구독 - else 분기 제거
-                client.subscribe(`/sub/chat/room/${targetRoomId}`, (response) => {
-                    const newMsg = JSON.parse(response.body);
-
-                    if (newMsg.msgType === 'STATUS_CHANGE') {
-                        setCurrentRoomStatus(newMsg.message);
-                        loadRooms();
-                    } else {
-                        setChatLog(prev => [...prev, newMsg]);
-                        loadRooms();
-                    }
-                });
-
-                // ✅ 개인 알림 채널 - 다른 방 메시지 알림은 여기서만 처리
-                client.subscribe(`/sub/user/${userNo}/notification`, (response) => {
-                    const noti = JSON.parse(response.body);
-                    // ✅ 현재 보고 있는 방의 알림은 무시
-                    if (noti.roomId && String(noti.roomId) === String(currentRoomIdRef.current)) return;
-                    showNotification({ senderName: noti.title, message: noti.content });
-                });
-            },
-            (error) => {
-                console.error("❌ WS 연결 실패:", error);
-                setWsConnected(false);
-                reconnectTimer.current = setTimeout(() => connectWebSocket(targetRoomId), 3000);
-            }
-        );
-
-        stompClient.current = client;
-    }, [loadRooms, showNotification, userNo]);
 
     // 4. 방 변경 시 과거 내역 + 웹소켓 연결
     useEffect(() => {
         if (!roomId) return;
 
-        if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
         setChatLog([]);
         setWsConnected(false);
 
-        // 과거 채팅 내역
         api.get(`/api/chat/history/${roomId}`)
             .then(res => setChatLog(res.data.data || []))
             .catch(() => setChatLog([]));
 
-        // 읽음 처리
         api.post(`/api/chat/room/${roomId}/read`).catch(() => {});
 
-        // 웹소켓 연결
-        connectWebSocket(roomId);
+        let isMounted = true;
+        const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
+        const client = Stomp.over(socket);
+        client.debug = () => {};
+        const token = localStorage.getItem('accessToken');
+
+        client.connect({ Authorization: `Bearer ${token}` }, () => {
+            if (!isMounted) { client.disconnect(); return; }
+            setWsConnected(true);
+
+            // ▼▼▼ [핵심] 기존에 걸려있던 유령 구독이 있으면 모가지 비틀기 ▼▼▼
+            if (chatSubRef.current) {
+                chatSubRef.current.unsubscribe();
+            }
+
+            // ▼▼▼ 새 구독을 걸면서 Ref에 저장해둔다 ▼▼▼
+            chatSubRef.current = client.subscribe(`/sub/chat/room/${roomId}`, (response) => {
+                if (!isMounted) return;
+                const newMsg = JSON.parse(response.body);
+                if (newMsg.msgType === 'STATUS_CHANGE') {
+                    setCurrentRoomStatus(newMsg.message);
+                    loadRooms();
+                } else {
+                    setChatLog(prev => [...prev, newMsg]);
+                    loadRooms();
+                }
+            });
+
+            // (알림 채널은 방이 바뀌어도 계속 유지해야 하니까 냅둔다)
+            client.subscribe(`/sub/user/${userNo}/notification`, (response) => {
+                if (!isMounted) return;
+                const noti = JSON.parse(response.body);
+                if (noti.roomId && String(noti.roomId) === String(roomId)) return;
+                showNotification({ senderName: noti.title, message: noti.content });
+            });
+
+        }, (error) => {
+            console.error("❌ WS 연결 실패:", error);
+            setWsConnected(false);
+        });
+
+        stompClient.current = client;
 
         return () => {
-            if (stompClient.current?.connected) stompClient.current.disconnect();
-            if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+            isMounted = false;
+
+            // ▼▼▼ 방 나갈 때 구독 찌꺼기 날리기 ▼▼▼
+            if (chatSubRef.current) {
+                chatSubRef.current.unsubscribe();
+                chatSubRef.current = null;
+            }
+
+            if (stompClient.current) {
+                stompClient.current.disconnect();
+                stompClient.current = null;
+            }
             if (recognitionRef.current) recognitionRef.current.stop();
             setWsConnected(false);
         };
-    }, [roomId, connectWebSocket]);
+    }, [roomId]); // ← roomId만! 이게 핵심
 
     const isLawyer = currentRoom && Number(currentRoom.lawyerNo) === Number(userNo);
 
+    // ★ 상태 변경 API 호출 (수락 or 종료)
     const handleStatusChange = async (type) => {
         try {
             const endpoint = type === 'ACCEPT' ? `/api/chat/room/accept/${roomId}` : `/api/chat/room/close/${roomId}`;
-            await api.put(endpoint);
+            // 메서드는 둘 다 PUT
+            await api.put(endpoint, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }
+            });
+
             alert(type === 'ACCEPT' ? "상담을 수락했습니다." : "상담을 종료했습니다.");
+
+            // 상태 업데이트 및 목록 새로고침
             setCurrentRoomStatus(type === 'ACCEPT' ? 'ST02' : 'ST05');
             loadRooms();
-        } catch { alert("처리 중 오류가 발생했습니다."); }
+        } catch (error) {
+            alert("처리 중 에러가 발생했습니다.");
+        }
     };
 
     // ★ 메시지 전송 (연결 끊겼으면 재연결 후 재시도)
@@ -173,21 +181,13 @@ const ChatList = () => {
         if (!msgContent.trim()) return;
 
         if (!stompClient.current?.connected) {
-            connectWebSocket(roomId);
-            setTimeout(() => {
-                if (stompClient.current?.connected) {
-                    stompClient.current.send("/pub/chat/message", {}, JSON.stringify({ roomId, senderNo: userNo, message: msgContent, msgType }));
-                    if (msgType === 'TEXT') setMessage('');
-                } else {
-                    alert("연결이 불안정합니다. 잠시 후 다시 시도해주세요.");
-                }
-            }, 1500);
+            alert("연결이 불안정합니다. 잠시 후 다시 시도해주세요.");
             return;
         }
 
         stompClient.current.send("/pub/chat/message", {}, JSON.stringify({ roomId, senderNo: userNo, message: msgContent, msgType }));
         if (msgType === 'TEXT') setMessage('');
-    }, [message, roomId, userNo, connectWebSocket]);
+    }, [message, roomId, userNo]);
 
     const sendCalendarProposal = () => {
         if (!selectedDate) { alert("날짜와 시간을 선택해주세요."); return; }
@@ -372,7 +372,7 @@ const ChatList = () => {
                                 <div className="p-6 border-t border-slate-100 bg-white">
                                     <div className="relative bg-slate-50 rounded-2xl p-4 border border-slate-200">
                                         <textarea disabled={currentRoomStatus === 'ST05'}
-                                                  placeholder={currentRoomStatus === 'ST05' ? "상담이 종료되어 채팅할 수 없습니다." : "메시지를 입력하세요. (Enter: 전송, Shift+Enter: 줄바꿈)"}
+                                                  placeholder={currentRoomStatus === 'ST05' ? "상담이 종료되어 채팅할 수 없습니다." : "메시지를 입력하세요."}
                                                   className="w-full bg-transparent border-none outline-none text-sm font-medium resize-none disabled:opacity-50"
                                                   rows="2" value={message} onChange={(e) => setMessage(e.target.value)}
                                                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
