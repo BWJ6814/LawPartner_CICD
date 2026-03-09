@@ -97,7 +97,7 @@ export default function AdminPage() {
 
   const fetchBannedWords = async () => {
     try {
-      const res = await api.get('/api/admin/banned-words');
+      const res = await api.get('/security/banned-words');
       if (res.data.success) setBannedWords(res.data.data);
     } catch (e) { console.error("금지어 로드 실패", e); }
   };

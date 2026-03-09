@@ -497,26 +497,22 @@ public class AdminService {
      @param reason 블라인드 처리/해제 사유
      @param currentAdminId 처리하는 관리자 아이디
      */
-    @Transactional // ★ 핵심: 트랜잭션 안에서 엔티티를 조회하고 변경해야 함
+    @Transactional
     public void toggleBoardBlind(Long boardNo, String reason, String currentAdminId) {
-
-        // 1. 대상 게시글 조회하기
         Board board = boardRepository.findById(boardNo)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시글입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
-        // 2. 현재 상태 확인 및 토글 로직 (Y -> N, N -> Y)
+        // 현재 상태 반전
         String currentBlind = board.getBlindYn() != null ? board.getBlindYn() : "N";
-        String newBlind = "Y".equals(currentBlind) ? "N" : "Y";
+        String nextStatus = "Y".equals(currentBlind) ? "N" : "Y";
 
-        board.setBlindYn(newBlind);
+        board.setBlindYn(nextStatus);
 
-        // 💡 repository.save(board)는 필요하지 않음.
-        // @Transactional 안에서 불러온 엔티티(board)의 값을 Setter로 변경하기만 하면,
-        // JPA의 Dirty Checking 기능이 메서드 종료 시점에 자동으로 UPDATE 쿼리를 DB로 전송합니다.
-
-        log.warn("🚨 [콘텐츠 제어] 관리자[{}]가 게시글[{}]의 블라인드 상태를 [{}]로 변경했습니다. 사유: {}",
-                currentAdminId, boardNo, newBlind, reason);
+        // TB_BOARD_HISTORY(가칭) 같은 테이블이 있다면 여기에 reason과 함께 기록하는 로직 추가 가능
+        log.warn("🚨 [콘텐츠 차단 로그] 게시글 No.{}: {} 사유: {} (By 관리자: {})",
+                boardNo, nextStatus.equals("Y") ? "차단" : "해제", reason, currentAdminId);
     }
+
 
 }
 
