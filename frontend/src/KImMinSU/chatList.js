@@ -35,17 +35,41 @@ const ChatList = () => {
     const recognitionRef = useRef(null);
     const initialMessageRef = useRef('');
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    /** 변호사가 일정 제안 시 "이 날짜로 하시겠습니까?" 확인용 (true면 확인 모달 표시) */
+    const [showCalendarSendConfirm, setShowCalendarSendConfirm] = useState(false);
     const [selectedDate, setSelectedDate] = useState('');
     const [toastMsg, setToastMsg] = useState(null);
 
     const [pendingCalendarAction, setPendingCalendarAction] = useState(null);
 
+    /**
+     * 채팅/캘린더용 날짜+시간 표시 포맷 (날짜·시간만 깔끔하게)
+     * - "2026-03-15T14:00" / "2026-03-15 14:00" 등 모두 파싱
+     * - 결과: "3월 15일 14:00" (한 자리 수는 0 없이)
+     */
     const formatDateTimeClean = (dateString) => {
-        if (!dateString) return '';
-        const d = new Date(dateString);
+        if (!dateString || typeof dateString !== 'string') return '';
+        const normalized = dateString.trim().replace(' ', 'T');
+        const d = new Date(normalized);
+        if (Number.isNaN(d.getTime())) return dateString;
+        const month = d.getMonth() + 1;
+        const date = d.getDate();
+        const h = d.getHours();
+        const m = d.getMinutes();
+        const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        return `${month}월 ${date}일 ${time}`;
+    };
+
+    /**
+     * datetime-local 값 → API/저장용 "YYYY-MM-DD HH:mm" 형식으로 통일
+     * (백엔드 confirmSchedule 및 채팅 메시지 저장 시 동일 형식 사용)
+     */
+    const toApiDateString = (datetimeLocalValue) => {
+        if (!datetimeLocalValue) return '';
+        const d = new Date(datetimeLocalValue);
+        if (Number.isNaN(d.getTime())) return datetimeLocalValue;
         const pad = (n) => n.toString().padStart(2, '0');
-        // 초심자 팁: padStart를 쓰면 한 자리 숫자도 03, 09 처럼 두 자리로 예쁘게 맞춰짐
-        return `${pad(d.getMonth() + 1)}월 ${pad(d.getDate())}일 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
     // ★ [핵심 1] 모든 API 요청에 신분증(토큰)을 자동으로 붙여주는 도구
@@ -195,9 +219,17 @@ const ChatList = () => {
 
     const sendCalendarProposal = () => {
         if (!selectedDate) { alert("날짜와 시간을 선택해주세요."); return; }
-        handleSendMessage('CALENDAR', selectedDate);
+        setShowCalendarSendConfirm(true);
+    };
+
+    /** 변호사 확인 모달에서 "예, 제안할게요" 클릭 시 실제 전송 */
+    const confirmAndSendCalendarProposal = () => {
+        if (!selectedDate) return;
+        const dateForApi = toApiDateString(selectedDate);
+        handleSendMessage('CALENDAR', dateForApi);
         setIsCalendarOpen(false);
         setSelectedDate('');
+        setShowCalendarSendConfirm(false);
     };
 
     // ★ [핵심 변경] 수락 버튼 누르면 바로 확정 안 하고 모달 띄우기용 상태값 세팅
@@ -366,15 +398,13 @@ const ChatList = () => {
                                                     <div className={`p-3.5 rounded-2xl text-[13px] font-medium shadow-sm border ${isMyMessage ? 'bg-navy-main text-white rounded-tr-none' : 'bg-white text-slate-800 rounded-tl-none'}`}>
                                                         {msg.msgType === 'CALENDAR' ? (
                                                             <div className="flex flex-col items-center bg-white text-slate-800 p-4 rounded-xl border border-blue-100 min-w-[200px]">
-                                                                <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center mb-2">
-                                                                    <i className="fas fa-calendar-check text-blue-500 text-lg"></i>
+                                                                <div className="w-9 h-9 bg-blue-50 rounded-full flex items-center justify-center mb-2">
+                                                                    <i className="fas fa-calendar-day text-blue-500 text-sm"></i>
                                                                 </div>
-                                                                <p className="text-[11px] font-bold text-slate-400 mb-1">상담 일정 제안</p>
-                                                                {/* 투박한 문자열 대신 변환 함수 사용 */}
-                                                                <p className="font-black text-[14px] text-blue-900">{formatDateTimeClean(msg.message)}</p>
-
+                                                                <p className="text-[12px] font-bold text-slate-500 mb-0.5">상담 일정 제안</p>
+                                                                <p className="font-black text-[15px] text-blue-900 tracking-tight">{formatDateTimeClean(msg.message)}</p>
                                                                 {!isLawyer && !isMyMessage && currentRoomStatus === 'ST02' && (
-                                                                    <button onClick={() => openCalendarConfirmModal(msg.message)} className="mt-4 w-full bg-blue-600 text-white py-2.5 rounded-lg shadow-sm hover:bg-blue-700 text-[12px] font-black transition">
+                                                                    <button onClick={() => openCalendarConfirmModal(msg.message)} className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg shadow-sm hover:bg-blue-700 text-[12px] font-black transition">
                                                                         수락하기
                                                                     </button>
                                                                 )}
@@ -431,32 +461,44 @@ const ChatList = () => {
                 {isCalendarOpen && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
                         <div className="bg-white p-6 rounded-2xl w-80 shadow-2xl">
-                            <h3 className="font-black text-lg mb-2 text-slate-800">🗓 일정 제안하기</h3>
+                            <h3 className="font-black text-lg mb-2 text-slate-800">일정 제안하기</h3>
                             <p className="text-xs text-slate-500 mb-4 font-medium">제안할 날짜와 시간을 선택하세요.</p>
                             <input type="datetime-local" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-full p-2 border border-slate-200 rounded-lg mb-4 text-sm font-bold" />
                             <div className="flex justify-end gap-2">
-                                <button onClick={() => { setIsCalendarOpen(false); setSelectedDate(''); }} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">취소</button>
+                                <button onClick={() => { setIsCalendarOpen(false); setSelectedDate(''); setShowCalendarSendConfirm(false); }} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">취소</button>
                                 <button onClick={sendCalendarProposal} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-md hover:bg-blue-700">상대방에게 제안</button>
                             </div>
                         </div>
                     </div>
                 )}
+                {/* 변호사: 날짜 선택 후 "이 날짜로 하시겠습니까?" 확인 모달 */}
+                {showCalendarSendConfirm && selectedDate && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[55] backdrop-blur-sm">
+                        <div className="bg-white p-6 rounded-2xl w-[300px] shadow-2xl text-center">
+                            <p className="text-slate-600 text-sm mb-1">상담 일정</p>
+                            <p className="text-blue-700 font-black text-base mb-4">{formatDateTimeClean(selectedDate)}</p>
+                            <p className="text-slate-700 font-bold text-sm mb-4">이 날짜로 상담 일정을 제안하시겠습니까?</p>
+                            <div className="flex gap-2">
+                                <button onClick={() => setShowCalendarSendConfirm(false)} className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold">취소</button>
+                                <button onClick={confirmAndSendCalendarProposal} className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold">예, 제안할게요</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* ★ [핵심 추가] 브라우저 기본 confirm 대신 띄우는 커스텀 모달 */}
+                {/* 일정 확정 확인 모달: "N월 N일 N시 — 이 날짜로 하시겠습니까?" */}
                 {pendingCalendarAction && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm">
                         <div className="bg-white p-6 rounded-2xl w-[320px] shadow-2xl text-center">
                             <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i className="fas fa-question text-xl text-blue-600"></i>
+                                <i className="fas fa-calendar-day text-xl text-blue-600"></i>
                             </div>
-                            <h3 className="font-black text-lg mb-2 text-slate-800">일정을 확정할까요?</h3>
-                            <p className="text-[13px] text-slate-600 mb-6 font-medium break-keep leading-relaxed bg-slate-50 p-3 rounded-lg">
-                                선택하신 날짜는<br/>
-                                <span className="text-blue-700 font-black text-[15px] block mt-1">{formatDateTimeClean(pendingCalendarAction)}</span>
-                                입니다. 이 시간으로 예약할까요?
-                            </p>
+                            <h3 className="font-black text-lg mb-2 text-slate-800">이 날짜로 하시겠습니까?</h3>
+                            <p className="text-[13px] text-slate-600 mb-1 font-medium break-keep">상담 일정</p>
+                            <p className="text-blue-700 font-black text-[17px] mb-6 bg-slate-50 py-3 px-4 rounded-xl">{formatDateTimeClean(pendingCalendarAction)}</p>
                             <div className="flex justify-center gap-2">
                                 <button onClick={() => setPendingCalendarAction(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-sm font-black hover:bg-slate-200 transition">아니오</button>
-                                <button onClick={executeCalendarAccept} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-black shadow-md hover:bg-blue-700 transition">네, 예약합니다</button>
+                                <button onClick={executeCalendarAccept} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-black shadow-md hover:bg-blue-700 transition">예, 이 날짜로 할게요</button>
                             </div>
                         </div>
                     </div>

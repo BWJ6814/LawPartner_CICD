@@ -61,20 +61,21 @@
   overflow: hidden !important;
 }
 
-/* 초심자 팁: FullCalendar 기본 옵션을 강제로 덮어씌워서 글자가 박스 안에서 예쁘게 줄바꿈 되게 만드는 치트키임 */
+/* FullCalendar: 일정이 1일 칸 안에서만 보이도록, 제목 한 줄 말줄임 + 툴팁 */
 .fc-event {
-    white-space: normal !important;
-    padding: 4px !important;
+    padding: 4px 6px !important;
     border: none !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    border-radius: 4px !important;
 }
 
 .fc-event-title {
     font-size: 11px !important;
     font-weight: 700 !important;
-    line-height: 1.4 !important;
-    word-break: keep-all; /* 단어 단위로 예쁘게 줄바꿈 */
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* 두 줄 넘어가면 ... 처리 */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    line-height: 1.35 !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    display: block !important;
 }
