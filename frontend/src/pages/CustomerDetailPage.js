@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
+const TOKEN_KEY = "accessToken";
+
 function formatDateTime(iso) {
     if (!iso) return "-";
     const d = new Date(iso);
@@ -54,11 +56,27 @@ export default function CustomerDetailPage() {
 
     useEffect(() => {
         async function fetchInquiry() {
+            const token = localStorage.getItem(TOKEN_KEY);
+
+            if (!token) {
+                setError("로그인이 필요합니다.");
+                setItem(null);
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoading(true);
                 setError("");
 
-                const res = await axios.get(`http://localhost:8080/api/customer/inquiries/${id}`);
+                const res = await axios.get(
+                    `http://localhost:8080/api/customer/inquiries/${id}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
                 setItem(res.data);
             } catch (err) {
                 console.error("문의 상세 조회 실패:", err);
@@ -75,11 +93,25 @@ export default function CustomerDetailPage() {
     async function handleDelete() {
         if (!item) return;
 
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            navigate("/login");
+            return;
+        }
+
         const ok = window.confirm("정말 삭제하시겠습니까?");
         if (!ok) return;
 
         try {
-            await axios.delete(`http://localhost:8080/api/customer/inquiries/${id}`);
+            await axios.delete(
+                `http://localhost:8080/api/customer/inquiries/${id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
             alert("삭제되었습니다.");
             navigate("/customer/list");
         } catch (err) {
@@ -162,11 +194,11 @@ export default function CustomerDetailPage() {
                                     <div style={answerMeta}>
                                         <span style={answerBadge}>답변완료</span>
                                         <span style={answerMetaText}>
-                답변자: {item.answeredBy || "-"}
-            </span>
+                                            답변자: {item.answeredBy || "-"}
+                                        </span>
                                         <span style={answerMetaText}>
-                답변일: {formatDateTime(item.answeredAt)}
-            </span>
+                                            답변일: {formatDateTime(item.answeredAt)}
+                                        </span>
                                     </div>
 
                                     <div style={answerContentText}>

@@ -30,9 +30,20 @@ export default function CustomerListPage() {
         }
 
         const fetchInquiries = async () => {
+            const token = localStorage.getItem(TOKEN_KEY);
+            if (!token) {
+                setList([]);
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 setIsLoading(true);
-                const res = await axios.get("http://localhost:8080/api/customer/inquiries");
+                const res = await axios.get("http://localhost:8080/api/customer/inquiries", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
                 setList(Array.isArray(res.data) ? res.data : []);
             } catch (err) {
                 console.error("문의 목록 조회 실패:", err);
@@ -73,7 +84,6 @@ export default function CustomerListPage() {
     return (
         <main style={page}>
             <div style={container}>
-
                 <div style={topArea}>
                     <div>
                         <h1 style={title}>문의 내역</h1>

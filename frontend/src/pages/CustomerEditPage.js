@@ -23,13 +23,28 @@ export default function CustomerEditPage() {
 
     useEffect(() => {
         async function fetchInquiry() {
+            const token = localStorage.getItem(TOKEN_KEY);
+
+            if (!token) {
+                setLoadError("로그인이 필요합니다.");
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoading(true);
                 setLoadError("");
 
-                const res = await axios.get(`http://localhost:8080/api/customer/inquiries/${id}`);
-                const data = res.data;
+                const res = await axios.get(
+                    `http://localhost:8080/api/customer/inquiries/${id}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
 
+                const data = res.data;
                 setType(data.type || "서비스 이용 문의");
                 setTitle(data.title || "");
                 setContent(data.content || "");
@@ -41,8 +56,12 @@ export default function CustomerEditPage() {
             }
         }
 
-        fetchInquiry();
-    }, [id]);
+        if (!blocked) {
+            fetchInquiry();
+        } else {
+            setLoading(false);
+        }
+    }, [id, blocked]);
 
     const onSubmit = async (e) => {
         e.preventDefault();
@@ -50,12 +69,27 @@ export default function CustomerEditPage() {
         if (!title.trim()) return alert("문의 제목을 입력하세요.");
         if (!content.trim()) return alert("문의 내용을 입력하세요.");
 
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            navigate("/login");
+            return;
+        }
+
         try {
-            await axios.put(`http://localhost:8080/api/customer/inquiries/${id}`, {
-                type,
-                title: title.trim(),
-                content: content.trim(),
-            });
+            await axios.put(
+                `http://localhost:8080/api/customer/inquiries/${id}`,
+                {
+                    type,
+                    title: title.trim(),
+                    content: content.trim(),
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
 
             alert("수정이 완료되었습니다.");
             navigate(`/customer/detail/${id}`);

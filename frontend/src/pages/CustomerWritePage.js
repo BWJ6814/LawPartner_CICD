@@ -27,12 +27,27 @@ export default function CustomerWritePage() {
         if (!title.trim()) return alert("문의 제목을 입력하세요.");
         if (!content.trim()) return alert("문의 내용을 입력하세요.");
 
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            navigate("/login");
+            return;
+        }
+
         try {
-            await axios.post("http://localhost:8080/api/customer/inquiries", {
-                type,
-                title: title.trim(),
-                content: content.trim(),
-            });
+            await axios.post(
+                "http://localhost:8080/api/customer/inquiries",
+                {
+                    type,
+                    title: title.trim(),
+                    content: content.trim(),
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
 
             alert("문의가 등록되었습니다.");
             navigate("/customer/list");
@@ -75,7 +90,6 @@ export default function CustomerWritePage() {
                     </div>
                 ) : (
                     <form onSubmit={onSubmit} style={card}>
-
                         <div style={field}>
                             <label style={label}>문의 유형</label>
                             <select
@@ -131,7 +145,6 @@ export default function CustomerWritePage() {
                             <strong>안내</strong><br />
                             등록 후 상태는 기본 “대기”로 표시됩니다.
                         </div>
-
                     </form>
                 )}
             </div>

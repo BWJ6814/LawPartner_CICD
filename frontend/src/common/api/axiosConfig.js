@@ -56,10 +56,13 @@ api.interceptors.response.use(
                     return api(originalRequest);
                 }
             } catch (refreshError) {
-                // 재발급 실패 시 (리프레시 토큰까지 만료된 경우)
-                console.warn("🚨 세션이 만료되었습니다. 다시 로그인해 주세요.");
-                localStorage.clear();
-                window.location.href = '/login';
+                // ✅ 백엔드가 실제로 400/401 응답한 경우만 세션 만료 처리
+                // 네트워크 단절, 서버 다운 등의 에러는 로그아웃하지 않음
+                if (refreshError.response) {
+                    console.warn("🚨 세션이 만료되었습니다. 다시 로그인해 주세요.");
+                    localStorage.clear();
+                    window.location.href = '/login';
+                }
                 return Promise.reject(refreshError);
             }
         }

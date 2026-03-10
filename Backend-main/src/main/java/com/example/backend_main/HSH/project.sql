@@ -808,4 +808,56 @@ commit;
 
 select * from tb_user;
 
+drop table TB_CUSTOMER_INQUIRY;
 
+-- ==================================================================================
+-- TB_CUSTOMER_INQUIRY (고객 문의 테이블)
+-- ==================================================================================
+
+CREATE TABLE TB_CUSTOMER_INQUIRY
+(
+    ID             NUMBER          GENERATED AS IDENTITY PRIMARY KEY,
+    WRITER_NO      NUMBER          NOT NULL,                            -- 작성자 USER_NO (FK)
+    TYPE           VARCHAR2(100)   NOT NULL,                            -- 문의 유형 (계정/결제/서비스 등)
+    TITLE          VARCHAR2(300)   NOT NULL,                            -- 문의 제목
+    CONTENT        CLOB            NOT NULL,                            -- 문의 내용
+    STATUS         VARCHAR2(20)    DEFAULT '대기' NOT NULL,             -- 대기 / 답변완료
+    ANSWER_CONTENT CLOB,                                                -- 관리자 답변 내용
+    ANSWERED_BY    VARCHAR2(100),                                       -- 답변한 관리자 이름
+    ANSWERED_AT    TIMESTAMP,                                           -- 답변 일시
+    CREATED_AT     TIMESTAMP       DEFAULT SYSTIMESTAMP NOT NULL,       -- 등록 일시
+    UPDATED_AT     TIMESTAMP       DEFAULT SYSTIMESTAMP NOT NULL,       -- 수정 일시
+
+    -- 외래키 제약조건
+    CONSTRAINT FK_INQUIRY_USER FOREIGN KEY (WRITER_NO)
+        REFERENCES TB_USER (USER_NO)
+);
+
+-- ==================================================================================
+-- 인덱스
+-- ==================================================================================
+
+-- 상태별 조회 (대기 목록 필터링)
+CREATE INDEX IX_INQUIRY_STATUS
+    ON TB_CUSTOMER_INQUIRY (STATUS);
+
+-- 작성자별 조회 (내 문의 목록)
+CREATE INDEX IX_INQUIRY_WRITER
+    ON TB_CUSTOMER_INQUIRY (WRITER_NO);
+
+-- 날짜순 정렬 (최신순 정렬)
+CREATE INDEX IX_INQUIRY_CREATED
+    ON TB_CUSTOMER_INQUIRY (CREATED_AT DESC);
+
+-- ==================================================================================
+-- 트리거 — UPDATED_AT 자동 갱신
+-- UPDATE 시 DEFAULT SYSDATE는 적용 안 됨 → 트리거로 강제 갱신
+-- ==================================================================================
+
+CREATE OR REPLACE TRIGGER TRG_INQUIRY_UPDATED_AT
+    BEFORE UPDATE ON TB_CUSTOMER_INQUIRY
+    FOR EACH ROW
+BEGIN
+    :NEW.UPDATED_AT := SYSTIMESTAMP;
+END;
+/

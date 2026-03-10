@@ -3,7 +3,7 @@ package com.example.backend_main.HSH.service;
 import com.example.backend_main.common.entity.LawyerInfo;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.LawyerInfoRepository;
-import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDTO;
+import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika; // ★ Tika 추가
@@ -29,7 +29,7 @@ public class LawyerService {
     private final Tika tika = new Tika();
 
     @Transactional
-    public void registerLawyerInfo(User user, UserJoinRequestDTO dto) {
+    public void registerLawyerInfo(User user, UserJoinRequestDto dto) {
 
         // 0.1 자격 번호 중복 체크 (조용한 거절)
         if (lawyerInfoRepository.existsByLicenseNo(dto.getLicenseNo())) {

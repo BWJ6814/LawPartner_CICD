@@ -3,10 +3,12 @@ import api from '../../common/api/axiosConfig';
 
 const PasswordTab = () => {
     const [passwordData, setPasswordData] = useState({
+
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
     });
+    //
 
     const handleSave = () => {
         if (passwordData.newPassword !== passwordData.confirmPassword) {

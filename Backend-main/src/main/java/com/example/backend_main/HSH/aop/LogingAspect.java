@@ -297,9 +297,13 @@ public class LogingAspect {
             ip = ip.split(",")[0].trim();
         }
 
-        // IPv6 로컬호스트 → IPv4로 변환
+        // ✅ 수정 — IPv4-mapped IPv6 형식도 변환
         if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
             ip = "127.0.0.1";
+        }
+        // ::ffff:192.168.0.43 → 192.168.0.43 변환
+        if (ip != null && ip.startsWith("::ffff:")) {
+            ip = ip.substring(7);
         }
 
         return ip;
