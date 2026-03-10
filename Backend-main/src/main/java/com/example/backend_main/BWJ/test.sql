@@ -200,3 +200,5 @@ SET USER_NM = '우영우',
 WHERE USER_NM = '우영우';
 
 COMMIT;
+
+select * from TB_BOARD;

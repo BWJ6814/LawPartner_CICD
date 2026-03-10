@@ -1,0 +1,833 @@
+2026-03-10T12:51:10.963+09:00  INFO 12168 --- [main] c.e.backend_main.BackendMainApplication  : Starting BackendMainApplication using Java 17.0.2 with PID 12168 (C:\Final_Project\Backend-main\target\classes started by human-19 in C:\Final_Project\Backend-main)
+2026-03-10T12:51:10.965+09:00  INFO 12168 --- [main] c.e.backend_main.BackendMainApplication  : The following 1 profile is active: "secret"
+2026-03-10T12:51:11.849+09:00  INFO 12168 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-03-10T12:51:11.958+09:00  INFO 12168 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 100 ms. Found 20 JPA repository interfaces.
+2026-03-10T12:51:12.843+09:00  INFO 12168 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-03-10T12:51:12.857+09:00  INFO 12168 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-03-10T12:51:12.858+09:00  INFO 12168 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.50]
+2026-03-10T12:51:12.923+09:00  INFO 12168 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-03-10T12:51:12.923+09:00  INFO 12168 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1896 ms
+2026-03-10T12:51:14.112+09:00  INFO 12168 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-03-10T12:51:15.705+09:00  INFO 12168 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection oracle.jdbc.driver.T4CConnection@d108406
+2026-03-10T12:51:15.707+09:00  INFO 12168 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-03-10T12:51:16.544+09:00  INFO 12168 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-03-10T12:51:16.631+09:00  INFO 12168 --- [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.41.Final
+2026-03-10T12:51:16.678+09:00  INFO 12168 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-03-10T12:51:17.274+09:00  INFO 12168 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-03-10T12:51:17.941+09:00  INFO 12168 --- [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 21.3
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-03-10T12:51:20.485+09:00  INFO 12168 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-03-10T12:51:20.489+09:00  INFO 12168 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-03-10T12:51:21.799+09:00  INFO 12168 --- [main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-03-10T12:51:24.132+09:00  WARN 12168 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-03-10T12:51:24.462+09:00  INFO 12168 --- [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-03-10T12:51:25.082+09:00  INFO 12168 --- [main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-03-10T12:51:25.084+09:00  INFO 12168 --- [main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@30e4cf5e]]
+2026-03-10T12:51:25.085+09:00  INFO 12168 --- [main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-03-10T12:51:25.113+09:00  INFO 12168 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-03-10T12:51:25.133+09:00  INFO 12168 --- [main] c.e.backend_main.BackendMainApplication  : Started BackendMainApplication in 16.708 seconds (process running for 17.319)
+2026-03-10T12:51:25.138+09:00  INFO 12168 --- [main] o.s.b.a.b.JobLauncherApplicationRunner   : Running default command line with: []
+2026-03-10T12:51:39.605+09:00  INFO 12168 --- [http-nio-8080-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-03-10T12:51:39.605+09:00  INFO 12168 --- [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-03-10T12:51:39.607+09:00  INFO 12168 --- [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-03-10T12:51:39.952+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: dd4b39fd, URI: /api/mypage/notifications/list, Status: 200, Time: 9ms
+2026-03-10T12:51:39.952+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 97248c05, URI: /api/mypage/notifications/count, Status: 200, Time: 9ms
+2026-03-10T12:52:09.491+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 843bf72b, URI: /api/mypage/notifications/count, Status: 200, Time: 7ms
+2026-03-10T12:52:09.491+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c917367b, URI: /api/mypage/notifications/list, Status: 200, Time: 7ms
+2026-03-10T12:52:22.238+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8b973402, URI: /api/admin/blacklist, Status: 200, Time: 6ms
+2026-03-10T12:52:22.240+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e514abda, URI: /api/admin/banned-words, Status: 200, Time: 8ms
+2026-03-10T12:52:22.270+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f10e2860, URI: /api/admin/boards, Status: 200, Time: 38ms
+2026-03-10T12:52:22.302+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8d4b5adb, URI: /api/admin/blacklist, Status: 200, Time: 3ms
+2026-03-10T12:52:22.302+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: bb081ed2, URI: /api/admin/banned-words, Status: 200, Time: 3ms
+2026-03-10T12:52:22.303+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 394c9e41, URI: /api/admin/status/daily, Status: 200, Time: 71ms
+2026-03-10T12:52:22.320+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: cb290790, URI: /api/admin/logs, Status: 200, Time: 88ms
+2026-03-10T12:52:22.321+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 816892b6, URI: /api/admin/boards, Status: 200, Time: 14ms
+2026-03-10T12:52:22.327+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: eb8dd1a0, URI: /api/admin/users, Status: 200, Time: 95ms
+2026-03-10T12:52:22.362+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 70f47fd6, URI: /api/admin/status/daily, Status: 200, Time: 24ms
+2026-03-10T12:52:22.402+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 48d61dcb, URI: /api/admin/status/daily, Status: 200, Time: 25ms
+2026-03-10T12:52:22.405+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7977cb94, URI: /api/admin/users, Status: 200, Time: 53ms
+2026-03-10T12:52:22.410+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: cf525911, URI: /api/admin/logs, Status: 200, Time: 52ms
+2026-03-10T12:52:22.436+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0ac00fc0, URI: /api/admin/status/daily, Status: 200, Time: 19ms
+2026-03-10T12:52:23.011+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a2bff78c, URI: /api/admin/summary, Status: 200, Time: 654ms
+2026-03-10T12:52:23.168+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 39737804, URI: /api/admin/logs/threats, Status: 200, Time: 4ms
+2026-03-10T12:52:23.708+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b4b3a295, URI: /api/admin/summary, Status: 200, Time: 568ms
+2026-03-10T12:52:23.831+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0e7fe48f, URI: /api/admin/logs/threats, Status: 200, Time: 3ms
+2026-03-10T12:52:25.079+09:00  INFO 12168 --- [MessageBroker-1] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 1, active threads = 1, queued tasks = 0, completed tasks = 0]
+2026-03-10T12:59:53.600+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 5ce525a1, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T12:59:53.600+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a048b817, URI: /api/mypage/notifications/count, Status: 200, Time: 3ms
+2026-03-10T12:59:53.607+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 2cf9d6c5, URI: /api/chat/rooms, Status: 200, Time: 10ms
+2026-03-10T12:59:53.619+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b43bd1b3, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T12:59:53.619+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 65ac5c9a, URI: /api/mypage/notifications/count, Status: 200, Time: 3ms
+2026-03-10T12:59:53.626+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 358f2b9e, URI: /api/chat/rooms, Status: 200, Time: 5ms
+2026-03-10T12:59:53.630+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 2f6e111d, URI: /api/mypage/general, Status: 200, Time: 33ms
+2026-03-10T12:59:53.660+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6cf1e725, URI: /api/mypage/general, Status: 200, Time: 13ms
+2026-03-10T12:59:55.241+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 93629b13, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T12:59:55.241+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: bc23f97a, URI: /api/admin/banned-words, Status: 200, Time: 3ms
+2026-03-10T12:59:55.249+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d314080c, URI: /api/admin/boards, Status: 200, Time: 10ms
+2026-03-10T12:59:55.260+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 9fee81fe, URI: /api/admin/blacklist, Status: 200, Time: 1ms
+2026-03-10T12:59:55.269+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1caee8f0, URI: /api/admin/banned-words, Status: 200, Time: 2ms
+2026-03-10T12:59:55.276+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3c62b07b, URI: /api/admin/status/daily, Status: 200, Time: 34ms
+2026-03-10T12:59:55.279+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1d45c760, URI: /api/admin/boards, Status: 200, Time: 8ms
+2026-03-10T12:59:55.290+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 5be01c44, URI: /api/admin/logs, Status: 200, Time: 51ms
+2026-03-10T12:59:55.291+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e1816663, URI: /api/admin/users, Status: 200, Time: 53ms
+2026-03-10T12:59:55.303+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 87eea08b, URI: /api/admin/status/daily, Status: 200, Time: 14ms
+2026-03-10T12:59:55.325+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 872a3025, URI: /api/admin/logs, Status: 200, Time: 24ms
+2026-03-10T12:59:55.327+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e659facb, URI: /api/admin/status/daily, Status: 200, Time: 14ms
+2026-03-10T12:59:55.329+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 85b19223, URI: /api/admin/users, Status: 200, Time: 28ms
+2026-03-10T12:59:55.352+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 4a349979, URI: /api/admin/status/daily, Status: 200, Time: 15ms
+2026-03-10T12:59:55.884+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6d631163, URI: /api/admin/summary, Status: 200, Time: 574ms
+2026-03-10T12:59:56.001+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: fef0dcdc, URI: /api/admin/logs/threats, Status: 200, Time: 5ms
+2026-03-10T12:59:56.646+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a737b42d, URI: /api/admin/summary, Status: 200, Time: 657ms
+2026-03-10T12:59:56.730+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 93a02982, URI: /api/admin/logs/threats, Status: 200, Time: 3ms
+2026-03-10T13:02:08.798+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: fbc71fbf, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T13:02:08.802+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f294ced4, URI: /api/admin/banned-words, Status: 200, Time: 4ms
+2026-03-10T13:02:08.808+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e739a09d, URI: /api/admin/boards, Status: 200, Time: 12ms
+2026-03-10T13:02:08.819+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 504547bb, URI: /api/admin/blacklist, Status: 200, Time: 3ms
+2026-03-10T13:02:08.823+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 11b59cbc, URI: /api/admin/banned-words, Status: 200, Time: 4ms
+2026-03-10T13:02:08.830+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7aa286bf, URI: /api/admin/status/daily, Status: 200, Time: 14ms
+2026-03-10T13:02:08.839+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: db105d37, URI: /api/admin/logs, Status: 200, Time: 25ms
+2026-03-10T13:02:08.842+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b0e30f04, URI: /api/admin/users, Status: 200, Time: 46ms
+2026-03-10T13:02:08.844+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 88338018, URI: /api/admin/boards, Status: 200, Time: 8ms
+2026-03-10T13:02:08.867+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e166e277, URI: /api/admin/status/daily, Status: 200, Time: 12ms
+2026-03-10T13:02:08.881+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d9db8f32, URI: /api/admin/logs, Status: 200, Time: 18ms
+2026-03-10T13:02:08.897+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 21b4548b, URI: /api/admin/users, Status: 200, Time: 32ms
+2026-03-10T13:02:08.901+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 172d5e75, URI: /api/admin/status/daily, Status: 200, Time: 10ms
+2026-03-10T13:02:08.922+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 88ed6e83, URI: /api/admin/status/daily, Status: 200, Time: 12ms
+2026-03-10T13:02:09.478+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8a4687c9, URI: /api/admin/summary, Status: 200, Time: 603ms
+2026-03-10T13:02:09.613+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 24e89811, URI: /api/admin/logs/threats, Status: 200, Time: 5ms
+2026-03-10T13:02:10.160+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1b534ed4, URI: /api/admin/customer/inquiries, Status: 200, Time: 7ms
+2026-03-10T13:02:10.179+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3729e2f6, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:02:10.254+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 083954a1, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 5ms
+2026-03-10T13:02:10.302+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 259493c0, URI: /api/admin/summary, Status: 200, Time: 705ms
+2026-03-10T13:02:10.413+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 2f7ac278, URI: /api/admin/logs/threats, Status: 200, Time: 4ms
+2026-03-10T13:02:13.288+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8a7e0aa4, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:02:13.303+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d274a995, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:02:13.333+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: bc28408f, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:02:14.307+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6bec31e9, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:02:14.325+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7231d767, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:02:14.331+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d9285e7f, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:02:15.107+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1544cbc9, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:02:15.123+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 765ed564, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:02:15.131+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 31425eef, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:02:15.661+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 30992cf4, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:02:15.677+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: eac527dc, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:02:15.692+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d53f10cc, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:02:17.027+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 5076e9c8, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:02:17.045+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 91f5956b, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:02:17.050+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: cb455740, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:02:19.020+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: fdc7f1f5, URI: /api/admin/customer/inquiries, Status: 200, Time: 5ms
+2026-03-10T13:02:19.041+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6802a7e8, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:02:19.072+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a9bb0875, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 3ms
+2026-03-10T13:02:19.716+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ca1ccd15, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:02:19.740+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b5892d86, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:02:19.754+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 43ab1915, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 3ms
+2026-03-10T13:02:21.355+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e5d6c694, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:02:21.373+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: df83e79d, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:02:21.381+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6ca408ed, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:10:28.128+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c5c9f7ad, URI: /api/admin/banned-words, Status: 200, Time: 3ms
+2026-03-10T13:10:28.129+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a4c31eb5, URI: /api/admin/blacklist, Status: 200, Time: 4ms
+2026-03-10T13:10:28.137+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3c198003, URI: /api/admin/boards, Status: 200, Time: 12ms
+2026-03-10T13:10:28.148+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 29ee4c54, URI: /api/admin/blacklist, Status: 200, Time: 3ms
+2026-03-10T13:10:28.148+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b4a6192e, URI: /api/admin/banned-words, Status: 200, Time: 3ms
+2026-03-10T13:10:28.162+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a2fd1221, URI: /api/admin/boards, Status: 200, Time: 10ms
+2026-03-10T13:10:28.170+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0dc4ac5b, URI: /api/admin/status/daily, Status: 200, Time: 44ms
+2026-03-10T13:10:28.174+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 4f64579d, URI: /api/admin/users, Status: 200, Time: 49ms
+2026-03-10T13:10:28.180+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3f8afb68, URI: /api/admin/logs, Status: 200, Time: 53ms
+2026-03-10T13:10:28.198+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: bee73cb3, URI: /api/admin/status/daily, Status: 200, Time: 19ms
+2026-03-10T13:10:28.210+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8dc70156, URI: /api/admin/users, Status: 200, Time: 28ms
+2026-03-10T13:10:28.212+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7b12ddf4, URI: /api/admin/logs, Status: 200, Time: 22ms
+2026-03-10T13:10:28.219+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 9c5255c3, URI: /api/admin/status/daily, Status: 200, Time: 12ms
+2026-03-10T13:10:28.245+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0545c8a0, URI: /api/admin/status/daily, Status: 200, Time: 16ms
+2026-03-10T13:10:28.779+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3a3fe782, URI: /api/admin/summary, Status: 200, Time: 593ms
+2026-03-10T13:10:28.886+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c03b6c08, URI: /api/admin/logs/threats, Status: 200, Time: 3ms
+2026-03-10T13:10:29.493+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 88490f47, URI: /api/admin/summary, Status: 200, Time: 622ms
+2026-03-10T13:10:29.589+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e0d25952, URI: /api/admin/logs/threats, Status: 200, Time: 3ms
+2026-03-10T13:10:29.851+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 82521124, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:10:29.862+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e4849284, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:10:29.910+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d445cfe4, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 1ms
+2026-03-10T13:10:43.400+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 08a632d3, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 3ms
+2026-03-10T13:11:05.715+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7ececadb, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:11:07.001+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7f4a6bc3, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 3ms
+2026-03-10T13:11:07.340+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 31ed4ca8, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:11:09.017+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6d0658ec, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:11:09.748+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ed2575f8, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 3ms
+2026-03-10T13:12:08.559+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c4624704, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 3ms
+2026-03-10T13:16:29.038+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f0af8211, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T13:16:29.040+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6ed4d1d0, URI: /api/admin/banned-words, Status: 200, Time: 3ms
+2026-03-10T13:16:29.045+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1536b60c, URI: /api/admin/boards, Status: 200, Time: 9ms
+2026-03-10T13:16:29.059+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3c35838f, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T13:16:29.059+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7266d2f3, URI: /api/admin/banned-words, Status: 200, Time: 2ms
+2026-03-10T13:16:29.068+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 64646710, URI: /api/admin/boards, Status: 200, Time: 8ms
+2026-03-10T13:16:29.077+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 12fb9e30, URI: /api/admin/users, Status: 200, Time: 46ms
+2026-03-10T13:16:29.086+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b7570ebb, URI: /api/admin/status/daily, Status: 200, Time: 42ms
+2026-03-10T13:16:29.096+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 2d881ee4, URI: /api/admin/logs, Status: 200, Time: 55ms
+2026-03-10T13:16:29.111+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0171613c, URI: /api/admin/status/daily, Status: 200, Time: 12ms
+2026-03-10T13:16:29.116+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 893e76ee, URI: /api/admin/users, Status: 200, Time: 29ms
+2026-03-10T13:16:29.133+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: cd245711, URI: /api/admin/status/daily, Status: 200, Time: 13ms
+2026-03-10T13:16:29.140+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3890ad08, URI: /api/admin/logs, Status: 200, Time: 20ms
+2026-03-10T13:16:29.153+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 05cafa97, URI: /api/admin/status/daily, Status: 200, Time: 11ms
+2026-03-10T13:16:29.678+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 5b7edce5, URI: /api/admin/summary, Status: 200, Time: 576ms
+2026-03-10T13:16:29.796+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: eac83400, URI: /api/admin/logs/threats, Status: 200, Time: 4ms
+2026-03-10T13:16:30.259+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 80ae7a93, URI: /api/admin/customer/inquiries, Status: 200, Time: 5ms
+2026-03-10T13:16:30.273+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 80865353, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:16:30.325+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f0633f4e, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 1ms
+2026-03-10T13:16:30.420+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 44736b35, URI: /api/admin/summary, Status: 200, Time: 640ms
+2026-03-10T13:16:30.521+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 04167bd9, URI: /api/admin/logs/threats, Status: 200, Time: 2ms
+2026-03-10T13:16:31.922+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d57ccc7a, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 3ms
+2026-03-10T13:16:32.199+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ae1f2dc9, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 3ms
+2026-03-10T13:17:14.078+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b032709c, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:14.091+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 597df5b3, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:14.123+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f6f5123d, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 3ms
+2026-03-10T13:17:14.818+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 215d2511, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:14.831+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7166bd2b, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:17:14.844+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3d450371, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:17:21.748+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ead95ce0, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:21.763+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 72ad3bfe, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:21.779+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e591fe20, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:17:23.682+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e58d4ec9, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:17:23.695+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 4b684440, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:23.708+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 4a1427cc, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:17:24.711+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: aeaeb1c3, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:17:24.726+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 5dddacfc, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:24.741+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 51bc5d3c, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 8ms
+2026-03-10T13:17:28.109+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1919462a, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:28.123+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7ffb88d9, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:28.135+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: acfba244, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:17:37.640+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 254c6da1, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:37.655+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3d8e63cd, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:17:37.681+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: bdc570a2, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:19:29.581+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: dba0d2c1, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:19:29.595+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c5336826, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:19:29.609+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: dd008d26, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:19:31.509+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a0cd9ab9, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T13:19:31.517+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7fd91f53, URI: /api/admin/boards, Status: 200, Time: 9ms
+2026-03-10T13:19:31.519+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a2d17605, URI: /api/admin/banned-words, Status: 200, Time: 2ms
+2026-03-10T13:19:31.525+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e62809a0, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T13:19:31.534+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7e077668, URI: /api/admin/banned-words, Status: 200, Time: 2ms
+2026-03-10T13:19:31.538+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 4e534cbb, URI: /api/admin/boards, Status: 200, Time: 7ms
+2026-03-10T13:19:31.552+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3cf4671e, URI: /api/admin/users, Status: 200, Time: 47ms
+2026-03-10T13:19:31.561+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0f15012f, URI: /api/admin/status/daily, Status: 200, Time: 43ms
+2026-03-10T13:19:31.571+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c605ad0f, URI: /api/admin/logs, Status: 200, Time: 53ms
+2026-03-10T13:19:31.587+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8be26399, URI: /api/admin/status/daily, Status: 200, Time: 16ms
+2026-03-10T13:19:31.589+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a2f7cdd1, URI: /api/admin/users, Status: 200, Time: 27ms
+2026-03-10T13:19:31.599+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 22ef2187, URI: /api/admin/logs, Status: 200, Time: 20ms
+2026-03-10T13:19:31.606+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 4712116c, URI: /api/admin/status/daily, Status: 200, Time: 11ms
+2026-03-10T13:19:31.635+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 23388e5a, URI: /api/admin/status/daily, Status: 200, Time: 10ms
+2026-03-10T13:19:32.150+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: aafd8fbb, URI: /api/admin/summary, Status: 200, Time: 585ms
+2026-03-10T13:19:32.265+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c05b24ea, URI: /api/admin/logs/threats, Status: 200, Time: 3ms
+2026-03-10T13:19:32.696+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7fa0e2ea, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:19:32.711+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f760b46b, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:19:32.762+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 9cd4bf72, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 1ms
+2026-03-10T13:19:32.879+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 4da55259, URI: /api/admin/summary, Status: 200, Time: 630ms
+2026-03-10T13:19:32.976+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 67d95dde, URI: /api/admin/logs/threats, Status: 200, Time: 3ms
+2026-03-10T13:22:25.094+09:00  INFO 12168 --- [MessageBroker-3] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 2 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(2)-CONNECTED(2)-DISCONNECT(1)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 21], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 5], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 1, completed tasks = 277]
+2026-03-10T13:25:17.387+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 5d74814e, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:25:17.509+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b796f0cf, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:26:08.140+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 343f2ae0, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T13:26:08.143+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 967fb768, URI: /api/admin/banned-words, Status: 200, Time: 1ms
+2026-03-10T13:26:08.147+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 47115a06, URI: /api/admin/boards, Status: 200, Time: 9ms
+2026-03-10T13:26:08.156+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 75ac0180, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T13:26:08.162+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ec37b130, URI: /api/admin/banned-words, Status: 200, Time: 2ms
+2026-03-10T13:26:08.175+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3584e1be, URI: /api/admin/boards, Status: 200, Time: 9ms
+2026-03-10T13:26:08.180+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7755293d, URI: /api/admin/users, Status: 200, Time: 53ms
+2026-03-10T13:26:08.187+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e5d77025, URI: /api/admin/status/daily, Status: 200, Time: 46ms
+2026-03-10T13:26:08.200+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f54fbe48, URI: /api/admin/logs, Status: 200, Time: 59ms
+2026-03-10T13:26:08.221+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f75cb505, URI: /api/admin/status/daily, Status: 200, Time: 18ms
+2026-03-10T13:26:08.229+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7992e119, URI: /api/admin/users, Status: 200, Time: 34ms
+2026-03-10T13:26:08.242+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 773a8bcd, URI: /api/admin/logs, Status: 200, Time: 27ms
+2026-03-10T13:26:08.250+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 307fb718, URI: /api/admin/status/daily, Status: 200, Time: 18ms
+2026-03-10T13:26:08.275+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e2934762, URI: /api/admin/status/daily, Status: 200, Time: 16ms
+2026-03-10T13:26:08.819+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 9bdbdd45, URI: /api/admin/summary, Status: 200, Time: 602ms
+2026-03-10T13:26:08.916+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f0420c72, URI: /api/admin/logs/threats, Status: 200, Time: 3ms
+2026-03-10T13:26:09.212+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0cc05cf6, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:26:09.231+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: aab5c522, URI: /api/admin/customer/inquiries, Status: 200, Time: 4ms
+2026-03-10T13:26:09.255+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b9c3c8e5, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 3ms
+2026-03-10T13:26:09.641+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: aa550c6d, URI: /api/admin/summary, Status: 200, Time: 740ms
+2026-03-10T13:26:09.745+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f973bfd9, URI: /api/admin/logs/threats, Status: 200, Time: 4ms
+2026-03-10T13:29:33.470+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: acc9b103, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:29:40.634+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7f4bcfa0, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:29:40.859+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: fdc6544f, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:29:42.604+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a164c595, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:29:46.204+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 639c53d2, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:30:09.133+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 147ce3e0, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:30:13.608+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 78520053, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:30:13.622+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6ed3bc03, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:30:16.133+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0d48e91b, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:30:16.146+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 2cd38a38, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:38:47.655+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 173f2a69, URI: /api/chat/rooms, Status: 200, Time: 3ms
+2026-03-10T13:38:47.656+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e1edee9c, URI: /api/mypage/notifications/count, Status: 200, Time: 2ms
+2026-03-10T13:38:47.656+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e7089866, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T13:38:47.661+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d3671cef, URI: /api/mypage/general, Status: 200, Time: 8ms
+2026-03-10T13:38:47.668+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e47bba3b, URI: /api/mypage/notifications/count, Status: 200, Time: 2ms
+2026-03-10T13:38:47.669+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 22c2cb8b, URI: /api/chat/rooms, Status: 200, Time: 3ms
+2026-03-10T13:38:47.669+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e8fddb17, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T13:38:47.681+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 41b91ac4, URI: /api/mypage/general, Status: 200, Time: 7ms
+2026-03-10T13:38:53.636+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 54f48b67, URI: /api/mypage/notifications/count, Status: 200, Time: 2ms
+2026-03-10T13:38:53.636+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8a86a9a2, URI: /api/mypage/notifications/list, Status: 200, Time: 2ms
+2026-03-10T13:38:53.638+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ed17bcca, URI: /api/chat/rooms, Status: 200, Time: 3ms
+2026-03-10T13:38:53.646+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b8cc4ec4, URI: /api/mypage/general, Status: 200, Time: 12ms
+2026-03-10T13:38:53.653+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 06ddc548, URI: /api/mypage/notifications/count, Status: 200, Time: 3ms
+2026-03-10T13:38:53.657+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 68be4bad, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T13:38:53.660+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0cf2391e, URI: /api/chat/rooms, Status: 200, Time: 2ms
+2026-03-10T13:38:53.669+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 9ddc800c, URI: /api/mypage/general, Status: 200, Time: 8ms
+2026-03-10T13:39:02.439+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0627e629, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T13:39:02.439+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e43fd7fe, URI: /api/admin/banned-words, Status: 200, Time: 2ms
+2026-03-10T13:39:02.444+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1eb9c266, URI: /api/admin/boards, Status: 200, Time: 7ms
+2026-03-10T13:39:02.451+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a98bbf0d, URI: /api/admin/banned-words, Status: 200, Time: 2ms
+2026-03-10T13:39:02.451+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a5df758d, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T13:39:02.465+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f791f907, URI: /api/admin/boards, Status: 200, Time: 7ms
+2026-03-10T13:39:02.476+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1cbd2cc8, URI: /api/admin/status/daily, Status: 200, Time: 34ms
+2026-03-10T13:39:02.476+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b019f5ea, URI: /api/admin/users, Status: 200, Time: 39ms
+2026-03-10T13:39:02.486+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 78ec8b03, URI: /api/admin/logs, Status: 200, Time: 44ms
+2026-03-10T13:39:02.501+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c4f9ba68, URI: /api/admin/status/daily, Status: 200, Time: 17ms
+2026-03-10T13:39:02.508+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1b1fd96c, URI: /api/admin/users, Status: 200, Time: 24ms
+2026-03-10T13:39:02.517+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d66583a5, URI: /api/admin/logs, Status: 200, Time: 22ms
+2026-03-10T13:39:02.521+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 86e9a246, URI: /api/admin/status/daily, Status: 200, Time: 13ms
+2026-03-10T13:39:02.542+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1d29b8dc, URI: /api/admin/status/daily, Status: 200, Time: 13ms
+2026-03-10T13:39:03.088+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3242befa, URI: /api/admin/summary, Status: 200, Time: 601ms
+2026-03-10T13:39:03.190+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b7e8b741, URI: /api/admin/logs/threats, Status: 200, Time: 4ms
+2026-03-10T13:39:03.825+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 788e5fd1, URI: /api/admin/summary, Status: 200, Time: 651ms
+2026-03-10T13:39:03.926+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b40762df, URI: /api/admin/logs/threats, Status: 200, Time: 3ms
+2026-03-10T13:39:18.607+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a63db342, URI: /api/auth/login, Status: 200, Time: 128ms
+2026-03-10T13:39:20.086+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8a5980c9, URI: /api/mypage/notifications/count, Status: 200, Time: 2ms
+2026-03-10T13:39:20.088+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: cba4d021, URI: /api/mypage/notifications/list, Status: 200, Time: 4ms
+2026-03-10T13:39:20.101+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: af409f4d, URI: /api/mypage/notifications/count, Status: 200, Time: 2ms
+2026-03-10T13:39:20.102+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b48c7f4e, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T13:39:28.300+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6fe32c2b, URI: /api/mypage/notifications/count, Status: 200, Time: 3ms
+2026-03-10T13:39:28.301+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e2767963, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T13:39:28.306+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7b027468, URI: /api/mypage/general, Status: 200, Time: 9ms
+2026-03-10T13:39:28.313+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c35678d8, URI: /api/mypage/notifications/count, Status: 200, Time: 2ms
+2026-03-10T13:39:28.314+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e7f4cf68, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T13:39:28.316+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: dae2b1c0, URI: /api/chat/rooms, Status: 200, Time: 19ms
+2026-03-10T13:39:28.327+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 43613f1c, URI: /api/mypage/general, Status: 200, Time: 9ms
+2026-03-10T13:39:28.341+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: cb72bb66, URI: /api/chat/rooms, Status: 200, Time: 13ms
+2026-03-10T13:39:29.462+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 2909eb81, URI: /api/chat/history/bf3a6d44-ffc8-4bc7-85b1-fce96daf261e, Status: 200, Time: 8ms
+2026-03-10T13:39:29.548+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: fc049f7d, URI: /api/chat/files/download/7a89d610-1dee-45cf-9712-ea6a5511cc19_free-icon-scales-of-justice-1430.png, Status: 200, Time: 50ms
+2026-03-10T13:39:29.606+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 484efc71, URI: /api/chat/files/download/a30e4059-5b22-4c1d-a68e-bb93a5f0ea70_1.gif, Status: 200, Time: 108ms
+2026-03-10T13:39:38.471+09:00 ERROR 12168 --- [http-nio-8080-exec-7] c.e.b.c.e.GlobalExceptionHandler         : 🚨 [Critical System Error] 원인 미상의 서버 에러 발생: 
+
+org.springframework.http.converter.HttpMessageNotWritableException: No converter for [class java.util.LinkedHashMap] with preset Content-Type 'application/javascript;charset=UTF-8'
+	at org.springframework.web.servlet.mvc.method.annotation.AbstractMessageConverterMethodProcessor.writeWithMessageConverters(AbstractMessageConverterMethodProcessor.java:365) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.HttpEntityMethodProcessor.handleReturnValue(HttpEntityMethodProcessor.java:263) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.ResponseEntityReturnValueHandler.handleReturnValue(ResponseEntityReturnValueHandler.java:79) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.method.support.HandlerMethodReturnValueHandlerComposite.handleReturnValue(HandlerMethodReturnValueHandlerComposite.java:78) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:136) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:991) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:896) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.50.jar:6.0]
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.50.jar:6.0]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:125) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:119) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:91) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:319) ~[spring-security-config-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$4(HandlerMappingIntrospector.java:267) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:240) ~[spring-security-config-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:362) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:278) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.invoke(ApplicationDispatcher.java:610) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.doInclude(ApplicationDispatcher.java:489) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.include(ApplicationDispatcher.java:437) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.custom(StandardHostValve.java:355) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.status(StandardHostValve.java:206) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.throwable(StandardHostValve.java:283) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.AsyncContextImpl.setErrorState(AsyncContextImpl.java:440) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.connector.CoyoteAdapter.asyncDispatch(CoyoteAdapter.java:153) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProcessor.dispatch(AbstractProcessor.java:243) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:57) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1774) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:973) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:491) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]
+
+2026-03-10T13:39:38.471+09:00 ERROR 12168 --- [http-nio-8080-exec-8] c.e.b.c.e.GlobalExceptionHandler         : 🚨 [Critical System Error] 원인 미상의 서버 에러 발생: 
+
+org.springframework.http.converter.HttpMessageNotWritableException: No converter for [class java.util.LinkedHashMap] with preset Content-Type 'application/javascript;charset=UTF-8'
+	at org.springframework.web.servlet.mvc.method.annotation.AbstractMessageConverterMethodProcessor.writeWithMessageConverters(AbstractMessageConverterMethodProcessor.java:365) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.HttpEntityMethodProcessor.handleReturnValue(HttpEntityMethodProcessor.java:263) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.ResponseEntityReturnValueHandler.handleReturnValue(ResponseEntityReturnValueHandler.java:79) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.method.support.HandlerMethodReturnValueHandlerComposite.handleReturnValue(HandlerMethodReturnValueHandlerComposite.java:78) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:136) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:991) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:896) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.50.jar:6.0]
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.50.jar:6.0]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:125) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:119) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:91) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:319) ~[spring-security-config-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$4(HandlerMappingIntrospector.java:267) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:240) ~[spring-security-config-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:362) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:278) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.invoke(ApplicationDispatcher.java:610) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.doInclude(ApplicationDispatcher.java:489) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.include(ApplicationDispatcher.java:437) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.custom(StandardHostValve.java:355) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.status(StandardHostValve.java:206) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.throwable(StandardHostValve.java:283) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.AsyncContextImpl.setErrorState(AsyncContextImpl.java:440) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.connector.CoyoteAdapter.asyncDispatch(CoyoteAdapter.java:153) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProcessor.dispatch(AbstractProcessor.java:243) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:57) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1774) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:973) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:491) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]
+
+2026-03-10T13:39:38.480+09:00  WARN 12168 --- [http-nio-8080-exec-8] .m.m.a.ExceptionHandlerExceptionResolver : Failure in @ExceptionHandler com.example.backend_main.common.exception.GlobalExceptionHandler#handleAllException(Exception)
+
+org.springframework.http.converter.HttpMessageNotWritableException: No converter for [class com.example.backend_main.common.vo.ResultVO] with preset Content-Type 'application/javascript;charset=UTF-8'
+	at org.springframework.web.servlet.mvc.method.annotation.AbstractMessageConverterMethodProcessor.writeWithMessageConverters(AbstractMessageConverterMethodProcessor.java:365) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.HttpEntityMethodProcessor.handleReturnValue(HttpEntityMethodProcessor.java:263) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.method.support.HandlerMethodReturnValueHandlerComposite.handleReturnValue(HandlerMethodReturnValueHandlerComposite.java:78) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:136) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver.doResolveHandlerMethodException(ExceptionHandlerExceptionResolver.java:471) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.handler.AbstractHandlerMethodExceptionResolver.doResolveException(AbstractHandlerMethodExceptionResolver.java:73) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.handler.AbstractHandlerExceptionResolver.resolveException(AbstractHandlerExceptionResolver.java:182) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.handler.HandlerExceptionResolverComposite.resolveException(HandlerExceptionResolverComposite.java:80) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.processHandlerException(DispatcherServlet.java:1360) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.processDispatchResult(DispatcherServlet.java:1161) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1106) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.50.jar:6.0]
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.50.jar:6.0]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:125) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:119) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:91) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:319) ~[spring-security-config-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$4(HandlerMappingIntrospector.java:267) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:240) ~[spring-security-config-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:362) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:278) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.invoke(ApplicationDispatcher.java:610) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.doInclude(ApplicationDispatcher.java:489) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.include(ApplicationDispatcher.java:437) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.custom(StandardHostValve.java:355) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.status(StandardHostValve.java:206) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.throwable(StandardHostValve.java:283) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.AsyncContextImpl.setErrorState(AsyncContextImpl.java:440) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.connector.CoyoteAdapter.asyncDispatch(CoyoteAdapter.java:153) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProcessor.dispatch(AbstractProcessor.java:243) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:57) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1774) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:973) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:491) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]
+
+2026-03-10T13:39:38.480+09:00  WARN 12168 --- [http-nio-8080-exec-7] .m.m.a.ExceptionHandlerExceptionResolver : Failure in @ExceptionHandler com.example.backend_main.common.exception.GlobalExceptionHandler#handleAllException(Exception)
+
+org.springframework.http.converter.HttpMessageNotWritableException: No converter for [class com.example.backend_main.common.vo.ResultVO] with preset Content-Type 'application/javascript;charset=UTF-8'
+	at org.springframework.web.servlet.mvc.method.annotation.AbstractMessageConverterMethodProcessor.writeWithMessageConverters(AbstractMessageConverterMethodProcessor.java:365) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.HttpEntityMethodProcessor.handleReturnValue(HttpEntityMethodProcessor.java:263) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.method.support.HandlerMethodReturnValueHandlerComposite.handleReturnValue(HandlerMethodReturnValueHandlerComposite.java:78) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:136) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver.doResolveHandlerMethodException(ExceptionHandlerExceptionResolver.java:471) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.handler.AbstractHandlerMethodExceptionResolver.doResolveException(AbstractHandlerMethodExceptionResolver.java:73) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.handler.AbstractHandlerExceptionResolver.resolveException(AbstractHandlerExceptionResolver.java:182) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.handler.HandlerExceptionResolverComposite.resolveException(HandlerExceptionResolverComposite.java:80) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.processHandlerException(DispatcherServlet.java:1360) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.processDispatchResult(DispatcherServlet.java:1161) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1106) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.50.jar:6.0]
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.50.jar:6.0]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:365) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:125) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:119) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:91) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:374) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191) ~[spring-security-web-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:319) ~[spring-security-config-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$4(HandlerMappingIntrospector.java:267) ~[spring-webmvc-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:240) ~[spring-security-config-6.5.7.jar:6.5.7]
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:362) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:278) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101) ~[spring-web-6.2.15.jar:6.2.15]
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:162) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:138) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.invoke(ApplicationDispatcher.java:610) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.doInclude(ApplicationDispatcher.java:489) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.ApplicationDispatcher.include(ApplicationDispatcher.java:437) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.custom(StandardHostValve.java:355) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.status(StandardHostValve.java:206) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.StandardHostValve.throwable(StandardHostValve.java:283) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.core.AsyncContextImpl.setErrorState(AsyncContextImpl.java:440) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.catalina.connector.CoyoteAdapter.asyncDispatch(CoyoteAdapter.java:153) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProcessor.dispatch(AbstractProcessor.java:243) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:57) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:903) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1774) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:973) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:491) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.50.jar:10.1.50]
+	at java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]
+
+2026-03-10T13:39:38.487+09:00  WARN 12168 --- [http-nio-8080-exec-7] .w.s.m.s.DefaultHandlerExceptionResolver : Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: No converter for [class java.util.LinkedHashMap] with preset Content-Type 'application/javascript;charset=UTF-8'
+2026-03-10T13:39:38.487+09:00  WARN 12168 --- [http-nio-8080-exec-8] .w.s.m.s.DefaultHandlerExceptionResolver : Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: No converter for [class java.util.LinkedHashMap] with preset Content-Type 'application/javascript;charset=UTF-8'
+2026-03-10T13:39:38.488+09:00  WARN 12168 --- [http-nio-8080-exec-7] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotWritableException: No converter for [class java.util.LinkedHashMap] with preset Content-Type 'application/javascript;charset=UTF-8']
+2026-03-10T13:39:38.488+09:00  WARN 12168 --- [http-nio-8080-exec-8] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotWritableException: No converter for [class java.util.LinkedHashMap] with preset Content-Type 'application/javascript;charset=UTF-8']
+2026-03-10T13:39:43.924+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 653600ce, URI: /api/chat/history/5fad088f-1d02-412d-a9ce-d283fa016eff, Status: 200, Time: 3ms
+2026-03-10T13:39:44.320+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: fd813094, URI: /api/chat/history/318c6b68-a184-4dce-a3b8-2d93791bc853, Status: 200, Time: 3ms
+2026-03-10T13:39:46.612+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7a5996a1, URI: /api/lawyer/dashboard/calendars, Status: 200, Time: 3ms
+2026-03-10T13:39:46.616+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ad18fb3b, URI: /api/ky/profile, Status: 200, Time: 7ms
+2026-03-10T13:39:46.621+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 80e06bbb, URI: /api/lawyer/dashboard/stats, Status: 200, Time: 12ms
+2026-03-10T13:39:46.624+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 438250a0, URI: /api/lawyer/dashboard/calendars, Status: 200, Time: 1ms
+2026-03-10T13:39:46.625+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 85bcca30, URI: /api/lawyer/dashboard/consultations, Status: 200, Time: 16ms
+2026-03-10T13:39:46.628+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: bd50113b, URI: /api/ky/profile, Status: 200, Time: 2ms
+2026-03-10T13:39:46.636+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 33410c0c, URI: /api/lawyer/dashboard/reviews, Status: 200, Time: 27ms
+2026-03-10T13:39:46.639+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 38e4350d, URI: /api/lawyer/dashboard/stats, Status: 200, Time: 7ms
+2026-03-10T13:39:46.645+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3a94425c, URI: /api/lawyer/dashboard/consultations, Status: 200, Time: 10ms
+2026-03-10T13:39:46.660+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ec1ac861, URI: /api/lawyer/dashboard/reviews, Status: 200, Time: 11ms
+2026-03-10T13:39:48.030+09:00  WARN 12168 --- [http-nio-8080-exec-6] c.e.b.c.e.GlobalExceptionHandler         : ⚠️ [Missing Header] 필수 헤더 누락: Authorization
+2026-03-10T13:39:48.030+09:00  WARN 12168 --- [http-nio-8080-exec-9] c.e.b.c.e.GlobalExceptionHandler         : ⚠️ [Missing Header] 필수 헤더 누락: Authorization
+2026-03-10T13:39:54.998+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f1fdc6d1, URI: /api/auth/login, Status: 200, Time: 85ms
+2026-03-10T13:39:56.028+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7acdf559, URI: /api/admin/blacklist, Status: 200, Time: 2ms
+2026-03-10T13:39:56.030+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d87b1f1b, URI: /api/admin/banned-words, Status: 200, Time: 2ms
+2026-03-10T13:39:56.035+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e03e4940, URI: /api/admin/boards, Status: 200, Time: 9ms
+2026-03-10T13:39:56.040+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 5af8c068, URI: /api/admin/blacklist, Status: 200, Time: 1ms
+2026-03-10T13:39:56.042+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 9cddc6fd, URI: /api/admin/banned-words, Status: 200, Time: 1ms
+2026-03-10T13:39:56.053+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 05d45d1e, URI: /api/admin/boards, Status: 200, Time: 6ms
+2026-03-10T13:39:56.070+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 100a9950, URI: /api/admin/users, Status: 200, Time: 44ms
+2026-03-10T13:39:56.075+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3d70dc82, URI: /api/admin/status/daily, Status: 200, Time: 39ms
+2026-03-10T13:39:56.086+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e9834dee, URI: /api/admin/logs, Status: 200, Time: 50ms
+2026-03-10T13:39:56.100+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 093353af, URI: /api/admin/status/daily, Status: 200, Time: 18ms
+2026-03-10T13:39:56.106+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 39a7b1f2, URI: /api/admin/users, Status: 200, Time: 27ms
+2026-03-10T13:39:56.116+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6dea229e, URI: /api/admin/logs, Status: 200, Time: 22ms
+2026-03-10T13:39:56.116+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7dfca9bf, URI: /api/admin/status/daily, Status: 200, Time: 10ms
+2026-03-10T13:39:56.135+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 25d229db, URI: /api/admin/status/daily, Status: 200, Time: 11ms
+2026-03-10T13:39:56.689+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 08b605e3, URI: /api/admin/summary, Status: 200, Time: 607ms
+2026-03-10T13:39:56.788+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ef76274c, URI: /api/admin/logs/threats, Status: 200, Time: 3ms
+2026-03-10T13:39:57.425+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 2602cfae, URI: /api/admin/summary, Status: 200, Time: 651ms
+2026-03-10T13:39:57.532+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6a13c6fd, URI: /api/admin/logs/threats, Status: 200, Time: 4ms
+2026-03-10T13:40:05.105+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8a94788a, URI: /api/admin/status/daily, Status: 200, Time: 24ms
+2026-03-10T13:40:06.020+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6d10809f, URI: /api/admin/status/daily, Status: 200, Time: 40ms
+2026-03-10T13:40:07.478+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0eb48927, URI: /api/admin/status/daily, Status: 200, Time: 42ms
+2026-03-10T13:42:06.974+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: adbec331, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:42:06.985+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 14156cba, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:42:10.771+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e9d0572d, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:42:13.892+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8b846e90, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:42:14.515+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d254d488, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:42:17.803+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8f37fbb8, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:42:18.152+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 37dd7f8e, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:42:18.801+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: be9349bb, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:42:19.167+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 9a584687, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:42:19.632+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8e9fec6c, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:42:20.017+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b1de1c33, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:42:20.633+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0e559ec7, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:42:20.898+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 184cf9c1, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:42:21.359+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ed2892fc, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:42:21.648+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: fb0128af, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:42:22.040+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7f83c3cc, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:42:22.303+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7952f18e, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:42:23.057+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 88ba5668, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:42:23.298+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 670a59fc, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:42:23.543+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8f3a5ddd, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:42:23.824+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7eaffde4, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:42:24.088+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1180b437, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 1ms
+2026-03-10T13:42:24.680+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 26c481c7, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:42:24.912+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 62c4ecd1, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:44:11.224+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 85b8917b, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:44:11.237+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f338d7b9, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:44:34.973+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 11d5e84c, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:44:34.986+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 09498e85, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:44:41.589+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 5df5a342, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:44:41.601+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ce0c9f8d, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:44:42.827+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 505209a0, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:44:42.839+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c82e6db0, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:44:45.092+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f8ee5873, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:44:45.104+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a89c5483, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:44:51.158+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 37b38d8f, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:44:51.170+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 51f05f76, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:45:49.570+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 9e718542, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:45:49.583+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 7e29264e, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:45:53.804+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e57c6c8f, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:48:49.055+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 575af07c, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:48:49.069+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c7eec013, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:48:49.167+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 877299c8, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:48:55.025+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8e8df36d, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:49:11.857+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0adbb586, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 1ms
+2026-03-10T13:49:12.289+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c94ab466, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:49:12.729+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 56b49638, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:49:13.114+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 5da7b7f7, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:49:13.497+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 25485356, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:49:14.081+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 539a10fa, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:49:14.384+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d4c1b324, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:49:14.696+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d5a02290, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:49:14.961+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ef83dac8, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:49:27.935+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 31a8dec1, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:49:27.949+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 62497b97, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:49:27.981+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 5ccca438, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:49:29.430+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 0b28db82, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:49:29.443+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 045f240d, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:49:29.486+09:00  INFO 12168 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a21cf198, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:49:38.379+09:00  INFO 12168 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b4ea6892, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:49:42.123+09:00  INFO 12168 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ff6b0568, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:49:42.389+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: e6d44a4e, URI: /api/admin/customer/inquiries/1, Status: 200, Time: 2ms
+2026-03-10T13:49:42.761+09:00  INFO 12168 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6a74dad5, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:49:43.001+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 34826cf1, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:52:25.095+09:00  INFO 12168 --- [MessageBroker-4] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 13 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(13)-CONNECTED(13)-DISCONNECT(6)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 129], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 32], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 1, completed tasks = 643]
+2026-03-10T13:55:01.237+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 035950ed, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:55:01.248+09:00  INFO 12168 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 03c24248, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:55:01.264+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 8a44956d, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:55:01.287+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 82d58076, URI: /api/admin/customer/inquiries/4, Status: 200, Time: 2ms
+2026-03-10T13:55:08.959+09:00  INFO 12168 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 209f7e44, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:55:08.974+09:00  INFO 12168 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 4b538a72, URI: /api/admin/customer/inquiries, Status: 200, Time: 3ms
+2026-03-10T13:55:09.001+09:00  INFO 12168 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 1b5febf4, URI: /api/admin/customer/inquiries/2, Status: 200, Time: 2ms
+2026-03-10T13:56:05.970+09:00  INFO 12168 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 9aa74154, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms
+2026-03-10T13:56:06.239+09:00  INFO 12168 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f783ad6b, URI: /api/admin/customer/inquiries, Status: 200, Time: 2ms

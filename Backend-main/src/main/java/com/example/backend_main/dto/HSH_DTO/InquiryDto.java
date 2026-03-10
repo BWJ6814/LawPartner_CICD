@@ -56,23 +56,24 @@ public class InquiryDto {
     @Getter
     @Builder
     public static class ListResponse {
-
         private Long id;
         private String type;
         private String title;
         private String status;
+        private String writerNm; // ★ 추가: 작성자 이름 (목록에서도 누구 건지 알면 좋음)
         private String answeredBy;
-        private boolean hasAnswer;      // 답변 존재 여부 (answerContent != null)
+        private boolean hasAnswer;
         private LocalDateTime createdAt;
         private LocalDateTime answeredAt;
 
-        // Entity → DTO 변환 (정적 팩토리 메서드)
         public static ListResponse from(CustomerInquiry entity) {
             return ListResponse.builder()
                     .id(entity.getId())
                     .type(entity.getType())
                     .title(entity.getTitle())
                     .status(entity.getStatus())
+                    // 만약 entity에 User 연관관계가 맺어져 있다면 entity.getWriter().getUserNm() 등으로 변경
+                    .writerNm(entity.getWriterNm()) // ★ 추가: 엔티티에 해당 필드가 있다면 매핑
                     .answeredBy(entity.getAnsweredBy())
                     .hasAnswer(entity.getAnswerContent() != null)
                     .createdAt(entity.getCreatedAt())
@@ -81,30 +82,30 @@ public class InquiryDto {
         }
     }
 
-    /**
-     * [문의 상세 응답] — 단건 상세 조회 시 사용 (전체 필드 포함)
-     */
     @Getter
     @Builder
     public static class DetailResponse {
-
         private Long id;
         private Long writerNo;
+        private String userId;   // ★ 추가: 작성자 아이디 (화면 표시용 @userId)
+        private String writerNm; // ★ 추가: 작성자 실명
         private String type;
         private String title;
-        private String content;         // 문의 본문 (CLOB)
+        private String content;
         private String status;
-        private String answerContent;   // 답변 내용 (CLOB)
+        private String answerContent;
         private String answeredBy;
         private LocalDateTime answeredAt;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
-        // Entity → DTO 변환 (정적 팩토리 메서드)
         public static DetailResponse from(CustomerInquiry entity) {
             return DetailResponse.builder()
                     .id(entity.getId())
-                    .writerNo(entity.getWriterNo())
+                    // 객체에서 번호 추출 + findById()로 조회할 경우엔 LAZY 로딩이라 NPE가 날 수 있어 방어처리..
+                    .writerNo(entity.getWriter() != null ? entity.getWriter().getUserNo() : null)
+                    .userId(entity.getUserId())               // 엔티티에 만든 편의 메서드 사용
+                    .writerNm(entity.getWriterNm())           // 엔티티에 만든 편의 메서드 사용
                     .type(entity.getType())
                     .title(entity.getTitle())
                     .content(entity.getContent())
@@ -117,4 +118,5 @@ public class InquiryDto {
                     .build();
         }
     }
+
 }

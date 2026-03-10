@@ -1,4 +1,4 @@
-package com.example.backend_main.dto.HSH_DTO;
+package com.example.backend_main.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
