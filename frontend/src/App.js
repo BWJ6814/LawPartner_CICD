@@ -33,16 +33,20 @@ const LayoutManager = ({ auth, onLoginUpdate, children }) => {
     
     // 현재 주소가 '/admin'으로 시작하는지 확인
     const isAdminRoute = location.pathname.startsWith('/admin');
+    const isAiChatRoute = location.pathname === '/ai-chat';
+
+    // ai-chat: 헤더 고정, 메인 영역만 스크롤 (페이지 전체 스크롤 방지)
+    const isFixedLayout = isAiChatRoute;
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50 text-slate-900 font-sans">
+        <div className={`flex flex-col bg-gray-50 text-slate-900 font-sans ${isFixedLayout ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
             {!isAdminRoute && <Header auth={auth} onLoginUpdate={onLoginUpdate} />}
-
-            <main className="flex-grow">
-                {children}
+            <main className={`flex-grow ${isFixedLayout ? 'min-h-0 overflow-hidden flex flex-col' : ''}`}>
+                {isFixedLayout ? <div className="flex-1 min-h-0 overflow-hidden">{children}</div> : children}
             </main>
 
-            {!isAdminRoute && <Footer />}
+            {/* admin, ai-chat에서는 Footer 숨김 */}
+            {!isAdminRoute && !isAiChatRoute && <Footer />}
         </div>
     );
 };
@@ -129,7 +133,6 @@ function App() {
                     <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
                     <Route path="/lawyer-chat" element={<ChatList />} />
                     <Route path="/lawyer-chat/:roomId" element={<ChatList />} />
-                    <Route path="/ai-chat" element={<div className="text-center p-20 text-xl text-gray-500">AI 상담 준비 중입니다.</div>} />
 
                     <Route path="/experts" element={<ExpertsPage />} />
                     <Route path="/experts/:id" element={<ExpertDetailPage />} />
