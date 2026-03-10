@@ -19,7 +19,7 @@ import AuditLogView from './AuditLogView';
 import BlacklistView from './BlacklistView';
 import SecurityPolicyView from './SecurityPolicyView';
 import ContentSecurityView from './ContentSecurityView';
-import AdminInquiryManageView from './AdminInquiryManageView';
+import AdminInquiryManageContainer from './AdminInquiryManageContainer';
 
 const ROLES = {
   USER: 'ROLE_USER',
@@ -282,7 +282,7 @@ export default function AdminPage() {
       case 'blacklist': return <BlacklistView blacklist={blacklist} newIp={newIp} setNewIp={setNewIp} newReason={newReason} setNewReason={setNewReason} handleAddBlacklist={handleAddBlacklist} handleUnblock={handleUnblock} />;
       case 'security-policy': return <SecurityPolicyView bannedWords={bannedWords} newWord={newWord} setNewWord={setNewWord} handleAddBannedWord={handleAddBannedWord} handleDeleteBannedWord={handleDeleteBannedWord} />;
       case 'content-security': return <ContentSecurityView contentBoards={contentBoards} handleToggleBlind={handleToggleBlind} />;
-      case 'inquiry-manage': return <AdminInquiryManageView />;
+      case 'inquiry-manage': return <AdminInquiryManageContainer />;
       default: return <DashboardView {...commonProps} />;
     }
   };
@@ -370,6 +370,26 @@ export default function AdminPage() {
               <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
                 <p className="text-sm font-bold text-amber-900 flex items-center gap-2"><Lock size={16} /> 보안 로그 기록 중</p>
               </div>
+              <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div>
+                    <div className="text-xs font-bold text-slate-400 mb-1">이메일</div>
+                    <div className="text-sm font-bold text-slate-700">{selectedItem.email || '-'}</div>
+                </div>
+                <div>
+                    <div className="text-xs font-bold text-slate-400 mb-1">전화번호</div>
+                    <div className="text-sm font-bold text-slate-700 font-mono">{selectedItem.phone || '-'}</div>
+                </div>
+                <div>
+                    <div className="text-xs font-bold text-slate-400 mb-1">가입일</div>
+                    <div className="text-sm font-bold text-slate-700">
+                        {selectedItem.joinDt ? new Date(selectedItem.joinDt).toLocaleDateString() : '-'}
+                    </div>
+                </div>
+                <div>
+                    <div className="text-xs font-bold text-slate-400 mb-1">닉네임</div>
+                    <div className="text-sm font-bold text-slate-700">{selectedItem.nickNm || '-'}</div>
+                </div>
+              </div>   
               <div className="p-5 bg-slate-50 rounded-xl border">
                 <h5 className="font-bold text-sm text-slate-600 mb-3 flex items-center gap-2"><Settings size={14} /> 권한 및 상태 설정</h5>
                 <div className="space-y-3">
