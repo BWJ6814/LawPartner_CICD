@@ -40,6 +40,10 @@
 .DS_Store
 Thumbs.db
 
+backend-ai/db/
+
 # [log 파일]
 logs/
 *.log
+
+backend-ai/db/

@@ -34,7 +34,6 @@ export default function ExpertDetailPage() {
                 const res = await api.get(`/api/lawyers/${id}`);
                 const d = res.data?.data ?? res.data;
 
-                // ✅ 백엔드 DTO 필드명에 따라 여기만 맞추면 됨
                 const userNo = d.userNo ?? d.user_no ?? d.USER_NO ?? Number(id);
                 const userNm = d.userNm ?? d.user_nm ?? d.USER_NM ?? d.name ?? "변호사";
                 const specialtyStr = d.specialtyStr ?? d.specialty_str ?? d.SPECIALTY_STR ?? "";
@@ -50,10 +49,9 @@ export default function ExpertDetailPage() {
                     name: userNm,
                     image: safeImage(imgUrl),
                     specialtyStr,
-                    // mainCategory는 DB에 별도 없으니 1차는 “첫 태그”로 임시 처리
                     mainCategory: splitTags(specialtyStr)[0] || "기타",
                     intro: introText || "소개 정보가 없습니다.",
-                    careers: Array.isArray(d.careers) ? d.careers : [], // 1차는 비우는 게 정상
+                    careers: Array.isArray(d.careers) ? d.careers : [],
                     office: [officeName, officeAddr].filter(Boolean).join(" ") || "사무실 정보가 없습니다.",
                     phone: d.phone ?? "미제공",
                     rating,
@@ -70,14 +68,44 @@ export default function ExpertDetailPage() {
         fetchDetail();
     }, [id]);
 
-    const handleChat = () => {
+    const handleChat = async () => {
         if (!isLoggedIn()) {
             alert("로그인이 필요합니다.");
             navigate("/login");
             return;
         }
-        // ✅ ExpertsPage와 동일 경로로 통일
-        navigate(`/consultation?lawyerId=${id}`);
+
+        const userNo = Number(localStorage.getItem("userNo"));
+        const lawyerNo = Number(id);
+
+        if (!userNo) {
+            alert("사용자 정보가 없습니다. 다시 로그인해주세요.");
+            return;
+        }
+
+        if (!lawyerNo) {
+            alert("변호사 정보가 올바르지 않습니다.");
+            return;
+        }
+
+        try {
+            const res = await api.post("/api/boards/chat/room", {
+                userNo,
+                lawyerNo,
+            });
+
+            const room = res.data;
+            const roomId = room?.id ?? room?.roomId;
+
+            if (roomId) {
+                navigate(`/chatList/${roomId}`);
+            } else {
+                navigate("/chatList");
+            }
+        } catch (err) {
+            console.error("채팅방 생성 실패:", err);
+            alert("채팅방 생성 중 오류가 발생했습니다.");
+        }
     };
 
     const hasCareers = useMemo(() => (lawyer?.careers || []).length > 0, [lawyer]);
@@ -95,7 +123,6 @@ export default function ExpertDetailPage() {
             <h2 className="text-3xl font-black mb-10">변호사 프로필 상세</h2>
 
             <div className="bg-white shadow-xl rounded-3xl p-10">
-                {/* 기본 정보 */}
                 <div className="flex items-center gap-8 mb-10">
                     <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-lg">
                         <img src={lawyer.image} alt={lawyer.name} className="w-full h-full object-cover" />
@@ -112,13 +139,11 @@ export default function ExpertDetailPage() {
                     </div>
                 </div>
 
-                {/* 소개 */}
                 <section className="mb-8">
                     <h4 className="text-xl font-bold mb-2 border-b pb-2">소개</h4>
                     <p>{lawyer.intro}</p>
                 </section>
 
-                {/* 경력 */}
                 <section className="mb-8">
                     <h4 className="text-xl font-bold mb-2 border-b pb-2">경력</h4>
                     {hasCareers ? (
@@ -132,7 +157,6 @@ export default function ExpertDetailPage() {
                     )}
                 </section>
 
-                {/* 사무실 정보 */}
                 <section>
                     <h4 className="text-xl font-bold mb-2 border-b pb-2">사무실 정보</h4>
                     <p>주소: {lawyer.office}</p>
