@@ -375,13 +375,44 @@ export default function ExpertsPage() {
 
     const handleProfile = (id) => navigate(`/experts/${id}`);
 
-    const handleConsult = (id) => {
+    const handleConsult = async (id) => {
         if (!isLoggedIn()) {
             alert("로그인이 필요합니다.");
             navigate("/login");
             return;
         }
-        navigate(`/consultation?lawyerId=${id}`);
+
+        const userNo = Number(localStorage.getItem("userNo"));
+        const lawyerNo = Number(id);
+
+        if (!userNo) {
+            alert("사용자 정보가 없습니다. 다시 로그인해주세요.");
+            return;
+        }
+
+        if (!lawyerNo) {
+            alert("변호사 정보가 올바르지 않습니다.");
+            return;
+        }
+
+        try {
+            const res = await api.post("/api/boards/chat/room", {
+                userNo,
+                lawyerNo,
+            });
+
+            const room = res.data;
+            const roomId = room?.id ?? room?.roomId;
+
+            if (roomId) {
+                navigate(`/chatList/${roomId}`);
+            } else {
+                navigate("/chatList");
+            }
+        } catch (err) {
+            console.error("채팅방 생성 실패:", err);
+            alert("채팅방 생성 중 오류가 발생했습니다.");
+        }
     };
 
     const resultLabel = useMemo(() => {
