@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../common/api/axiosConfig';
 import { LayoutGrid, CheckCircle, CloudUpload, X, FileText } from 'lucide-react';
 
@@ -16,6 +16,14 @@ const CATEGORIES = [
 
 const WriteQuestionPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // AI 채팅에서 '상담내용으로 글쓰기'로 넘어올 때 제목/내용 자동 입력
+    useEffect(() => {
+        const state = location.state;
+        if (state?.title) setTitle(state.title);
+        if (state?.content) setContent(state.content);
+    }, [location]);
 
     // [리액트] useRef는 DOM 요소에 직접 접근할 때 사용해요.
     // 여기서는 숨겨진 <input type="file">을 클릭하기 위해 사용합니다.

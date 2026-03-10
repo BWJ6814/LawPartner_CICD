@@ -39,3 +39,7 @@
 # --- [OS: 시스템 파일] ---
 .DS_Store
 Thumbs.db
+
+# [log 파일]
+logs/
+*.log

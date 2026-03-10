@@ -58,8 +58,8 @@ async def chat(request: QueryRequest):
         # 사용자의 질문을 RAG 체인에 통과시켜 답변을 얻어냅니다.
         response = qa_chain.invoke({"query": request.question})
 
-        # 참고한 판례 원문이 너무 길 수 있으므로, 리액트 화면에 보여주기 좋게 앞부분 200자만 자릅니다.
-        sources = [doc.page_content[:200] + "..." for doc in response["source_documents"]]
+        # 참고한 판례 원문 전체를 전송 (프론트엔드에서 더보기로 펼쳐서 표시)
+        sources = [doc.page_content for doc in response["source_documents"]]
 
         # 완성된 AI의 답변과 참고 판례 리스트를 JSON 형태로 리액트에게 돌려보냅니다.
         return {
