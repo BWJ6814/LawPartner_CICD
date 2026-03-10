@@ -1,16 +1,19 @@
 package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.BWJ.BoardRepository;
+import com.example.backend_main.common.annotation.Masking;
 import com.example.backend_main.common.entity.*;
 import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.repository.*;
+import com.example.backend_main.common.repository.CustomerInquiryRepository;
 import com.example.backend_main.common.spec.AccessLogSpecification;
 import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.HSH_DTO.AccessLogResponseDTO;
 import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDto;
 import com.example.backend_main.dto.HSH_DTO.UserListDto;
+import com.example.backend_main.dto.HSH_DTO.InquiryDto;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +48,7 @@ public class AdminService {
     private final BannedWordRepository bannedWordRepository;
     private final BoardRepository boardRepository;
     private final AdminAuditRepository adminAuditRepository;
+    private final CustomerInquiryRepository customerInquiryRepository;  // ✅ 문의 관리
 
     // ✅ Aes256Util 의존성 제거 — JPA Converter가 자동 암호화/복호화 처리
 
@@ -53,6 +57,7 @@ public class AdminService {
     // ==================================================================================
 
     @Transactional(readOnly = true)
+    @Masking(fields = {"phone"})
     public List<UserListDto> getAllUsers() {
         return userRepository.findAllByStatusCodeNot("S99").stream()
                 .map(user -> UserListDto.builder()
@@ -464,5 +469,67 @@ public class AdminService {
 
         log.warn("🚨 [콘텐츠 차단 로그] 게시글 No.{}: {} 사유: {} (By 관리자: {})",
                 boardNo, "Y".equals(nextStatus) ? "차단" : "해제", reason, currentAdminId);
+    }
+
+    // ==================================================================================
+    // 💬 문의 관리 (관리자용)
+    // ==================================================================================
+
+    /*
+     * 전체 문의 목록 조회 (상태 필터링 가능)
+     * status = null 이면 전체, "대기"/"답변완료" 이면 필터링
+     */
+    @Transactional(readOnly = true)
+    public List<InquiryDto.ListResponse> getAllInquiries(String status) {
+        List<CustomerInquiry> inquiries = (status == null || status.isBlank())
+                ? customerInquiryRepository.findAllByOrderByCreatedAtDesc()
+                : customerInquiryRepository.findByStatusOrderByCreatedAtDesc(status);
+
+        return inquiries.stream()
+                .map(InquiryDto.ListResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 문의 상세 조회
+     */
+    @Transactional(readOnly = true)
+    public InquiryDto.DetailResponse getInquiryDetail(Long id) {
+        CustomerInquiry inquiry = customerInquiryRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "존재하지 않는 문의입니다."));
+
+        return InquiryDto.DetailResponse.from(inquiry);
+    }
+
+    /*
+     * 관리자 답변 저장
+     * — 답변 내용 저장 + 상태 "답변완료" 자동 변경 (Entity 비즈니스 메서드 사용)
+     */
+    @Transactional
+    public void saveAnswer(Long id, InquiryDto.AnswerRequest dto) {
+        CustomerInquiry inquiry = customerInquiryRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "존재하지 않는 문의입니다."));
+
+        // Entity의 answer() 메서드 — 답변 내용/답변자/일시/상태 한번에 변경
+        String answeredBy = (dto.getAnsweredBy() != null && !dto.getAnsweredBy().isBlank())
+                ? dto.getAnsweredBy()
+                : "관리자";
+
+        inquiry.answer(dto.getAnswerContent(), answeredBy);
+        // @Transactional + Dirty Checking → 별도 save() 호출 불필요
+
+        log.info("✅ [문의 답변 완료] 문의 ID: {}, 답변자: {}", id, answeredBy);
+    }
+
+    /*
+     * 문의 삭제
+     */
+    @Transactional
+    public void deleteInquiry(Long id) {
+        if (!customerInquiryRepository.existsById(id)) {
+            throw new CustomException(ErrorCode.DATA_NOT_FOUND, "존재하지 않는 문의입니다.");
+        }
+        customerInquiryRepository.deleteById(id);
+        log.info("🗑️ [문의 삭제 완료] 문의 ID: {}", id);
     }
 }

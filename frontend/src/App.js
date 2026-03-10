@@ -140,7 +140,9 @@ function App() {
                     <Route path="/customer/write" element={<CustomerWritePage />} />
                     <Route path="/customer/detail/:id" element={<CustomerDetailPage />} />
                     <Route path="/customer/edit/:id" element={<CustomerEditPage />} />
-
+                    
+                    {/**/}
+                    
                     {/* 404 */}
                     <Route
                         path="*"

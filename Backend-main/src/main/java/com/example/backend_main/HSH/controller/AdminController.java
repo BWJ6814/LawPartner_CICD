@@ -36,7 +36,6 @@ import java.util.Map;
 @Slf4j
 public class AdminController {
 
-    // ✅ Repository 의존성 전부 제거 — 모든 데이터 접근은 Service 경유
     private final AdminService adminService;
 
     // ==================================================================================
@@ -44,6 +43,7 @@ public class AdminController {
     // ==================================================================================
 
     @GetMapping("/users")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN','ROLE_OPERATOR')")
     public ResultVO<List<UserListDto>> getAllUsers() {
         return ResultVO.ok("전체 회원 목록을 성공적으로 불러왔습니다.", adminService.getAllUsers());
     }
@@ -135,7 +135,6 @@ public class AdminController {
     @GetMapping("/blacklist")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
     public ResultVO<List<BlacklistIp>> getBlacklist() {
-        // ✅ blacklistIpRepository.findAll() → Service로 이동
         return ResultVO.ok(adminService.getAllBlacklist());
     }
 
@@ -149,12 +148,13 @@ public class AdminController {
         return ResultVO.ok("IP가 차단되었습니다.", null);
     }
 
-    @DeleteMapping("/blacklist/{ip}")
+    @DeleteMapping("/blacklist")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     @ActionLog(action = "IP 블랙리스트 해제", target = "보안 시스템")
     public ResultVO<Void> removeBlacklist(
-            @PathVariable String ip,
+            @RequestParam String ip,
             @RequestParam String reason) {
+        // ✅ PathVariable → RequestParam 변경 (IP의 점(.)을 확장자로 인식하는 파싱 문제 해결)
         adminService.removeBlacklist(ip, reason);
         return ResultVO.ok("IP 차단이 해제되었습니다.", null);
     }
@@ -177,7 +177,6 @@ public class AdminController {
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     @ActionLog(action = "DELETE_BANNED_WORD", target = "TB_BANNED_WORD")
     public ResultVO<Void> deleteBannedWord(@PathVariable Long wordNo) {
-        // ✅ bannedWordRepository.deleteById() → Service로 이동
         adminService.deleteBannedWord(wordNo);
         return ResultVO.ok("금지어가 삭제되었습니다.", null);
     }
@@ -195,7 +194,6 @@ public class AdminController {
     @GetMapping("/boards")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
     public ResultVO<List<Board>> getAllBoards() {
-        // ✅ boardRepository.findAll() → Service로 이동
         return ResultVO.ok(adminService.getAllBoards());
     }
 
@@ -207,5 +205,44 @@ public class AdminController {
             Principal principal) {
         adminService.toggleBoardBlind(dto.getBoardNo(), dto.getReason(), principal.getName());
         return ResultVO.ok("게시글 상태가 변경되었습니다.", null);
+    }
+
+    // ==================================================================================
+    // 💬 문의 관리
+    // ==================================================================================
+
+    // 전체 문의 목록 조회 (status 생략 시 전체, "대기"/"답변완료" 전달 시 필터링)
+    @GetMapping("/customer/inquiries")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    public ResultVO<List<InquiryDto.ListResponse>> getAllInquiries(
+            @RequestParam(required = false) String status) {
+        return ResultVO.ok("문의 목록을 성공적으로 불러왔습니다.", adminService.getAllInquiries(status));
+    }
+
+    // 문의 상세 조회
+    @GetMapping("/customer/inquiries/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    public ResultVO<InquiryDto.DetailResponse> getInquiryDetail(@PathVariable Long id) {
+        return ResultVO.ok("문의 상세를 성공적으로 불러왔습니다.", adminService.getInquiryDetail(id));
+    }
+
+    // 관리자 답변 저장
+    @PutMapping("/customer/inquiries/{id}/answer")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    @ActionLog(action = "SAVE_INQUIRY_ANSWER", target = "TB_CUSTOMER_INQUIRY")
+    public ResultVO<Void> saveAnswer(
+            @PathVariable Long id,
+            @Valid @RequestBody InquiryDto.AnswerRequest dto) {
+        adminService.saveAnswer(id, dto);
+        return ResultVO.ok("답변이 저장되었습니다.", null);
+    }
+
+    // 문의 삭제 — SUPER_ADMIN, ADMIN만 가능 (OPERATOR 제외)
+    @DeleteMapping("/customer/inquiries/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @ActionLog(action = "DELETE_INQUIRY", target = "TB_CUSTOMER_INQUIRY")
+    public ResultVO<Void> deleteInquiry(@PathVariable Long id) {
+        adminService.deleteInquiry(id);
+        return ResultVO.ok("문의가 삭제되었습니다.", null);
     }
 }

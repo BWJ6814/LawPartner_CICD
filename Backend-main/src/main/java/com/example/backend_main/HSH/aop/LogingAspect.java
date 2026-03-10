@@ -8,6 +8,7 @@ import com.example.backend_main.common.repository.AccessLogRepository;
 import com.example.backend_main.common.repository.AdminAuditRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.CustomUserDetails;
+import com.example.backend_main.common.util.IpUtil;
 import org.slf4j.MDC;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -62,7 +63,7 @@ public class LogingAspect {
             HttpServletRequest request = ((ServletRequestAttributes) attributes).getRequest();
             httpResponse = ((ServletRequestAttributes) attributes).getResponse();
 
-            ip = getClientIp(request);
+            ip = IpUtil.getClientIp(request); // ✅ 공통 유틸로 교체
             uri = request.getRequestURI();
             userAgent = request.getHeader("User-Agent");
             if (userAgent != null && userAgent.length() > 200) {
@@ -93,10 +94,8 @@ public class LogingAspect {
         } finally {
             long duration = System.currentTimeMillis() - startTime;
 
-            // ✅ [핵심 수정] GlobalExceptionHandler가 예외를 처리한 후의 실제 상태코드를 읽어옴
-            // 기존: catch에서 무조건 500으로 고정 → 400, 403, 404 등이 전부 500으로 기록되는 문제
-            // 변경: response에서 직접 읽기 → GlobalExceptionHandler가 설정한 실제 코드 반영
-            int status = 200; // 기본값
+            // ✅ GlobalExceptionHandler가 예외를 처리한 후의 실제 상태코드를 읽어옴
+            int status = 200;
             if (httpResponse != null) {
                 status = httpResponse.getStatus();
             }
@@ -149,7 +148,7 @@ public class LogingAspect {
 
         if (attributes != null) {
             HttpServletRequest request = ((ServletRequestAttributes) attributes).getRequest();
-            ip = getClientIp(request);
+            ip = IpUtil.getClientIp(request); // ✅ 공통 유틸로 교체
             userAgent = request.getHeader("User-Agent");
             if (userAgent != null && userAgent.length() > 200) userAgent = userAgent.substring(0, 200);
         }
@@ -157,7 +156,7 @@ public class LogingAspect {
         String traceId = MDC.get("TRACE_ID");
         if (traceId == null) traceId = "SYSTEM";
 
-        // 3. ✅ [개선] reason 추출 — Map, @RequestParam, DTO 필드까지 모두 커버
+        // 3. reason 추출 — Map, @RequestParam, DTO 필드까지 모두 커버
         String reason = "사유 미입력";
         Object[] args = joinPoint.getArgs();
         String[] parameterNames = signature.getParameterNames();
@@ -178,7 +177,7 @@ public class LogingAspect {
                 reason = String.valueOf(arg);
                 break;
             }
-            // ✅ 케이스 C: [추가] DTO 안에 reason 필드가 있을 때 (리플렉션으로 꺼내기)
+            // 케이스 C: DTO 안에 reason 필드가 있을 때 (리플렉션으로 꺼내기)
             else {
                 try {
                     var field = arg.getClass().getDeclaredField("reason");
@@ -195,8 +194,6 @@ public class LogingAspect {
         }
 
         // 4. adminNo 검증 — try 진입 전에 처리
-        // @PreAuthorize가 정상 작동하는 한 도달 불가
-        // 만약 도달한다면 Security 설정에 구멍이 생긴 것 → 즉시 차단
         if (adminNo == null) {
             log.error("🚨 [보안 경고] @ActionLog 메서드에 미인증 접근 감지! TraceID: {}, Action: {}", traceId, actionType);
             throw new IllegalStateException("감사 로그 저장 실패: 인증된 관리자 정보가 없습니다.");
@@ -219,7 +216,6 @@ public class LogingAspect {
             log.error("❌ [Admin Action Fail] Admin: {}, Action: {}, Error: {}", adminId, actionType, e.getMessage());
             throw e;
         } finally {
-            // 여기 도달하면 adminNo는 무조건 존재 (위에서 검증 완료)
             adminAuditRepository.save(AdminAudit.builder()
                     .adminNo(adminNo)
                     .adminId(adminId)
@@ -244,7 +240,7 @@ public class LogingAspect {
     /*
      SecurityContext에서 현재 로그인한 유저의 PK(USER_NO)를 가져오는 메서드
      3단계 폴백: JWT details → CustomUserDetails → DB 조회 (최후의 보루)
-     */
+    */
     private Long getCurrentUserNo() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
@@ -278,34 +274,5 @@ public class LogingAspect {
         }
     }
 
-    /*
-     실제 클라이언트 IP를 추출하는 메서드
-     프록시/로드밸런서 환경을 고려해 헤더를 순서대로 확인
-     */
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
-            ip = request.getHeader("Proxy-Client-IP");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
-            ip = request.getRemoteAddr();
-
-        // 다중 프록시 환경: 첫 번째 IP가 진짜 클라이언트 IP
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-
-        // ✅ 수정 — IPv4-mapped IPv6 형식도 변환
-        if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {
-            ip = "127.0.0.1";
-        }
-        // ::ffff:192.168.0.43 → 192.168.0.43 변환
-        if (ip != null && ip.startsWith("::ffff:")) {
-            ip = ip.substring(7);
-        }
-
-        return ip;
-    }
+    // ✅ getClientIp() 메서드 삭제 — IpUtil.getClientIp()로 완전 대체
 }
