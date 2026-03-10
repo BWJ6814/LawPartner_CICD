@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import React  from 'react';
+import { Link } from 'react-router-dom';
 /*
 Link 컴포넌트 사용 : <a> 태그 대신 Link를 사용했습니다. 이는 SPA 환경에서 페이지 전체를 
 새로고침 하지 않고 필요한 부분만 갈아 끼워 속도를 높이기 위함입니다.
