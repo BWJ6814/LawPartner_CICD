@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../common/api/axiosConfig';
 
 const AIChatPage = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const userNo = (() => {
         const v = localStorage.getItem('userNo');
         const n = v ? Number(v) : null;
@@ -25,6 +26,17 @@ const AIChatPage = () => {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
+
+    // 메인페이지 검색에서 넘어온 question이 있으면 자동으로 한 번만 전송
+    const initialQuestionSent = useRef(false);
+    useEffect(() => {
+        const question = searchParams.get('question');
+        if (question?.trim() && !initialQuestionSent.current) {
+            initialQuestionSent.current = true;
+            sendMessage(question.trim());
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- 의도적으로 최초 1회만 question 전송
+    }, [searchParams]);
 
     const loadRooms = async () => {
         if (!userNo) return;

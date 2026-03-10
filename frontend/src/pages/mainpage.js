@@ -1,19 +1,27 @@
-import React  from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 /*
 Link 컴포넌트 사용 : <a> 태그 대신 Link를 사용했습니다. 이는 SPA 환경에서 페이지 전체를 
 새로고침 하지 않고 필요한 부분만 갈아 끼워 속도를 높이기 위함입니다.
 */
 
 import winterimg from '../common/img/윈터증사.webp'
-// ----------------------------------------------------------------------
-// [메인 페이지] MainPage.jsx로 분리할 부분 (★★★★★)
-// ----------------------------------------------------------------------
-// 이 컴포넌트 전체를 잘라내서 'src/pages/MainPage.jsx'로 저장하세요.
-
-
 
 const MainPage = () => {
+  const navigate = useNavigate();
+  const [searchCategory, setSearchCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 상단 검색: 카테고리 + 질문 입력 후 AI 페이지로 이동하여 자동 질의
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const query = searchQuery?.trim() || '';
+    const params = new URLSearchParams();
+    if (searchCategory && searchCategory !== 'all') params.set('category', searchCategory);
+    if (query) params.set('question', query);
+    navigate(`/ai-chat?${params.toString()}`);
+  };
+
   return (
     <main className="flex-grow font-sans">
 
@@ -21,26 +29,32 @@ const MainPage = () => {
       <section className="law-gradient py-16 md:py-24 px-4 overflow-hidden relative">
         <div className="max-w-7xl mx-auto relative z-10">
           
-          {/* 통합 검색 바 */}
+          {/* 통합 검색 바 — 제출 시 /ai-chat?category=...&question=... 로 이동, AI 페이지에서 자동 전송 */}
           <div className="max-w-4xl mx-auto mb-20">
-            <div className="bg-white rounded-2xl p-2 flex items-center search-focus transition-all duration-300 shadow-2xl">
+            <form onSubmit={handleSearchSubmit} className="bg-white rounded-2xl p-2 flex items-center search-focus transition-all duration-300 shadow-2xl">
               <div className="hidden md:flex items-center px-4 border-r border-gray-200 cursor-pointer hover:bg-gray-50 h-full rounded-l-xl transition">
-                <select className="text-sm font-bold text-gray-700 whitespace-nowrap mr-2">
-                    <option value="all">전체 검색</option> 
-                    <option value="lawyer">변호사</option> 
-                    <option value="JP">판례</option> 
-                    <option value="lawterm">법률 용어</option> 
+                <select
+                  value={searchCategory}
+                  onChange={(e) => setSearchCategory(e.target.value)}
+                  className="text-sm font-bold text-gray-700 whitespace-nowrap mr-2"
+                >
+                  <option value="all">전체 검색</option>
+                  <option value="lawyer">변호사</option>
+                  <option value="JP">판례</option>
+                  <option value="lawterm">법률 용어</option>
                 </select>
               </div>
-              <input 
-                type="text" 
-                placeholder="변호사, 판례, 법률 용어를 검색해 보세요" 
-                className="flex-1 px-6 py-4 text-gray-700 focus:outline-none placeholder:text-gray-400 font-medium bg-transparent min-w-0" 
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="변호사, 판례, 법률 용어를 검색해 보세요"
+                className="flex-1 px-6 py-4 text-gray-700 focus:outline-none placeholder:text-gray-400 font-medium bg-transparent min-w-0"
               />
-              <button className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition flex items-center whitespace-nowrap shadow-lg">
+              <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition flex items-center whitespace-nowrap shadow-lg">
                 <i className="fas fa-search mr-2"></i> 검색
               </button>
-            </div>
+            </form>
             <div className="mt-4 flex justify-center space-x-6 text-blue-200 text-xs font-medium">
               <span className="text-gray-400 font-bold">인기 검색어</span>
               <Link to="/search?q=전세사기" className="hover:text-white transition underline underline-offset-4">#전세사기대응</Link>

@@ -1166,3 +1166,79 @@ Caused by: org.hibernate.query.sqm.PathElementException: Could not resolve attri
 2026-03-10T15:36:38.360+09:00  INFO 10660 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: bf6a6411, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
 2026-03-10T15:37:38.328+09:00  INFO 10660 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a580b6c4, URI: /api/mypage/notifications/count, Status: 200, Time: 2ms
 2026-03-10T15:37:38.329+09:00  INFO 10660 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c8f14626, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T15:38:38.332+09:00  INFO 10660 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 3f72882f, URI: /api/mypage/notifications/count, Status: 200, Time: 2ms
+2026-03-10T15:38:38.333+09:00  INFO 10660 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: b9b04ab8, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T15:39:38.327+09:00  INFO 10660 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: d1e82565, URI: /api/mypage/notifications/count, Status: 200, Time: 2ms
+2026-03-10T15:39:38.329+09:00  INFO 10660 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 82fc63d5, URI: /api/mypage/notifications/list, Status: 200, Time: 4ms
+2026-03-10T15:40:05.289+09:00  INFO 10660 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 538d04db, URI: /api/mypage/notifications/count, Status: 200, Time: 4ms
+2026-03-10T15:40:05.290+09:00  INFO 10660 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: ea022089, URI: /api/mypage/notifications/list, Status: 200, Time: 4ms
+2026-03-10T15:40:13.362+09:00  INFO 10660 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 74ddfdcd, URI: /api/mypage/notifications/count, Status: 200, Time: 2ms
+2026-03-10T15:40:13.363+09:00  INFO 10660 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 2e0b4155, URI: /api/mypage/notifications/list, Status: 200, Time: 3ms
+2026-03-10T15:40:43.372+09:00  INFO 10660 --- [http-nio-8080-exec-4] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 26f4c6d9, URI: /api/mypage/notifications/count, Status: 200, Time: 5ms
+2026-03-10T15:40:43.374+09:00  INFO 10660 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: a38d9b68, URI: /api/mypage/notifications/list, Status: 200, Time: 7ms
+2026-03-10T15:41:13.383+09:00  INFO 10660 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 168bf5ac, URI: /api/mypage/notifications/count, Status: 200, Time: 5ms
+2026-03-10T15:41:13.384+09:00  INFO 10660 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: cf0d86a3, URI: /api/mypage/notifications/list, Status: 200, Time: 6ms
+2026-03-10T15:41:43.359+09:00  INFO 10660 --- [http-nio-8080-exec-3] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 265bfc62, URI: /api/mypage/notifications/count, Status: 200, Time: 3ms
+2026-03-10T15:41:43.360+09:00  INFO 10660 --- [http-nio-8080-exec-9] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c8946b4d, URI: /api/mypage/notifications/list, Status: 200, Time: 4ms
+2026-03-10T15:42:13.388+09:00  INFO 10660 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 24ac58ca, URI: /api/mypage/notifications/count, Status: 200, Time: 4ms
+2026-03-10T15:42:13.390+09:00  INFO 10660 --- [http-nio-8080-exec-10] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: f3b7ddc7, URI: /api/mypage/notifications/list, Status: 200, Time: 6ms
+2026-03-10T15:42:43.364+09:00  INFO 10660 --- [http-nio-8080-exec-1] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 10cc2838, URI: /api/mypage/notifications/count, Status: 200, Time: 3ms
+2026-03-10T15:42:43.365+09:00  INFO 10660 --- [http-nio-8080-exec-2] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 015198ab, URI: /api/mypage/notifications/list, Status: 200, Time: 4ms
+2026-03-10T15:42:49.323+09:00  INFO 10660 --- [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-03-10T15:42:49.607+09:00  INFO 10660 --- [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-03-10T15:42:49.614+09:00  INFO 10660 --- [SpringApplicationShutdownHook] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopping...
+2026-03-10T15:42:49.614+09:00  INFO 10660 --- [SpringApplicationShutdownHook] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@796ca104]]
+2026-03-10T15:42:49.615+09:00  INFO 10660 --- [SpringApplicationShutdownHook] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopped.
+2026-03-10T15:42:49.626+09:00  INFO 10660 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-03-10T15:42:49.631+09:00  INFO 10660 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-03-10T15:42:49.652+09:00  INFO 10660 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-03-10T15:50:27.324+09:00  INFO 20996 --- [main] c.e.backend_main.BackendMainApplication  : Starting BackendMainApplication using Java 17.0.2 with PID 20996 (D:\AI-Law\Backend-main\target\classes started by human-20 in D:\AI-Law\Backend-main)
+2026-03-10T15:50:27.327+09:00  INFO 20996 --- [main] c.e.backend_main.BackendMainApplication  : The following 1 profile is active: "secret"
+2026-03-10T15:50:28.374+09:00  INFO 20996 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-03-10T15:50:28.575+09:00  INFO 20996 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 188 ms. Found 20 JPA repository interfaces.
+2026-03-10T15:50:29.516+09:00  INFO 20996 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-03-10T15:50:29.531+09:00  INFO 20996 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-03-10T15:50:29.532+09:00  INFO 20996 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.50]
+2026-03-10T15:50:29.626+09:00  INFO 20996 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-03-10T15:50:29.627+09:00  INFO 20996 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2251 ms
+2026-03-10T15:50:29.819+09:00  INFO 20996 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-03-10T15:50:30.237+09:00  INFO 20996 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection oracle.jdbc.driver.T4CConnection@4899799b
+2026-03-10T15:50:30.239+09:00  INFO 20996 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-03-10T15:50:30.353+09:00  INFO 20996 --- [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-03-10T15:50:30.420+09:00  INFO 20996 --- [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.41.Final
+2026-03-10T15:50:30.469+09:00  INFO 20996 --- [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-03-10T15:50:30.809+09:00  INFO 20996 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-03-10T15:50:31.210+09:00  INFO 20996 --- [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 21.3
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-03-10T15:50:32.862+09:00  INFO 20996 --- [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-03-10T15:50:32.867+09:00  INFO 20996 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-03-10T15:50:33.381+09:00  INFO 20996 --- [main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-03-10T15:50:35.608+09:00  WARN 20996 --- [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-03-10T15:50:35.989+09:00  INFO 20996 --- [main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-03-10T15:50:36.812+09:00  INFO 20996 --- [main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-03-10T15:50:36.813+09:00  INFO 20996 --- [main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5d2d89a6]]
+2026-03-10T15:50:36.814+09:00  INFO 20996 --- [main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-03-10T15:50:36.845+09:00  INFO 20996 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-03-10T15:50:36.859+09:00  INFO 20996 --- [main] c.e.backend_main.BackendMainApplication  : Started BackendMainApplication in 10.116 seconds (process running for 10.609)
+2026-03-10T15:50:36.863+09:00  INFO 20996 --- [main] o.s.b.a.b.JobLauncherApplicationRunner   : Running default command line with: []
+2026-03-10T15:50:38.393+09:00  INFO 20996 --- [http-nio-8080-exec-4] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-03-10T15:50:38.394+09:00  INFO 20996 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-03-10T15:50:38.396+09:00  INFO 20996 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-03-10T15:50:38.774+09:00  INFO 20996 --- [http-nio-8080-exec-5] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: c4269472, URI: /api/mypage/notifications/count, Status: 200, Time: 10ms
+2026-03-10T15:50:38.774+09:00  INFO 20996 --- [http-nio-8080-exec-6] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 6753f714, URI: /api/mypage/notifications/count, Status: 200, Time: 10ms
+2026-03-10T15:50:38.776+09:00  INFO 20996 --- [http-nio-8080-exec-8] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: 2b7b2b43, URI: /api/mypage/notifications/list, Status: 200, Time: 12ms
+2026-03-10T15:50:38.776+09:00  INFO 20996 --- [http-nio-8080-exec-7] c.e.backend_main.HSH.aop.LogingAspect    : 📢 [Audit] TraceID: dc7c8bc5, URI: /api/mypage/notifications/list, Status: 200, Time: 12ms
+2026-03-10T15:51:04.357+09:00  INFO 20996 --- [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2026-03-10T15:51:04.536+09:00  INFO 20996 --- [tomcat-shutdown] o.s.b.w.e.tomcat.GracefulShutdown        : Graceful shutdown complete
+2026-03-10T15:51:04.539+09:00  INFO 20996 --- [SpringApplicationShutdownHook] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopping...
+2026-03-10T15:51:04.540+09:00  INFO 20996 --- [SpringApplicationShutdownHook] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5d2d89a6]]
+2026-03-10T15:51:04.541+09:00  INFO 20996 --- [SpringApplicationShutdownHook] o.s.m.s.b.SimpleBrokerMessageHandler     : Stopped.
+2026-03-10T15:51:04.548+09:00  INFO 20996 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-03-10T15:51:04.550+09:00  INFO 20996 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-03-10T15:51:04.571+09:00  INFO 20996 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
