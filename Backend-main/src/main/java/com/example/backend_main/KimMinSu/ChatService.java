@@ -49,8 +49,6 @@ public class ChatService {
         // ★ [알림용 2] DB에 알림 저장하기 위한 Repository (이건 네가 만들어야 함!)
         private final NotificationRepository notificationRepository;
 
-        // 파일을 저장할 서버 하드디스크 절대 경로 (리눅스면 /var/uploads/chat/ 같은 걸로 바꿔라)
-        private final String CHAT_UPLOAD_DIR = "C:/LP_uploads/chat/";
         private final org.apache.tika.Tika tika = new org.apache.tika.Tika();
         private final CalendarEventRepository calendarEventRepository;
 
@@ -217,22 +215,24 @@ public class ChatService {
         }
 
         // ------------------------------------------------------------------
-        // 5. 내 채팅방 목록 조회 (수정 없음)
+        // 5. 내 채팅방 목록 조회 — 최근 메시지 온 순서로 정렬
         // ------------------------------------------------------------------
         public List<ChatRoomDTO> getMyChatRooms(Long myUserNo) {
-                return chatRoomRepository.findByUserNoOrLawyerNoOrderByRegDtDesc(myUserNo, myUserNo).stream()
+                List<ChatRoomDTO> list = chatRoomRepository.findByUserNoOrLawyerNoOrderByRegDtDesc(myUserNo, myUserNo).stream()
                                 .map(room -> {
                                         String clientName = userRepository.findById(room.getUserNo())
                                                         .map(u -> u.getUserNm()).orElse("알 수 없는 유저");
                                         String lawyerName = userRepository.findById(room.getLawyerNo())
                                                         .map(u -> u.getUserNm() + " 변호사").orElse("알 수 없는 변호사");
 
-                                        // ★ [핵심] DB에서 이 방의 가장 최근 메시지 1개를 가져옴
-                                        String lastMsg = chatMessageRepository
-                                                        .findTopByRoomIdOrderBySendDtDesc(room.getRoomId())
+                                        var lastMsgOpt = chatMessageRepository.findTopByRoomIdOrderBySendDtDesc(room.getRoomId());
+                                        String lastMsg = lastMsgOpt
                                                         .map(msg -> "FILE".equals(msg.getMsgType()) ? "[파일이 전송되었습니다]"
                                                                         : msg.getMessage())
-                                                        .orElse("대화를 시작하세요..."); // 메시지가 아예 없으면 기본 텍스트 출력
+                                                        .orElse("대화를 시작하세요...");
+                                        java.time.LocalDateTime lastMessageAt = lastMsgOpt
+                                                        .map(com.example.backend_main.common.entity.ChatMessage::getSendDt)
+                                                        .orElse(null);
 
                                         return ChatRoomDTO.builder()
                                                         .roomId(room.getRoomId())
@@ -241,10 +241,14 @@ public class ChatService {
                                                         .progressCode(room.getProgressCode())
                                                         .userNm(clientName)
                                                         .lawyerName(lawyerName)
-                                                        .lastMessage(lastMsg) // ★ 꺼내온 메시지를 DTO에 박아줌!
+                                                        .lastMessage(lastMsg)
+                                                        .lastMessageAt(lastMessageAt)
                                                         .build();
                                 })
                                 .collect(Collectors.toList());
+                list.sort(java.util.Comparator.comparing(ChatRoomDTO::getLastMessageAt,
+                                java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())));
+                return list;
         }
 
         @Transactional
@@ -332,11 +336,15 @@ public class ChatService {
                 messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, statusMsg);
         }
 
-        // 2. 캘린더 동시 저장 로직
+        // 2. 캘린더 동시 저장 로직 — 요청자가 해당 방 의뢰인/변호사인지 검증, 날짜 검증
         @Transactional
-        public void confirmSchedule(String roomId, String dateStr) {
+        public void confirmSchedule(String roomId, String dateStr, Long requesterUserNo) {
+                if (dateStr == null || dateStr.isBlank())
+                        throw new IllegalArgumentException("날짜가 필요합니다.");
                 ChatRoom room = chatRoomRepository.findById(roomId)
                                 .orElseThrow(() -> new RuntimeException("방이 없습니다."));
+                if (!room.getUserNo().equals(requesterUserNo) && !room.getLawyerNo().equals(requesterUserNo))
+                        throw new RuntimeException("이 채팅방의 일정을 확정할 권한이 없습니다.");
 
                 String clientName = userRepository.findById(room.getUserNo())
                                 .map(com.example.backend_main.common.entity.User::getUserNm).orElse("의뢰인");

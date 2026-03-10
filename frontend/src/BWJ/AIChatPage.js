@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../common/api/axiosConfig';
 
 const AIChatPage = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState([
         { text: "안녕하세요. LAW PARTNER 입니다.\n법률 문제에 대해 판례 분석과 법적 절차를 기반으로 답변해 드립니다.\n어떤 도움이 필요하신가요?", isUser: false }
@@ -18,6 +19,17 @@ const AIChatPage = () => {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
+
+    // 메인페이지 검색에서 넘어온 question이 있으면 자동으로 한 번만 전송
+    const initialQuestionSent = useRef(false);
+    useEffect(() => {
+        const question = searchParams.get('question');
+        if (question?.trim() && !initialQuestionSent.current) {
+            initialQuestionSent.current = true;
+            sendMessage(question.trim());
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- 의도적으로 최초 1회만 question 전송
+    }, [searchParams]);
 
     const sendMessage = async (questionText) => {
         const finalQuestion = typeof questionText === 'string' ? questionText : input;

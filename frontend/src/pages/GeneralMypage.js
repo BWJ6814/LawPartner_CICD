@@ -86,6 +86,9 @@ const GeneralMyPage = () => {
     const handleLogout = () => {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userRole');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('userNo');
+        localStorage.removeItem('userId');
         alert("로그아웃 되었습니다.");
         navigate('/');
     };

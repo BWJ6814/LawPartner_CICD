@@ -125,15 +125,23 @@ public class ChatController {
         return ResultVO.ok("상담이 종료되었습니다.", null);
     }
 
-    // 2. 캘린더 일정 확정 (의뢰인이 수락 누를 때 호출)
+    // 2. 캘린더 일정 확정 (의뢰인이 수락 누를 때 호출) — 요청자가 해당 방 참여자인지 검증
     @PostMapping("/calendar/confirm")
     public ResultVO<Void> confirmSchedule(
             @RequestHeader("Authorization") String token,
             @RequestBody java.util.Map<String, String> payload
     ) {
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
         String roomId = payload.get("roomId");
-        String dateStr = payload.get("date"); // 프론트에서 넘어온 "2026-03-10 14:00" 같은 문자열
-        chatService.confirmSchedule(roomId, dateStr);
-        return ResultVO.ok("일정이 캘린더에 추가되었습니다.", null);
+        String dateStr = payload.get("date");
+        try {
+            chatService.confirmSchedule(roomId, dateStr, userNo);
+            return ResultVO.ok("일정이 캘린더에 추가되었습니다.", null);
+        } catch (IllegalArgumentException e) {
+            return ResultVO.fail("BAD_REQUEST", e.getMessage());
+        } catch (RuntimeException e) {
+            return ResultVO.fail("FORBIDDEN", e.getMessage());
+        }
     }
 }
