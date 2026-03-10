@@ -33,7 +33,17 @@
 .classpath
 .project
 .settings/
+**/docs/
+**/logs/
 
 # --- [OS: 시스템 파일] ---
 .DS_Store
 Thumbs.db
+
+backend-ai/db/
+
+# [log 파일]
+logs/
+*.log
+
+backend-ai/db/

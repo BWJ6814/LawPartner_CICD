@@ -29,13 +29,6 @@ public interface CustomerInquiryRepository extends JpaRepository<CustomerInquiry
     @Query("SELECT i FROM CustomerInquiry i JOIN FETCH i.writer WHERE i.status = :status ORDER BY i.createdAt DESC")
     List<CustomerInquiry> findByStatusWithUser(@Param("status") String status);
 
-    // 사용자용 — 내 문의 목록 최신순 조회
-    List<CustomerInquiry> findByWriterNoOrderByCreatedAtDesc(Long writerNo);
-
-    /*
-    [ 홍승현 ]
-    dto에 엔티티 연결해서 사용자 번호 가져오도록 처리해서, 이렇게 하셔도 상관없습니다.
-    확인해보고 수정 요함
+    // 사용자용 — 내 문의 목록 최신순 조회 (엔티티 필드는 writer 뿐이므로 writer.userNo 경로 사용)
     List<CustomerInquiry> findByWriter_UserNoOrderByCreatedAtDesc(Long userNo);
-    */
 }

@@ -60,3 +60,22 @@
 .fc-scroller {
   overflow: hidden !important;
 }
+
+/* FullCalendar: 일정이 1일 칸 안에서만 보이도록, 제목 한 줄 말줄임 + 툴팁 */
+.fc-event {
+    padding: 4px 6px !important;
+    border: none !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    border-radius: 4px !important;
+}
+
+.fc-event-title {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 1.35 !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    display: block !important;
+}

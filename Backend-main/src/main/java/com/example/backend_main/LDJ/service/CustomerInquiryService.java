@@ -18,7 +18,7 @@ public class CustomerInquiryService {
 
     public List<CustomerInquiry> getMyInquiries() {
         Long currentUserNo = getCurrentUserNo();
-        return customerInquiryRepository.findByWriterNoOrderByCreatedAtDesc(currentUserNo);
+        return customerInquiryRepository.findByWriter_UserNoOrderByCreatedAtDesc(currentUserNo);
     }
 
     public CustomerInquiry getInquiryById(Long id) {

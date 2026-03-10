@@ -200,3 +200,14 @@ SET USER_NM = '우영우',
 WHERE USER_NM = '우영우';
 
 COMMIT;
+
+select * from TB_BOARD;
+
+
+<<<<<<< Updated upstream
+select * from TB_BOARD;
+
+
+=======
+>>>>>>> Stashed changes
+
