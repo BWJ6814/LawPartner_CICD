@@ -1,10 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import DashboardSidebar from '../common/components/DashboardSidebar';
 import api from "../common/api/axiosConfig";
+
+/**
+ * 백엔드에서 오는 start 값("YYYY-MM-DD" 또는 "YYYY-MM-DD HH:mm")을
+ * FullCalendar가 인식하는 ISO 형식으로 통일합니다.
+ */
+const normalizeCalendarEvent = (event) => {
+    if (!event) return event;
+    let start = event.start;
+    if (typeof start === 'string' && start.includes(' ')) {
+        start = start.replace(' ', 'T');
+        if (!/T\d{2}:\d{2}:\d{2}/.test(start)) start = start + ':00';
+    }
+    return { ...event, start };
+};
+
+/** FullCalendar startStr(ISO) → 수정/저장 API용 "YYYY-MM-DD HH:mm" */
+const toBackendDateStr = (isoOrDateStr) => {
+    if (!isoOrDateStr) return '';
+    const s = String(isoOrDateStr).trim().replace('T', ' ');
+    return s.length > 16 ? s.slice(0, 16) : s;
+};
 
 const GeneralMyPage = () => {
     const navigate = useNavigate();
@@ -27,7 +48,11 @@ const GeneralMyPage = () => {
     // ============== [ 상담 전체보기 모달 상태 관리 ] ===================
     const [isAllConsultModalOpen, setIsAllConsultModalOpen] = useState(false);
 
-
+    // FullCalendar에 넘길 이벤트: start를 ISO 형식으로 정규화 (백엔드 "YYYY-MM-DD HH:mm" 호환)
+    const normalizedCalendarEvents = useMemo(
+        () => (dashboardData?.calendarEvents || []).map(normalizeCalendarEvent),
+        [dashboardData?.calendarEvents]
+    );
 
     // 2. 데이터 가져오기 (API 호출)
     useEffect(() => {
@@ -79,13 +104,13 @@ const GeneralMyPage = () => {
         setIsModalOpen(true);
     };
 
-    // 2. 기존 일정 클릭 시 (일정 수정/삭제 모드)
+    // 2. 기존 일정 클릭 시 (일정 수정/삭제 모드) — startStr(ISO)을 API 형식으로 변환
     const handleEventClick = (arg) => {
         setModalMode('edit');
         setEventInput({
-            id : arg.event.id, // 실무에서는 백엔드 PK값이 들어갑니다.
+            id : arg.event.id,
             title : arg.event.title,
-            start : arg.event.startStr,
+            start : toBackendDateStr(arg.event.startStr),
             backgroundColor: arg.event.backgroundColor || '#1e3a8a'
         });
         setIsModalOpen(true);
@@ -320,8 +345,6 @@ const GeneralMyPage = () => {
 
                         <div className="calendar-container">
                             <FullCalendar
-                                // 초심자를 위한 핵심: 달력을 눈으로 보기만 하던 dayGridPlugin 옆에,
-                                // 클릭이나 드래그 같은 '상호작용'을 담당하는 interactionPlugin을 같이 넣어줘야 작동해!
                                 plugins={[dayGridPlugin, interactionPlugin]}
                                 initialView="dayGridMonth"
                                 locale="ko"
@@ -330,13 +353,18 @@ const GeneralMyPage = () => {
                                     center: 'title',
                                     right: ''
                                 }}
-                                events={dashboardData.calendarEvents || []}
+                                events={normalizedCalendarEvents}
                                 dateClick={handleDateClick}
                                 eventClick={handleEventClick}
+                                eventDidMount={({ event }) => {
+                                    const el = event.el;
+                                    if (el) el.setAttribute('title', event.title || '');
+                                }}
+                                dayMaxEvents={3}
+                                moreLinkClick="popover"
                                 height="auto"
                                 contentHeight="auto"
                                 aspectRatio={2.5}
-
                             />
                         </div>
                     </div>

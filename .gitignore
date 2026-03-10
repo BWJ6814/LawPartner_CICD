@@ -33,6 +33,8 @@
 .classpath
 .project
 .settings/
+**/docs/
+**/logs/
 
 # --- [OS: 시스템 파일] ---
 .DS_Store
