@@ -1,29 +1,49 @@
 package com.example.backend_main.dto;
 
+import com.example.backend_main.common.entity.AiChatRoom;
+import com.example.backend_main.common.entity.User;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Data
-@Table(name = "AI_CHAT_LOG")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name = "TB_AI_CHAT_LOG")
 public class AiChatLog {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "LOG_ID")
-    private Long logId;
+    @Column(name = "LOG_NO")
+    private Long logNo;
 
-    @Column(name = "USER_ID")
-    private String userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ROOM_NO")
+    private AiChatRoom room;
 
-    @Lob // 긴 텍스트
-    @Column(name = "QUESTION")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "USER_NO")
+    private User user;
+
+    @Column(name = "CATEGORY_CODE", length = 20)
+    private String categoryCode;
+
+    @Column(name = "QUESTION", length = 4000)
     private String question;
 
     @Lob
     @Column(name = "ANSWER")
     private String answer;
 
-    @Column(name = "CREATED_AT")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "TOKEN_USAGE")
+    private Long tokenUsage;
+
+    @CreationTimestamp
+    @Column(name = "REG_DT", updatable = false)
+    private LocalDateTime regDt;
 }
