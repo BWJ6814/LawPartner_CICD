@@ -13,7 +13,6 @@ import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.HSH_DTO.AccessLogResponseDTO;
 import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDto;
 import com.example.backend_main.dto.HSH_DTO.UserListDto;
-import com.example.backend_main.dto.HSH_DTO.InquiryDto;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +47,6 @@ public class AdminService {
     private final BannedWordRepository bannedWordRepository;
     private final BoardRepository boardRepository;
     private final AdminAuditRepository adminAuditRepository;
-    private final CustomerInquiryRepository customerInquiryRepository;  // ✅ 문의 관리
 
     // ✅ Aes256Util 의존성 제거 — JPA Converter가 자동 암호화/복호화 처리
 

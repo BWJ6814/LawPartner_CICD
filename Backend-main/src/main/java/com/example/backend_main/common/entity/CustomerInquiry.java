@@ -1,6 +1,5 @@
 package com.example.backend_main.common.entity;
 
-import com.example.backend_main.common.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -100,6 +99,20 @@ public class CustomerInquiry {
         this.type = type;
         this.title = title;
         this.content = content;
+    }
+    
+    // 동주씨 전용 처리.. 이거 나중에 어떻게 하실지 고려해보세용
+    public static class CustomerInquiryBuilder {
+        public CustomerInquiryBuilder writerNo(Long writerNo) {
+            // User 객체에 ID만 담아서 가짜(Reference) 객체로 만들어 연결
+            this.writer = User.builder().userNo(writerNo).build();
+            return this;
+        }
+    }
+
+    // 앞서 만들었던 Getter도 유지 (읽기 전용)
+    public Long getWriterNo() {
+        return this.writer != null ? this.writer.getUserNo() : null;
     }
 
 }
