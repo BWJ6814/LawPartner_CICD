@@ -4,12 +4,19 @@ import api from '../common/api/axiosConfig';
 
 const AIChatPage = () => {
     const navigate = useNavigate();
+    const userNo = (() => {
+        const v = localStorage.getItem('userNo');
+        const n = v ? Number(v) : null;
+        return Number.isFinite(n) ? n : null;
+    })();
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState([
         { text: "안녕하세요. LAW PARTNER 입니다.\n법률 문제에 대해 판례 분석과 법적 절차를 기반으로 답변해 드립니다.\n어떤 도움이 필요하신가요?", isUser: false }
     ]);
     const [isLoading, setIsLoading] = useState(false);
     const [expandedSources, setExpandedSources] = useState(new Set()); // "msgIdx-srcIdx" 형태로 저장
+    const [rooms, setRooms] = useState([]);
+    const [currentRoomNo, setCurrentRoomNo] = useState(null);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
 
@@ -18,6 +25,39 @@ const AIChatPage = () => {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
+
+    const loadRooms = async () => {
+        if (!userNo) return;
+        const res = await api.get('/api/ai/rooms', { params: { userNo } });
+        setRooms(Array.isArray(res.data) ? res.data : []);
+    };
+
+    const loadRoomLogs = async (roomNo) => {
+        const res = await api.get(`/api/ai/rooms/${roomNo}/logs`);
+        const logs = Array.isArray(res.data) ? res.data : [];
+        const mapped = logs.flatMap(l => ([
+            { text: l.question, isUser: true },
+            { text: l.answer, isUser: false, sources: [] }
+        ]));
+        setMessages(mapped.length > 0 ? mapped : [
+            { text: "안녕하세요. LAW PARTNER 입니다.\n법률 문제에 대해 판례 분석과 법적 절차를 기반으로 답변해 드립니다.\n어떤 도움이 필요하신가요?", isUser: false }
+        ]);
+    };
+
+    const createNewRoom = async () => {
+        const res = await api.post('/api/ai/rooms', { userNo: userNo });
+        const roomNo = res.data?.roomNo;
+        setCurrentRoomNo(roomNo ?? null);
+        setExpandedSources(new Set());
+        setMessages([
+            { text: "안녕하세요. LAW PARTNER 입니다.\n법률 문제에 대해 판례 분석과 법적 절차를 기반으로 답변해 드립니다.\n어떤 도움이 필요하신가요?", isUser: false }
+        ]);
+        await loadRooms();
+    };
+
+    useEffect(() => {
+        loadRooms().catch(console.error);
+    }, []);
 
     const sendMessage = async (questionText) => {
         const finalQuestion = typeof questionText === 'string' ? questionText : input;
@@ -29,10 +69,10 @@ const AIChatPage = () => {
         setIsLoading(true);
 
         try {
-            const userId = localStorage.getItem('userId') || 'GUEST';
             const res = await api.post('/api/ai/consult', {
                 question: userMsg.text,
-                userId: userId
+                userNo: userNo,
+                roomNo: currentRoomNo
             });
             const data = res.data?.data ?? res.data;
             const aiMsg = {
@@ -41,6 +81,7 @@ const AIChatPage = () => {
                 sources: data?.related_cases ?? res.data?.related_cases ?? []
             };
             setMessages(prev => [...prev, aiMsg]);
+            await loadRooms();
         } catch (error) {
             console.error(error);
             setMessages(prev => [...prev, { text: "서버 연결 오류가 발생했습니다.", isUser: false }]);
@@ -75,7 +116,7 @@ const AIChatPage = () => {
                 {/* 1. 새 상담 시작 */}
                 <div className="pt-2.5 px-3 pb-3 border-b border-gray-200">
                     <button
-                        onClick={() => window.location.reload()}
+                        onClick={() => createNewRoom().catch(console.error)}
                         className="w-full flex items-center gap-2.5 text-gray-600 text-sm py-2 px-3 rounded-lg bg-white/60 border border-gray-100 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-all duration-200 shadow-sm"
                     >
                         <span className="text-lg">💬</span>
@@ -87,9 +128,23 @@ const AIChatPage = () => {
                 <div className="flex-1 overflow-y-auto px-2 py-4">
                     <h3 className="text-xs font-semibold text-gray-400 mb-4 pl-2">최근 상담 내역</h3>
                     <ul className="space-y-3 text-sm text-gray-600">
-                        <li className="cursor-pointer hover:text-blue-600 truncate pl-2">전세 보증금 반환 소송</li>
-                        <li className="cursor-pointer hover:text-blue-600 truncate pl-2">저작권 침해 내용증명</li>
-                        <li className="cursor-pointer hover:text-blue-600 truncate pl-2">근로계약서 검토 요청</li>
+                        {rooms.length === 0 && (
+                            <li className="text-xs text-gray-400 pl-2">최근 상담이 없습니다.</li>
+                        )}
+                        {rooms.map((r) => (
+                            <li
+                                key={r.roomNo}
+                                onClick={() => {
+                                    setCurrentRoomNo(r.roomNo);
+                                    setExpandedSources(new Set());
+                                    loadRoomLogs(r.roomNo).catch(console.error);
+                                }}
+                                className={`cursor-pointer hover:text-blue-600 truncate pl-2 ${currentRoomNo === r.roomNo ? 'text-blue-600 font-semibold' : ''}`}
+                                title={r.title || r.lastQuestion || ''}
+                            >
+                                {r.title || (r.lastQuestion ? String(r.lastQuestion).slice(0, 20) + '...' : `상담 #${r.roomNo}`)}
+                            </li>
+                        ))}
                     </ul>
                 </div>
 
