@@ -13,7 +13,6 @@ import AIChatPage from "./BWJ/AIChatPage";
 import GeneralMyPage from './pages/GeneralMypage';
 import ChatList from './KImMinSU/chatList';
 import Lawmainpage from './ky/Lawmainpage';
-import LawyerChatList from './ky/lawpage/LawyerChatList';
 import LoginPage from './HSH/LoginPage';
 import SignupPage from './HSH/SignupPage';
 import ExpertsPage from './pages/ExpertsPage';
@@ -128,8 +127,8 @@ function App() {
                     <Route path="/signup" element={<SignupPage />} />
 
                     <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
-                    <Route path="/lawyer-chat" element={<LawyerChatList />} />
-                    <Route path="/lawyer-chat/:roomId" element={<LawyerChatList />} />
+                    <Route path="/lawyer-chat" element={<ChatList />} />
+                    <Route path="/lawyer-chat/:roomId" element={<ChatList />} />
                     <Route path="/ai-chat" element={<div className="text-center p-20 text-xl text-gray-500">AI 상담 준비 중입니다.</div>} />
 
                     <Route path="/experts" element={<ExpertsPage />} />
