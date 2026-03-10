@@ -19,4 +19,6 @@ public class ChatRoomDTO {
     // (선택사항) 나중에 추가할 꿀기능들
     private String opponentName; // 상대방 이름
     private String lastMessage;  // 마지막 대화 한 줄
+    /** 채팅방 목록 정렬용: 마지막 메시지 시각 (최근 메시지 순 정렬) */
+    private LocalDateTime lastMessageAt;
 }
