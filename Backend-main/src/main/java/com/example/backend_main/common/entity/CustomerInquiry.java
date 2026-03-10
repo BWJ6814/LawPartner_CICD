@@ -1,10 +1,10 @@
 package com.example.backend_main.common.entity;
 
+import com.example.backend_main.common.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDateTime;
 
 /*
@@ -27,8 +27,13 @@ public class CustomerInquiry {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "WRITER_NO", nullable = false)
-    private Long writerNo;                          // 작성자 USER_NO
+    /*
+     [도입 원인]: 단순 숫자 id가 아닌 실제 User 객체와 연결하여 작성자의 이름, 아이디를 즉시 참조하기 위함
+     [기대 결과]: JOIN을 통해 DB 성능을 최적화하고, 코드 가독성을 극대화함
+     */
+    @ManyToOne(fetch = FetchType.LAZY) // 성능을 위해 지연 로딩 권장
+    @JoinColumn(name = "WRITER_NO", nullable = false) // DB의 WRITER_NO 컬럼과 매핑
+    private User writer;
 
     @Column(name = "TYPE", nullable = false, length = 100)
     private String type;                            // 문의 유형
@@ -63,6 +68,20 @@ public class CustomerInquiry {
     private LocalDateTime updatedAt;                // 수정 일시 (자동)
 
     // ==================================================================================
+    // 헬퍼 메서드 (DTO 매핑용)
+    // ==================================================================================
+
+    // DTO에서 .userId(entity.getUserId())로 호출 가능
+    public String getUserId() {
+        return this.writer != null ? this.writer.getUserId() : "unknown";
+    }
+
+    // DTO에서 .writerNm(entity.getWriterNm())로 호출 가능
+    public String getWriterNm() {
+        return this.writer != null ? this.writer.getUserNm() : "익명";
+    }
+
+    // ==================================================================================
     // 비즈니스 메서드 — Setter 대신 의미있는 메서드로 상태 변경
     // ==================================================================================
 
@@ -76,9 +95,11 @@ public class CustomerInquiry {
         this.answeredAt = LocalDateTime.now();
         this.status = "답변완료";
     }
+
     public void update(String type, String title, String content) {
         this.type = type;
         this.title = title;
         this.content = content;
     }
+
 }
