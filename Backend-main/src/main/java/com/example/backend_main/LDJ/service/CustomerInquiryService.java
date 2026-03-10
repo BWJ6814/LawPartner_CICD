@@ -3,12 +3,14 @@ package com.example.backend_main.LDJ.service;
 import com.example.backend_main.common.entity.CustomerInquiry;
 import com.example.backend_main.common.repository.CustomerInquiryRepository;
 import com.example.backend_main.common.security.CustomUserDetails;
+import com.example.backend_main.dto.HSH_DTO.InquiryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -16,14 +18,25 @@ public class CustomerInquiryService {
 
     private final CustomerInquiryRepository customerInquiryRepository;
 
-    public List<CustomerInquiry> getMyInquiries() {
+    public List<InquiryDto.ListResponse> getMyInquiries() {
         Long currentUserNo = getCurrentUserNo();
-        return customerInquiryRepository.findByWriter_UserNoOrderByCreatedAtDesc(currentUserNo);
+
+        return customerInquiryRepository.findByWriter_UserNoOrderByCreatedAtDesc(currentUserNo)
+                .stream()
+                .map(InquiryDto.ListResponse::from)
+                .collect(Collectors.toList());
     }
 
-    public CustomerInquiry getInquiryById(Long id) {
-        return customerInquiryRepository.findById(id)
+    public InquiryDto.DetailResponse getInquiryById(Long id) {
+        CustomerInquiry inquiry = customerInquiryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("해당 문의를 찾을 수 없습니다. id=" + id));
+
+        Long currentUserNo = getCurrentUserNo();
+        if (!inquiry.getWriterNo().equals(currentUserNo)) {
+            throw new RuntimeException("본인 문의만 조회할 수 있습니다.");
+        }
+
+        return InquiryDto.DetailResponse.from(inquiry);
     }
 
     public CustomerInquiry createInquiry(String type, String title, String content) {
@@ -68,10 +81,6 @@ public class CustomerInquiryService {
         }
 
         Object principal = authentication.getPrincipal();
-
-        System.out.println("authentication = " + authentication);
-        System.out.println("principal class = " + (principal != null ? principal.getClass().getName() : "null"));
-        System.out.println("principal value = " + principal);
 
         if (principal instanceof CustomUserDetails userDetails) {
             return userDetails.getUserNo();

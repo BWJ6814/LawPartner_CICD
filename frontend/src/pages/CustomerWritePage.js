@@ -35,7 +35,7 @@ export default function CustomerWritePage() {
         }
 
         try {
-            await axios.post(
+            const res = await axios.post(
                 "http://localhost:8080/api/customer/inquiries",
                 {
                     type,
@@ -49,11 +49,21 @@ export default function CustomerWritePage() {
                 }
             );
 
+            if (res.data?.success !== true) {
+                throw new Error(res.data?.message || "문의 등록 실패");
+            }
+
             alert("문의가 등록되었습니다.");
             navigate("/customer/list");
         } catch (err) {
             console.error("문의 등록 실패:", err);
-            alert("문의 등록 중 오류가 발생했습니다.");
+            console.error("응답 상태:", err.response?.status);
+            console.error("응답 데이터:", err.response?.data);
+            alert(
+                err.response?.data?.message ||
+                err.message ||
+                "문의 등록 중 오류가 발생했습니다."
+            );
         }
     };
 
