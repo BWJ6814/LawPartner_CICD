@@ -267,7 +267,9 @@ public class ChatService {
                         File dest = new File(uploadDir, savedName);
                         file.transferTo(dest);
 
-                        String fileUrl = serverUrl + "/api/chat/files/download/" + savedName;
+                        // serverUrl에 슬래시가 이미 붙어 있어도, 중복 // 이 생기지 않도록 정규화
+                        String baseUrl = serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl;
+                        String fileUrl = baseUrl + "/api/chat/files/download/" + savedName;
 
                         ChatMessageDTO msgDto = ChatMessageDTO.builder()
                                         .roomId(roomId)

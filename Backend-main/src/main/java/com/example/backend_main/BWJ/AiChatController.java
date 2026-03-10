@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,22 +102,35 @@ public class AiChatController {
             String answer = (String) pythonResponse.get("answer");
             List<String> relatedCases = (List<String>) pythonResponse.get("related_cases");
 
-            AiChatRoom room = null;
-            if (roomNo != null) {
-                room = aiChatRoomRepository.findById(roomNo).orElse(null);
-                if (room != null) {
-                    room.touchLastChat(question);
-                    room.ensureTitleMaxLength(200);
-                    aiChatRoomRepository.save(room);
-                }
-            }
-
             User user = null;
             if (userNo != null) {
                 user = userRepository.findById(userNo).orElse(null);
             }
 
-            // 2. 오라클 DB에 저장
+            AiChatRoom room;
+            if (roomNo != null) {
+                room = aiChatRoomRepository.findById(roomNo).orElse(null);
+                if (room != null) {
+                    room.touchLastChat(question);
+                    room.ensureTitleMaxLength(200);
+                    room = aiChatRoomRepository.save(room);
+                } else {
+                    room = null;
+                }
+            } else {
+                // 첫 질문 시 방 생성 (질문 내용으로 제목/최근질문 설정)
+                String title = question != null && question.length() > 200
+                        ? question.substring(0, 200) : question;
+                room = AiChatRoom.builder()
+                        .user(user)
+                        .title(title)
+                        .lastQuestion(question)
+                        .lastChatDt(LocalDateTime.now())
+                        .build();
+                room = aiChatRoomRepository.save(room);
+            }
+
+            // 2. 오라클 DB에 저장 (TB_AI_CHAT_LOG)
             AiChatLog log = AiChatLog.builder()
                     .room(room)
                     .user(user)
@@ -126,11 +140,11 @@ public class AiChatController {
                     .build();
             aiChatLogRepository.save(log);
 
-            // 3. 리액트에 결과 반환 (답변 + 관련 판례)
+            // 3. 리액트에 결과 반환 (답변 + 관련 판례 + roomNo)
             Map<String, Object> finalResponse = new HashMap<>();
             finalResponse.put("answer", answer);
             finalResponse.put("related_cases", relatedCases);
-            finalResponse.put("roomNo", roomNo);
+            finalResponse.put("roomNo", room != null ? room.getRoomNo() : null);
 
             return ResponseEntity.ok(finalResponse);
 

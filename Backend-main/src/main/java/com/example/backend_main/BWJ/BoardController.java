@@ -45,20 +45,20 @@ public class BoardController {
             @RequestParam("content") String content,
             @RequestParam("categories") String categoryString,
             @RequestParam("userNo") Long userNo,
-            @RequestParam("isNicknameVisible") Boolean isVisible,
+            @RequestParam(value = "secretYn", required = false) Boolean isSecret,
             @RequestParam(value = "files", required = false) List<MultipartFile> files) {
 
         try {
-            String nicknameVisibleYn = (isVisible != null && isVisible) ? "Y" : "N";
+            String secretYn = (isSecret != null && isSecret) ? "Y" : "N";
 
             Board board = Board.builder()
                     .title(title)
                     .content(content)
                     .categoryCode(categoryString)
                     .writerNo(userNo)
+                    .secretYn(secretYn)
                     .replyCnt(0)
                     .matchYn("N")
-                    .nicknameVisibleYn(nicknameVisibleYn)
                     .build();
 
             boardRepository.save(board);
@@ -110,11 +110,18 @@ public class BoardController {
     }
 
     @GetMapping
-    public List<Board> getBoardList() {
+    public List<Board> getBoardList(@RequestParam(value = "userNo", required = false) Long userNo) {
         List<Board> boards = boardRepository.findAllByOrderByRegDtDesc();
         for (Board board : boards) {
             userRepository.findById(board.getWriterNo()).ifPresent(user -> board.setNickNm(user.getNickNm()));
             if (board.getReplyCnt() == null) board.setReplyCnt(0);
+        }
+
+        // 비밀글: 작성자가 아니면 목록에서 제외
+        if (userNo != null) {
+            boards = boards.stream()
+                    .filter(b -> !"Y".equalsIgnoreCase(b.getSecretYn()) || userNo.equals(b.getWriterNo()))
+                    .toList();
         }
         return boards;
     }

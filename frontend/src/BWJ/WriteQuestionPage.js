@@ -32,7 +32,7 @@ const WriteQuestionPage = () => {
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [isNicknameVisible, setIsNicknameVisible] = useState(false);
+    const [isSecret, setIsSecret] = useState(false);
 
     // [상태] 첨부된 파일들을 담는 리스트입니다.
     const [files, setFiles] = useState([]);
@@ -96,7 +96,6 @@ const WriteQuestionPage = () => {
         if (!content.trim()) return alert("내용을 입력해주세요.");
 
         const userNo = localStorage.getItem('userNo');
-        const nickNm = localStorage.getItem('nickNm');
 
         if(!userNo){
             alert("로그인 정보가 없습니다. 다시 로그인 해주세요.")
@@ -109,8 +108,7 @@ const WriteQuestionPage = () => {
         formData.append('content', content);
         formData.append('categories', selectedCategories.join(',')); // 리스트를 콤마로 연결된 문자열로 전송
         formData.append('userNo', userNo);
-        formData.append('nickNm', nickNm);
-        formData.append('isNicknameVisible', isNicknameVisible);
+        formData.append('secretYn', isSecret); // 비밀글 여부 (true/false)
 
         // 파일을 하나씩 FormData에 추가합니다. Key값인 'files'는 백엔드와 맞춰야 합니다.
         files.forEach((file) => {
@@ -242,13 +240,13 @@ const WriteQuestionPage = () => {
                     <div className="flex items-center gap-2 pl-2">
                         <input
                             type="checkbox"
-                            id="nicknameVisible"
-                            checked={isNicknameVisible}
-                            onChange={(e) => setIsNicknameVisible(e.target.checked)}
+                            id="secretYn"
+                            checked={isSecret}
+                            onChange={(e) => setIsSecret(e.target.checked)}
                             className="w-5 h-5 text-blue-600 border-gray-300 rounded cursor-pointer"
                         />
-                        <label htmlFor="nicknameVisible" className="text-gray-700 font-bold cursor-pointer">
-                            닉네임 공개
+                        <label htmlFor="secretYn" className="text-gray-700 font-bold cursor-pointer">
+                            비밀글 (작성자와 담당 변호사만 열람)
                         </label>
                     </div>
 
