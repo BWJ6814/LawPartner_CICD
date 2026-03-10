@@ -44,13 +44,24 @@ export default function CustomerEditPage() {
                     }
                 );
 
-                const data = res.data;
+                const data = res.data?.data || res.data;
+
+                if (!data) {
+                    throw new Error(res.data?.message || "해당 문의를 찾을 수 없습니다.");
+                }
+
                 setType(data.type || "서비스 이용 문의");
                 setTitle(data.title || "");
                 setContent(data.content || "");
             } catch (err) {
                 console.error("문의 수정용 데이터 조회 실패:", err);
-                setLoadError("해당 문의를 찾을 수 없습니다.");
+                console.error("응답 상태:", err.response?.status);
+                console.error("응답 데이터:", err.response?.data);
+                setLoadError(
+                    err.response?.data?.message ||
+                    err.message ||
+                    "해당 문의를 찾을 수 없습니다."
+                );
             } finally {
                 setLoading(false);
             }
@@ -77,7 +88,7 @@ export default function CustomerEditPage() {
         }
 
         try {
-            await axios.put(
+            const res = await axios.put(
                 `http://localhost:8080/api/customer/inquiries/${id}`,
                 {
                     type,
@@ -91,11 +102,25 @@ export default function CustomerEditPage() {
                 }
             );
 
+            const ok =
+                res.data?.success === true ||
+                (res.status >= 200 && res.status < 300);
+
+            if (!ok) {
+                throw new Error(res.data?.message || "수정 실패");
+            }
+
             alert("수정이 완료되었습니다.");
             navigate(`/customer/detail/${id}`);
         } catch (err) {
             console.error("문의 수정 실패:", err);
-            alert("수정 중 오류가 발생했습니다.");
+            console.error("응답 상태:", err.response?.status);
+            console.error("응답 데이터:", err.response?.data);
+            alert(
+                err.response?.data?.message ||
+                err.message ||
+                "수정 중 오류가 발생했습니다."
+            );
         }
     };
 

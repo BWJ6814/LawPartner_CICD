@@ -77,10 +77,14 @@ export default function CustomerDetailPage() {
                         },
                     }
                 );
-                setItem(res.data);
+
+                const data = res.data?.data || null;
+                setItem(data);
             } catch (err) {
                 console.error("문의 상세 조회 실패:", err);
-                setError("해당 문의를 불러오지 못했습니다.");
+                console.error("응답 상태:", err.response?.status);
+                console.error("응답 데이터:", err.response?.data);
+                setError(err.response?.data?.message || "해당 문의를 불러오지 못했습니다.");
                 setItem(null);
             } finally {
                 setLoading(false);
@@ -104,7 +108,7 @@ export default function CustomerDetailPage() {
         if (!ok) return;
 
         try {
-            await axios.delete(
+            const res = await axios.delete(
                 `http://localhost:8080/api/customer/inquiries/${id}`,
                 {
                     headers: {
@@ -112,11 +116,22 @@ export default function CustomerDetailPage() {
                     },
                 }
             );
+
+            if (res.data?.success !== true) {
+                throw new Error(res.data?.message || "삭제 실패");
+            }
+
             alert("삭제되었습니다.");
             navigate("/customer/list");
         } catch (err) {
             console.error("문의 삭제 실패:", err);
-            alert("삭제 중 오류가 발생했습니다.");
+            console.error("응답 상태:", err.response?.status);
+            console.error("응답 데이터:", err.response?.data);
+            alert(
+                err.response?.data?.message ||
+                err.message ||
+                "삭제 중 오류가 발생했습니다."
+            );
         }
     }
 
@@ -158,13 +173,15 @@ export default function CustomerDetailPage() {
                             <div style={subject}>{item.title}</div>
 
                             <div style={metaRow}>
-                                <span style={getStatusBadgeStyle(item.status)}>{item.status}</span>
+                                <span style={getStatusBadgeStyle(item.status)}>
+                                    {item.status || "대기"}
+                                </span>
 
                                 <span style={metaDot}>•</span>
 
                                 <span style={metaText}>
                                     <span style={metaKey}>유형</span>
-                                    <span style={metaValue}>{item.type}</span>
+                                    <span style={metaValue}>{item.type || "-"}</span>
                                 </span>
 
                                 <span style={metaDot}>•</span>
@@ -181,7 +198,7 @@ export default function CustomerDetailPage() {
                                 <div style={sectionTitle}>문의 내용</div>
                             </div>
 
-                            <div style={contentBox}>{item.content}</div>
+                            <div style={contentBox}>{item.content || "-"}</div>
 
                             <div style={divider} />
 

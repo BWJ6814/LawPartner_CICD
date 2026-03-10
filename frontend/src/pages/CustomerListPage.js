@@ -39,14 +39,20 @@ export default function CustomerListPage() {
 
             try {
                 setIsLoading(true);
+
                 const res = await axios.get("http://localhost:8080/api/customer/inquiries", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-                setList(Array.isArray(res.data) ? res.data : []);
+
+                console.log("문의 목록 응답:", res.data);
+
+                setList(Array.isArray(res.data?.data) ? res.data.data : []);
             } catch (err) {
                 console.error("문의 목록 조회 실패:", err);
+                console.error("응답 상태:", err.response?.status);
+                console.error("응답 데이터:", err.response?.data);
                 setList([]);
             } finally {
                 setIsLoading(false);
@@ -143,15 +149,15 @@ export default function CustomerListPage() {
                                         }
                                     >
                                         <td style={td}>
-                                            <span
-                                                style={
-                                                    it.status === "답변완료"
-                                                        ? badgeDone
-                                                        : badgeWait
-                                                }
-                                            >
-                                                {it.status}
-                                            </span>
+                                                <span
+                                                    style={
+                                                        it.status === "답변완료"
+                                                            ? badgeDone
+                                                            : badgeWait
+                                                    }
+                                                >
+                                                    {it.status}
+                                                </span>
                                         </td>
                                         <td style={td}>{it.type}</td>
                                         <td style={tdTitle}>
@@ -211,10 +217,6 @@ const metaText = {
     opacity: 0.7,
 };
 
-/* ======================
-   카드
-====================== */
-
 const card = {
     background: "#111c34",
     border: "1px solid rgba(255,255,255,0.08)",
@@ -222,10 +224,6 @@ const card = {
     padding: 32,
     boxShadow: "0 12px 50px rgba(0,0,0,0.35)",
 };
-
-/* ======================
-   테이블
-====================== */
 
 const tableWrap = {
     overflowX: "auto",
@@ -268,10 +266,6 @@ const chev = {
     fontWeight: 900,
 };
 
-/* ======================
-   상태 배지
-====================== */
-
 const badgeWait = {
     padding: "5px 12px",
     borderRadius: 999,
@@ -290,10 +284,6 @@ const badgeDone = {
     fontSize: 12,
 };
 
-/* ======================
-   빈 상태
-====================== */
-
 const emptyState = {
     textAlign: "center",
     padding: "40px 0",
@@ -309,10 +299,6 @@ const emptyDesc = {
     fontSize: 14,
     opacity: 0.7,
 };
-
-/* ======================
-   버튼
-====================== */
 
 const btnPrimary = {
     padding: "14px 20px",
