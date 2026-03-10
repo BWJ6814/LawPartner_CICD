@@ -19,7 +19,7 @@ import AuditLogView from './AuditLogView';
 import BlacklistView from './BlacklistView';
 import SecurityPolicyView from './SecurityPolicyView';
 import ContentSecurityView from './ContentSecurityView';
-import AdminInquiryManageContainer from './AdminInquiryManageContainer';
+import AdminInquiryManage from './AdminInquiryManage';
 
 const ROLES = {
   USER: 'ROLE_USER',
@@ -282,7 +282,7 @@ export default function AdminPage() {
       case 'blacklist': return <BlacklistView blacklist={blacklist} newIp={newIp} setNewIp={setNewIp} newReason={newReason} setNewReason={setNewReason} handleAddBlacklist={handleAddBlacklist} handleUnblock={handleUnblock} />;
       case 'security-policy': return <SecurityPolicyView bannedWords={bannedWords} newWord={newWord} setNewWord={setNewWord} handleAddBannedWord={handleAddBannedWord} handleDeleteBannedWord={handleDeleteBannedWord} />;
       case 'content-security': return <ContentSecurityView contentBoards={contentBoards} handleToggleBlind={handleToggleBlind} />;
-      case 'inquiry-manage': return <AdminInquiryManageContainer />;
+      case 'inquiry-manage': return <AdminInquiryManage />; 
       default: return <DashboardView {...commonProps} />;
     }
   };

@@ -2,7 +2,9 @@ package com.example.backend_main.LDJ.controller;
 
 import com.example.backend_main.LDJ.service.CustomerInquiryService;
 import com.example.backend_main.common.entity.CustomerInquiry;
-import com.example.backend_main.dto.HSH_DTO.CustomerInquiryDTO;
+import com.example.backend_main.common.vo.ResultVO;
+import com.example.backend_main.dto.CustomerInquiryDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,30 +27,40 @@ public class CustomerInquiryController {
         return customerInquiryService.getInquiryById(id);
     }
 
+    /**
+     * [사용자용 문의 등록]
+     * [변경 사항]: ResultVO 적용 및 @Valid를 통한 입력값 검증 추가
+     */
     @PostMapping
-    public CustomerInquiry createInquiry(@RequestBody CustomerInquiryDTO.CreateRequest request) {
-        return customerInquiryService.createInquiry(
+    public ResultVO<CustomerInquiry> createInquiry(
+            @Valid @RequestBody CustomerInquiryDTO.CreateRequest request) {
+
+        // 서비스 호출 (우리가 리팩토링한 LDJ의 CustomerInquiryService 사용)
+        CustomerInquiry created = customerInquiryService.createInquiry(
                 request.getType(),
                 request.getTitle(),
                 request.getContent()
         );
+
+        return ResultVO.ok("문의가 성공적으로 등록되었습니다.", created);
     }
 
+    /**
+     * [사용자용 문의 수정]
+     * [변경 사항]: 일관된 응답 형식을 위해 ResultVO 사용
+     */
     @PutMapping("/{id}")
-    public CustomerInquiry updateInquiry(
+    public ResultVO<CustomerInquiry> updateInquiry(
             @PathVariable Long id,
-            @RequestBody CustomerInquiryDTO.CreateRequest request
+            @Valid @RequestBody CustomerInquiryDTO.CreateRequest request
     ) {
-        return customerInquiryService.updateInquiry(
+        CustomerInquiry updated = customerInquiryService.updateInquiry(
                 id,
                 request.getType(),
                 request.getTitle(),
                 request.getContent()
         );
-    }
 
-    @DeleteMapping("/{id}")
-    public void deleteInquiry(@PathVariable Long id) {
-        customerInquiryService.deleteInquiry(id);
+        return ResultVO.ok("문의 내용이 수정되었습니다.", updated);
     }
 }

@@ -1,6 +1,7 @@
 package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AdminService;
+import com.example.backend_main.HSH.service.InquiryService;
 import com.example.backend_main.common.annotation.ActionLog;
 import com.example.backend_main.common.entity.BannedWord;
 import com.example.backend_main.common.entity.BlacklistIp;
@@ -37,6 +38,7 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private final InquiryService inquiryService;
 
     // ==================================================================================
     // 👤 회원 관리
@@ -208,22 +210,24 @@ public class AdminController {
     }
 
     // ==================================================================================
-    // 💬 문의 관리
+    // 💬 문의 관리 (수정 완료)
     // ==================================================================================
 
-    // 전체 문의 목록 조회 (status 생략 시 전체, "대기"/"답변완료" 전달 시 필터링)
+    // 전체 문의 목록 조회
     @GetMapping("/customer/inquiries")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
     public ResultVO<List<InquiryDto.ListResponse>> getAllInquiries(
             @RequestParam(required = false) String status) {
-        return ResultVO.ok("문의 목록을 성공적으로 불러왔습니다.", adminService.getAllInquiries(status));
+        // ✅ 2. adminService 대신 inquiryService의 성능 최적화된 메서드 호출
+        return ResultVO.ok("문의 목록을 성공적으로 불러왔습니다.", inquiryService.getAllInquiries(status));
     }
 
     // 문의 상세 조회
     @GetMapping("/customer/inquiries/{id}")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
     public ResultVO<InquiryDto.DetailResponse> getInquiryDetail(@PathVariable Long id) {
-        return ResultVO.ok("문의 상세를 성공적으로 불러왔습니다.", adminService.getInquiryDetail(id));
+        // ✅ 3. 작성자 실명/ID가 포함된 상세 정보를 가져옴
+        return ResultVO.ok("문의 상세를 성공적으로 불러왔습니다.", inquiryService.getInquiryDetail(id));
     }
 
     // 관리자 답변 저장
@@ -232,17 +236,19 @@ public class AdminController {
     @ActionLog(action = "SAVE_INQUIRY_ANSWER", target = "TB_CUSTOMER_INQUIRY")
     public ResultVO<Void> saveAnswer(
             @PathVariable Long id,
-            @Valid @RequestBody InquiryDto.AnswerRequest dto) {
-        adminService.saveAnswer(id, dto);
+            @Valid @RequestBody InquiryDto.AnswerRequest dto) { // ✅ JSON 데이터를 DTO로 자동 매핑
+        // ✅ 4. 서비스 레이어에서 답변 저장 및 상태 변경 처리
+        inquiryService.saveAnswer(id, dto);
         return ResultVO.ok("답변이 저장되었습니다.", null);
     }
 
-    // 문의 삭제 — SUPER_ADMIN, ADMIN만 가능 (OPERATOR 제외)
+    // 문의 삭제
     @DeleteMapping("/customer/inquiries/{id}")
     @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     @ActionLog(action = "DELETE_INQUIRY", target = "TB_CUSTOMER_INQUIRY")
     public ResultVO<Void> deleteInquiry(@PathVariable Long id) {
-        adminService.deleteInquiry(id);
+        // ✅ 5. 삭제 권한 체크 후 처리
+        inquiryService.deleteInquiry(id);
         return ResultVO.ok("문의가 삭제되었습니다.", null);
     }
 }
