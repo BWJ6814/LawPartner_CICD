@@ -6,7 +6,6 @@ import com.example.backend_main.common.entity.*;
 import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.repository.*;
-import com.example.backend_main.common.repository.CustomerInquiryRepository;
 import com.example.backend_main.common.spec.AccessLogSpecification;
 import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.dto.Board;
