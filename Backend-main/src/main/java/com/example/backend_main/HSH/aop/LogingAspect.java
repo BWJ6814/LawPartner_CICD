@@ -80,7 +80,7 @@ public class LogingAspect {
 
         Long userNo = getCurrentUserNo();
 
-        Object result;
+        Object result = null; // ✅ 초기화
         String errorMsg = null;
 
         try {
@@ -102,17 +102,21 @@ public class LogingAspect {
 
             log.info("📢 [Audit] TraceID: {}, URI: {}, Status: {}, Time: {}ms", traceId, uri, status, duration);
 
-            accessLogRepository.save(AccessLog.builder()
-                    .traceId(traceId)
-                    .reqIp(ip)
-                    .reqUri(uri)
-                    .userAgent(userAgent)
-                    .userNo(userNo)
-                    .statusCode(status)
-                    .execTime(duration)
-                    .errorMsg(errorMsg)
-                    .regDt(LocalDateTime.now())
-                    .build());
+            try {
+                accessLogRepository.save(AccessLog.builder()
+                        .traceId(traceId)
+                        .reqIp(ip)
+                        .reqUri(uri)
+                        .userAgent(userAgent)
+                        .userNo(userNo)
+                        .statusCode(status)
+                        .execTime(duration)
+                        .errorMsg(errorMsg)
+                        .regDt(LocalDateTime.now())
+                        .build());
+            } catch (Exception e) {
+                log.error("🚨 [접속 로그 저장 실패] {}", e.getMessage());
+            }
 
             MDC.clear();
         }
@@ -202,7 +206,7 @@ public class LogingAspect {
         log.info("👀 [Admin Action Start] Admin: {}({}), Action: {}, Target: {}, Reason: {}",
                 adminId, adminNo, actionType, targetInfo, reason);
 
-        Object result;
+        Object result = null; // ✅ 초기화
         String errorYn = "N";
         String errorMsg = null;
 
@@ -216,18 +220,22 @@ public class LogingAspect {
             log.error("❌ [Admin Action Fail] Admin: {}, Action: {}, Error: {}", adminId, actionType, e.getMessage());
             throw e;
         } finally {
-            adminAuditRepository.save(AdminAudit.builder()
-                    .adminNo(adminNo)
-                    .adminId(adminId)
-                    .actionType(actionType)
-                    .targetInfo(targetInfo)
-                    .reason(reason)
-                    .traceId(traceId)
-                    .errorYn(errorYn)
-                    .errorMsg(errorMsg)
-                    .reqIp(ip)
-                    .userAgent(userAgent)
-                    .build());
+            try {
+                adminAuditRepository.save(AdminAudit.builder()
+                        .adminNo(adminNo)
+                        .adminId(adminId)
+                        .actionType(actionType)
+                        .targetInfo(targetInfo)
+                        .reason(reason)
+                        .traceId(traceId)
+                        .errorYn(errorYn)
+                        .errorMsg(errorMsg)
+                        .reqIp(ip)
+                        .userAgent(userAgent)
+                        .build());
+            } catch (Exception e) {
+                log.error("🚨 [감사 로그 저장 실패] {}", e.getMessage());
+            }
         }
 
         return result;

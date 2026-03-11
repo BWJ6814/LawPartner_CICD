@@ -278,51 +278,45 @@ public class AdminService {
     }
 
     // ==================================================================================
-    // 📊 대시보드 통계
+    // 📊 대시보드 통계 (성능 최적화 버전)
     // ==================================================================================
 
     public Map<String, Object> getAdminSummary() {
         Map<String, Object> summary = new HashMap<>();
 
-        LocalDate today = LocalDate.now();
-        LocalDate yesterday = today.minusDays(1);
+        // 오늘 및 어제 날짜 범위 설정 (00:00:00 ~ 23:59:59.999...)
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime todayEnd = todayStart.plusDays(1).minusNanos(1);
+        LocalDateTime yesterdayStart = todayStart.minusDays(1);
+        LocalDateTime yesterdayEnd = todayStart.minusNanos(1);
 
-        List<User> allUsers = userRepository.findAll();
-        long totalUsersToday = allUsers.size();
-        long newUsersToday = allUsers.stream()
-                .filter(u -> u.getJoinDt() != null && u.getJoinDt().toLocalDate().isEqual(today))
-                .count();
-        long newUsersYesterday = allUsers.stream()
-                .filter(u -> u.getJoinDt() != null && u.getJoinDt().toLocalDate().isEqual(yesterday))
-                .count();
-        long totalUsersYesterday = totalUsersToday - newUsersToday;
+        // 1. 회원 수 통계 (DB 집계 쿼리 사용)
+        long totalUsersToday = userRepository.count();
+        long newUsersToday = userRepository.countByJoinDtBetween(todayStart, todayEnd);
+        long newUsersYesterday = userRepository.countByJoinDtBetween(yesterdayStart, yesterdayEnd);
+        long totalUsersYesterday = totalUsersToday - newUsersToday; // 어제 기준 총원
 
         summary.put("totalUsers", totalUsersToday);
         summary.put("totalUsersGrowth", calculateGrowth(totalUsersToday, totalUsersYesterday));
         summary.put("newUsersToday", newUsersToday);
         summary.put("newUsersGrowth", calculateGrowth(newUsersToday, newUsersYesterday));
 
-        List<AccessLog> allLogs = accessLogRepository.findAll();
-        long visitorsToday = allLogs.stream()
-                .filter(l -> l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(today))
-                .count();
-        long visitorsYesterday = allLogs.stream()
-                .filter(l -> l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(yesterday))
-                .count();
+        // 2. 방문자 수 통계 (IP 기준 중복 제거 - Unique Visitors)
+        long visitorsToday = accessLogRepository.countDistinctIpByRegDtBetween(todayStart, todayEnd);
+        long visitorsYesterday = accessLogRepository.countDistinctIpByRegDtBetween(yesterdayStart, yesterdayEnd);
+
         summary.put("todayVisitors", visitorsToday);
         summary.put("visitorsGrowth", calculateGrowth(visitorsToday, visitorsYesterday));
 
-        long threatsToday = allLogs.stream()
-                .filter(l -> l.getStatusCode() != null && l.getStatusCode() >= 400
-                        && l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(today))
-                .count();
-        long threatsYesterday = allLogs.stream()
-                .filter(l -> l.getStatusCode() != null && l.getStatusCode() >= 400
-                        && l.getRegDt() != null && l.getRegDt().toLocalDate().isEqual(yesterday))
-                .count();
+        // 3. 보안 위협 통계 (400 에러 이상 발생 수)
+        long threatsToday = accessLogRepository.countThreatsByRegDtBetween(todayStart, todayEnd);
+        long threatsYesterday = accessLogRepository.countThreatsByRegDtBetween(yesterdayStart, yesterdayEnd);
+
         summary.put("securityThreats", threatsToday);
         summary.put("threatsGrowth", calculateGrowth(threatsToday, threatsYesterday));
-        summary.put("pendingLawyers", allUsers.stream().filter(u -> "S02".equals(u.getStatusCode())).count());
+
+        // 4. 승인 대기 변호사 수
+        summary.put("pendingLawyers", userRepository.countByStatusCode("S02"));
 
         return summary;
     }
