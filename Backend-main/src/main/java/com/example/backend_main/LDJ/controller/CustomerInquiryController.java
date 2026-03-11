@@ -34,6 +34,7 @@ public class CustomerInquiryController {
     public ResultVO<CustomerInquiry> createInquiry(
             @Valid @RequestBody CustomerInquiryDTO.CreateRequest request) {
 
+        // 서비스 호출 (우리가 리팩토링한 LDJ의 CustomerInquiryService 사용)
         CustomerInquiry created = customerInquiryService.createInquiry(
                 request.getType(),
                 request.getTitle(),

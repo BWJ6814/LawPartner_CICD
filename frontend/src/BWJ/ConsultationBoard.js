@@ -156,14 +156,18 @@ const ConsultationBoard = () => {
 
     const fetchPosts = async () => {
         try {
-            const response = await api.get('/api/boards');
+            const userNo = localStorage.getItem('userNo');
+            const response = await api.get('/api/boards', {
+                params: { userNo }
+            });
             const raw = response.data?.data ?? response.data;
             const list = Array.isArray(raw) ? raw : [];
             const mappedData = list.map(board => ({
                 id: board.boardNo,
                 title: board.title,
                 content: board.content,
-                author: board.nicknameVisibleYn === 'Y' ? (board.nickNm || '익명') : '익명',
+                // 닉네임은 기존처럼 서버에서 내려준 nickNm 사용, 없으면 익명
+                author: board.nickNm || '익명',
                 date: board.regDt ? board.regDt.substring(0, 10) : '',
                 fullDate: board.regDt ? board.regDt : '',
                 replyCnt: board.replyCnt || 0,

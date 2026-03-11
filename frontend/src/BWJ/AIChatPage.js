@@ -56,15 +56,13 @@ const AIChatPage = () => {
         ]);
     };
 
-    const createNewRoom = async () => {
-        const res = await api.post('/api/ai/rooms', { userNo: userNo });
-        const roomNo = res.data?.roomNo;
-        setCurrentRoomNo(roomNo ?? null);
+    // 새로운 상담: DB 저장 없이 빈 채팅창만 열기 (첫 질문 시 방 생성됨)
+    const openNewChat = () => {
+        setCurrentRoomNo(null);
         setExpandedSources(new Set());
         setMessages([
             { text: "안녕하세요. LAW PARTNER 입니다.\n법률 문제에 대해 판례 분석과 법적 절차를 기반으로 답변해 드립니다.\n어떤 도움이 필요하신가요?", isUser: false }
         ]);
-        await loadRooms();
     };
 
     useEffect(() => {
@@ -93,6 +91,9 @@ const AIChatPage = () => {
                 sources: data?.related_cases ?? res.data?.related_cases ?? []
             };
             setMessages(prev => [...prev, aiMsg]);
+            // 첫 질문이면 백엔드가 새 방을 만들어 roomNo 반환 → 현재 방으로 지정
+            const newRoomNo = data?.roomNo ?? res.data?.roomNo;
+            if (newRoomNo != null) setCurrentRoomNo(newRoomNo);
             await loadRooms();
         } catch (error) {
             console.error(error);
@@ -128,7 +129,7 @@ const AIChatPage = () => {
                 {/* 1. 새 상담 시작 */}
                 <div className="pt-2.5 px-3 pb-3 border-b border-gray-200">
                     <button
-                        onClick={() => createNewRoom().catch(console.error)}
+                        onClick={openNewChat}
                         className="w-full flex items-center gap-2.5 text-gray-600 text-sm py-2 px-3 rounded-lg bg-white/60 border border-gray-100 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-all duration-200 shadow-sm"
                     >
                         <span className="text-lg">💬</span>
@@ -154,7 +155,7 @@ const AIChatPage = () => {
                                 className={`cursor-pointer hover:text-blue-600 truncate pl-2 ${currentRoomNo === r.roomNo ? 'text-blue-600 font-semibold' : ''}`}
                                 title={r.title || r.lastQuestion || ''}
                             >
-                                {r.title || (r.lastQuestion ? String(r.lastQuestion).slice(0, 20) + '...' : `상담 #${r.roomNo}`)}
+                                {r.title || r.lastQuestion || `상담 #${r.roomNo}`}
                             </li>
                         ))}
                     </ul>

@@ -36,3 +36,5 @@ build/
 ### Security & Local Config ###
 src/main/resources/application-secret.properties
 
+logs/ai-law-security.log
+*ai-law-security.log
