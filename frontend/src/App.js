@@ -43,12 +43,16 @@ const LayoutManager = ({ auth, onLoginUpdate, children }) => {
     return (
         <div className={`flex flex-col bg-gray-50 text-slate-900 font-sans ${isFixedLayout ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
             {!isAdminRoute && <Header auth={auth} onLoginUpdate={onLoginUpdate} />}
-            <main className={`flex-grow ${isFixedLayout ? 'min-h-0 overflow-hidden flex flex-col' : ''}`}>
-                {isFixedLayout ? <div className="flex-1 min-h-0 overflow-hidden">{children}</div> : children}
+            <main className={`${isFixedLayout ? 'flex-1 min-h-0 overflow-hidden flex flex-col' : 'flex-grow'}`}>
+                {isFixedLayout ? (
+                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col" style={{ minHeight: 0 }}>
+                        {children}
+                    </div>
+                ) : children}
             </main>
 
-            {/* admin, ai-chat에서는 Footer 숨김 */}
-            {!isAdminRoute && !isAiChatRoute && <Footer />}
+            {/* admin, ai-chat, 채팅 페이지(chatList/lawyer-chat)에서는 Footer 숨김 */}
+            {!isAdminRoute && !isAiChatRoute && !isChatRoute && <Footer />}
         </div>
     );
 };

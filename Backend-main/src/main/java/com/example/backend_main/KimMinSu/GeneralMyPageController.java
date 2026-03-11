@@ -209,6 +209,16 @@ public class GeneralMyPageController {
         }
     }
 
+    @DeleteMapping("/review/{reviewNo}")
+    public ResultVO<String> deleteMyReview(
+            @PathVariable("reviewNo") Long reviewNo,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "로그인이 필요합니다.");
+        myPageService.deleteMyReview(userNo, reviewNo);
+        return ResultVO.ok("리뷰가 삭제되었습니다.", null);
+    }
+
     @DeleteMapping("/chat/room/{roomId}")
     public ResultVO<String> deleteConsultation(
             @PathVariable("roomId") String roomId,

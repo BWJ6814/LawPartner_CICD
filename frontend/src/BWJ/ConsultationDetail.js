@@ -202,18 +202,23 @@ const ConsultationDetail = () => {
         }
 
         try {
-            // axios.post로 스프링 백엔드에 채팅방 생성 요청을 보냅니다.
             const response = await api.post(`/api/boards/chat/room`, {
-                userNo: currentUser.userNo,
+                userNo: Number(currentUser.userNo),
                 lawyerNo: lawyerNo
             });
 
-            if (response.status === 200) {
-                alert("1:1 대화 요청이 완료되었습니다!");
+            const room = response.data;
+            const roomId = room?.roomId ?? room?.id ?? response.data;
 
-                // ★ 주목! response.data.roomId에는 이제 "550e8400-e29b-..." 같은 문자열 UUID가 들어있습니다.
-                // 만약 바로 채팅방으로 넘어가고 싶다면 아래 주석을 풀고 사용하세요.
-                navigate(`/chatList/${response.data}`);
+            if (response.status === 200 && roomId) {
+                // 변호사·의뢰인에게 1:1 채팅 요청 알림 전송 (클릭 시 해당 채팅방 이동)
+                api.post("/api/chat/room/notify", {
+                    roomId,
+                    userNo: Number(currentUser.userNo),
+                    lawyerNo
+                }).catch(() => {});
+                alert("1:1 대화 요청이 완료되었습니다!");
+                navigate(`/chatList/${roomId}`);
             }
         } catch (err) {
             console.error("채팅방 생성 중 오류:", err);

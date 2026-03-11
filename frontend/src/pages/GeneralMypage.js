@@ -93,6 +93,24 @@ const GeneralMyPage = () => {
         navigate('/');
     };
 
+    /** 내가 적은 리뷰 삭제 */
+    const handleDeleteReview = async (reviewNo, e) => {
+        if (e) e.preventDefault();
+        if (e) e.stopPropagation();
+        if (!window.confirm("이 리뷰를 삭제하시겠습니까?")) return;
+        try {
+            await api.delete(`/api/mypage/review/${reviewNo}`);
+            setDashboardData(prev => ({
+                ...prev,
+                myReviews: (prev.myReviews || []).filter(r => r.reviewNo !== reviewNo)
+            }));
+            alert("리뷰가 삭제되었습니다.");
+        } catch (err) {
+            const msg = err.response?.data?.message || err.message || "삭제에 실패했습니다.";
+            alert(msg);
+        }
+    };
+
     // =========== [캘린더 이벤트 핸들러] ==============
 
     // 1. 빈 날짜 클릭 시(새 일정 추가 모드)
@@ -369,6 +387,51 @@ const GeneralMyPage = () => {
                                 contentHeight="auto"
                                 aspectRatio={2.5}
                             />
+                        </div>
+                    </div>
+
+                    {/* 내가 적은 리뷰 — 캘린더 아래, 기존 섹션과 동일 스타일 */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shadow-md mb-8">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-bold text-slate-800 text-lg">내가 적은 리뷰</h3>
+                            <span className="text-xs text-slate-400 font-medium">상담한 변호사에게 남긴 후기</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {dashboardData.myReviews && dashboardData.myReviews.length > 0 ? (
+                                dashboardData.myReviews.map((review) => (
+                                    <div
+                                        key={review.reviewNo}
+                                        className="flex items-start gap-2 p-4 bg-slate-50 rounded-xl border border-slate-100 hover:bg-slate-100 transition"
+                                    >
+                                        <Link
+                                            to={review.lawyerNo ? `/experts/${review.lawyerNo}` : '#'}
+                                            className="flex-1 min-w-0 flex flex-col cursor-pointer"
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-bold text-slate-800 truncate">{review.lawyerName}</span>
+                                                <span className="flex items-center text-amber-500 text-xs font-bold shrink-0 ml-2">
+                                                    {[1,2,3,4,5].map((i) => (
+                                                        <i key={i} className={`fas fa-star ${i <= Math.round(review.stars || 0) ? '' : 'opacity-30'}`}></i>
+                                                    ))}
+                                                    <span className="ml-1 text-slate-600">{(review.stars || 0).toFixed(1)}</span>
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed mb-1">{review.content || '(내용 없음)'}</p>
+                                            <span className="text-[10px] text-slate-400 font-medium">{review.regDate}</span>
+                                        </Link>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleDeleteReview(review.reviewNo, e)}
+                                            className="shrink-0 text-slate-400 hover:text-red-500 text-xs font-bold px-2 py-1 rounded transition"
+                                            title="리뷰 삭제"
+                                        >
+                                            <i className="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-2 text-center py-8 text-slate-400 text-sm">작성한 리뷰가 없습니다.</div>
+                            )}
                         </div>
                     </div>
 

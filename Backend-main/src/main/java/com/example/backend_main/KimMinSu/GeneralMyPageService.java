@@ -7,6 +7,8 @@ import com.example.backend_main.common.entity.ChatRoom;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.ChatRoomRepository;
 import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.ky.entity.Review;
+import com.example.backend_main.ky.repository.ReviewRepository;
 import com.example.backend_main.common.util.Aes256Util;
 import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.dto.Board;
@@ -33,6 +35,7 @@ public class GeneralMyPageService {
     // ★ 방금 만든 캘린더 관리자 추가!
     private final CalendarEventRepository calendarEventRepository;
     private final BoardReplyRepository boardReplyRepository;
+    private final ReviewRepository reviewRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     private final Aes256Util aes256Util;
@@ -132,26 +135,59 @@ public class GeneralMyPageService {
 
         dto.setCalendarEvents(eventList);
 
-        try {
-            if("S99".equals(user.getStatusCode())) {
-                dto.setEmail(user.getEmail());
-                dto.setPhone(user.getPhone());
-            } else {
-                dto.setEmail(aes256Util.decrypt(user.getEmail()));
-                dto.setPhone(aes256Util.decrypt(user.getPhone()));
+        // 6. 내가 적은 리뷰 (작성자 기준 최신순, 상위 10건)
+        List<Review> myReviewList = reviewRepository.findByWriterNoOrderByRegDtDesc(userNo);
+        List<GeneralMyPageDTO.MyReviewDTO> reviewDtoList = myReviewList.stream()
+                .limit(10)
+                .map(r -> {
+                    GeneralMyPageDTO.MyReviewDTO rd = new GeneralMyPageDTO.MyReviewDTO();
+                    rd.setReviewNo(r.getReviewNo());
+                    rd.setLawyerNo(r.getLawyerNo());
+                    rd.setLawyerName(userRepository.findById(r.getLawyerNo())
+                            .map(u -> u.getUserNm() + " 변호사")
+                            .orElse("변호사"));
+                    rd.setStars(r.getStars());
+                    rd.setContent(r.getContent() != null ? r.getContent() : "");
+                    rd.setRegDate(r.getRegDt() != null ? r.getRegDt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : "");
+                    return rd;
+                })
+                .collect(Collectors.toList());
+        dto.setMyReviews(reviewDtoList);
+
+        // 이메일/휴대폰: null·빈값 방지, 복호화 실패 시 원본 또는 빈 문자열 표시 (데이터 오류 문구 제거)
+        String rawEmail = user.getEmail();
+        String rawPhone = user.getPhone();
+        if (rawEmail == null) rawEmail = "";
+        if (rawPhone == null) rawPhone = "";
+        if ("S99".equals(user.getStatusCode())) {
+            dto.setEmail(rawEmail);
+            dto.setPhone(rawPhone);
+        } else {
+            try {
+                dto.setEmail(rawEmail.isEmpty() ? "" : aes256Util.decrypt(rawEmail));
+                dto.setPhone(rawPhone.isEmpty() ? "" : aes256Util.decrypt(rawPhone));
+            } catch (Exception e) {
+                // 복호화 실패 시(암호화 안 된 데이터 등) 원본 그대로 표시
+                dto.setEmail(rawEmail);
+                dto.setPhone(rawPhone);
             }
-        } catch (Exception e) {
-            dto.setEmail("데이터 오류");
-            dto.setPhone("데이터 오류");
         }
 
 
 
         return dto;
-
-
     }
 
+    /** 내가 적은 리뷰 삭제 (작성자 본인만 가능) */
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteMyReview(Long userNo, Long reviewNo) {
+        Review review = reviewRepository.findById(reviewNo)
+                .orElseThrow(() -> new RuntimeException("해당 리뷰를 찾을 수 없습니다."));
+        if (!review.getWriterNo().equals(userNo)) {
+            throw new RuntimeException("본인이 작성한 리뷰만 삭제할 수 있습니다.");
+        }
+        reviewRepository.delete(review);
+    }
 
     @org.springframework.transaction.annotation.Transactional
     public Long saveCalendarEvent(Long userNo, GeneralMyPageDTO.CalendarEventDTO dto) {

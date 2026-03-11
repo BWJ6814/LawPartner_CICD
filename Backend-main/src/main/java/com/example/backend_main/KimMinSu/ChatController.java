@@ -14,6 +14,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -39,6 +40,23 @@ public class ChatController {
         return ResponseEntity.ok(roomId);
     }
 
+    /** 기존 채팅방에 대한 1:1 채팅 요청 알림 전송 (전문가찾기/상담게시판에서 방 생성 후 호출) */
+    @PostMapping("/room/notify")
+    public ResultVO<Void> notifyChatRequest(
+            @RequestHeader("Authorization") String token,
+            @RequestBody Map<String, Object> body) {
+        Long myUserNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (myUserNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
+        String roomId = body.get("roomId") != null ? body.get("roomId").toString() : null;
+        Long userNo = body.get("userNo") != null ? Long.valueOf(body.get("userNo").toString()) : null;
+        Long lawyerNo = body.get("lawyerNo") != null ? Long.valueOf(body.get("lawyerNo").toString()) : null;
+        if (roomId == null || userNo == null || lawyerNo == null) {
+            return ResultVO.fail("BAD_REQUEST", "roomId, userNo, lawyerNo가 필요합니다.");
+        }
+        if (!myUserNo.equals(userNo)) return ResultVO.fail("AUTH-403", "의뢰인만 알림을 보낼 수 있습니다.");
+        chatService.sendChatRequestNotificationsForRoom(roomId, userNo, lawyerNo);
+        return ResultVO.ok("알림 전송 완료", null);
+    }
 
     // 2. 변호사가 상담 수락 (Put)
     @PutMapping("/room/accept/{roomId}")
@@ -80,15 +98,27 @@ public class ChatController {
         return ResultVO.ok("내 채팅방 목록 조회 성공", chatService.getMyChatRooms(myUserNo));
     }
 
-    // 과거 채팅 내역 불러오기
+    // 과거 채팅 내역 불러오기 (size 있으면 페이지네이션: 최신 size개, before 있으면 그 이전 size개)
     @GetMapping("/history/{roomId}")
     public ResultVO<List<ChatMessageDTO>> getChatHistory(
             @PathVariable("roomId") String roomId,
-            @RequestHeader("Authorization") String token
+            @RequestHeader("Authorization") String token,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String before
     ) {
         Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
         if (userNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
 
+        if (size != null && size > 0) {
+            java.time.LocalDateTime beforeDt = null;
+            if (before != null && !before.isEmpty()) {
+                try {
+                    beforeDt = java.time.LocalDateTime.parse(before);
+                } catch (Exception ignored) { }
+            }
+            List<ChatMessageDTO> history = chatService.getChatHistoryPaged(roomId, userNo, size, beforeDt);
+            return ResultVO.ok("과거 채팅 내역 조회 성공", history);
+        }
         List<ChatMessageDTO> history = chatService.getChatHistory(roomId, userNo);
         return ResultVO.ok("과거 채팅 내역 조회 성공", history);
     }

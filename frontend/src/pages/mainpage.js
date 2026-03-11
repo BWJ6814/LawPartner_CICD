@@ -10,7 +10,10 @@ const MainPage = () => {
 
   useEffect(() => {
     api.get('/api/lawyers')
-      .then((res) => setFeaturedLawyers(Array.isArray(res.data) ? res.data : []))
+      .then((res) => {
+        const raw = res.data?.data ?? res.data;
+        setFeaturedLawyers(Array.isArray(raw) ? raw : []);
+      })
       .catch(() => setFeaturedLawyers([]));
   }, []);
 
@@ -225,44 +228,59 @@ const MainPage = () => {
             </div>
           </div>
 
-          {/* 우측: 최적의 변호사 카드 (실제 API 데이터) */}
-          <div className="lg:w-1/2 w-full">
+          {/* 우측: 최적의 변호사 카드 (실제 평점·후기 데이터, 클릭 시 해당 변호사 상세 페이지) */}
+          <div className="lg:w-1/2 w-full space-y-4">
             {featuredLawyers.length > 0 ? (
-              <Link to={`/experts/${featuredLawyers[0].userNo}`} className="block">
-                <div className="bg-white rounded-3xl p-8 text-gray-900 shadow-2xl relative hover:shadow-xl transition-shadow">
-                  <div className="absolute top-6 right-6 text-gray-200 text-6xl opacity-20">
-                    <i className="fas fa-quote-right"></i>
-                  </div>
-                  <div className="flex items-center space-x-6 mb-6">
-                    <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-blue-50 shadow-md bg-slate-200">
-                      {featuredLawyers[0].imgUrl ? (
-                        <img src={featuredLawyers[0].imgUrl.startsWith('http') ? featuredLawyers[0].imgUrl : `${API_BASE_URL}${featuredLawyers[0].imgUrl}`} alt={featuredLawyers[0].userNm} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl font-black text-slate-400">{featuredLawyers[0].userNm?.substring(0, 1) || '변'}</div>
-                      )}
+              featuredLawyers.slice(0, 3).map((lawyer) => {
+                const id = lawyer.userNo ?? lawyer.user_no ?? lawyer.id;
+                const name = lawyer.userNm ?? lawyer.user_nm ?? lawyer.name ?? '변호사';
+                const rating = Number(lawyer.rating ?? lawyer.reviewAvg ?? 0);
+                const reviewCount = Number(lawyer.reviewCount ?? lawyer.review_count ?? 0);
+                const imgUrl = lawyer.imgUrl ?? lawyer.img_url ?? '';
+                const specialty = lawyer.specialtyStr ?? lawyer.specialty_str ?? '일반 법률 상담';
+                return (
+                  <Link to={id ? `/experts/${id}` : '/experts'} key={id || lawyer.name || lawyer.userNm} className="block group">
+                    <div className="bg-white rounded-3xl p-6 text-gray-900 shadow-2xl relative hover:shadow-xl hover:ring-2 hover:ring-blue-400/50 transition-all">
+                      <div className="absolute top-4 right-4 text-gray-200 text-4xl opacity-20">
+                        <i className="fas fa-quote-right"></i>
+                      </div>
+                      <div className="flex items-center space-x-4 mb-4">
+                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-50 shadow-md bg-slate-200 shrink-0">
+                          {imgUrl ? (
+                            <img src={imgUrl.startsWith('http') ? imgUrl : `${API_BASE_URL}${imgUrl}`} alt={name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xl font-black text-slate-400">{name.substring(0, 1)}</div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-lg font-black text-gray-900 truncate">{name} 변호사</h4>
+                          <p className="text-blue-600 font-bold text-xs mb-0.5">자격증: 변호사</p>
+                          <p className="text-gray-500 text-xs font-medium truncate">전문분야: {specialty}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 mb-3">
+                        <div className="flex text-yellow-400 text-sm">
+                          {[1,2,3,4,5].map((i) => <i key={i} className={`fas fa-star ${i <= Math.round(rating) ? '' : 'opacity-30'}`}></i>)}
+                        </div>
+                        <span className="font-bold text-gray-900">{rating.toFixed(1)}</span>
+                        <span className="text-gray-400 text-xs font-medium">(후기 {reviewCount}건)</span>
+                      </div>
+                      <p className="text-gray-500 text-xs font-medium">실제 후기·평점 데이터 반영 · 클릭 시 상세 보기</p>
                     </div>
-                    <div>
-                      <h4 className="text-2xl font-black text-gray-900">{featuredLawyers[0].userNm || '변호사'} 변호사</h4>
-                      <p className="text-blue-600 font-bold text-sm mb-1">자격증: 변호사</p>
-                      <p className="text-gray-500 text-xs font-medium">전문분야: {featuredLawyers[0].specialtyStr || '일반 법률 상담'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2 mb-6">
-                    <div className="flex text-yellow-400 text-sm">
-                      {[...Array(5)].map((_, i) => <i key={i} className={`fas fa-star ${i < Math.floor(featuredLawyers[0].rating || 0) ? '' : 'opacity-30'}`}></i>)}
-                    </div>
-                    <span className="font-bold text-gray-900">{(featuredLawyers[0].rating ?? 0).toFixed(1)}</span>
-                    <span className="text-gray-400 text-xs font-medium">(후기 {featuredLawyers[0].reviewCount ?? 0}건)</span>
-                  </div>
-                  <div className="bg-gray-50 p-5 rounded-2xl text-sm border border-gray-100">
-                    <p className="text-gray-600 font-medium">실제 후기 및 평점 데이터를 반영한 추천 변호사입니다. 프로필 보기 →</p>
-                  </div>
-                </div>
-              </Link>
+                  </Link>
+                );
+              })
             ) : (
               <div className="bg-white rounded-3xl p-8 text-gray-500 shadow-2xl text-center">
                 <p className="font-bold">등록된 변호사가 없습니다.</p>
                 <Link to="/experts" className="inline-block mt-4 text-blue-600 font-bold text-sm hover:underline">전문가 찾기</Link>
+              </div>
+            )}
+            {featuredLawyers.length > 3 && (
+              <div className="text-center">
+                <Link to="/experts" className="text-blue-400 hover:text-white font-bold text-sm inline-flex items-center gap-1">
+                  더 많은 변호사 보기 <i className="fas fa-chevron-right text-xs"></i>
+                </Link>
               </div>
             )}
           </div>

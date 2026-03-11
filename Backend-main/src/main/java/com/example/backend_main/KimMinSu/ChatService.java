@@ -31,11 +31,15 @@ import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap; // ★ 추가됨
 import java.util.List;
 import java.util.Map; // ★ 추가됨
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.springframework.data.domain.PageRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -98,33 +102,86 @@ public class ChatService {
                                 .build();
                 notificationRepository.save(lawyerNoti);
 
-                // 변호사 웹소켓 발사
+                // 변호사 웹소켓 발사 (roomId 포함해 알림 클릭 시 해당 채팅방으로 이동)
                 Map<String, String> lawyerNotiData = new HashMap<>();
                 lawyerNotiData.put("title", lawyerTitle);
                 lawyerNotiData.put("content", lawyerContent);
+                lawyerNotiData.put("roomId", roomId);
                 messagingTemplate.convertAndSend("/sub/user/" + lawyerNo + "/notification", lawyerNotiData);
 
                 // =========================================================
-                // ★ [알림 로직 2] 일반 유저(본인)에게 남기는 기록용 알림
+                // ★ [알림 로직 2] 일반 유저(본인)에게 남기는 기록용 알림 (클릭 시 해당 채팅방 이동용 roomId 포함)
                 // =========================================================
                 String clientTitle = "요청 완료";
                 String clientContent = lawyerName + " 변호사에게 1:1 채팅을 요청하였습니다.";
 
                 Notification clientNoti = Notification.builder()
-                                .userNo(userNo) // 타겟: 일반 유저
+                                .userNo(userNo)
                                 .msgTitle(clientTitle)
                                 .msgContent(clientContent)
+                                .roomId(roomId)
                                 .readYn("N")
                                 .build();
                 notificationRepository.save(clientNoti);
 
-                // 일반 유저 웹소켓 발사
+                // 일반 유저 웹소켓 발사 (roomId 포함해 알림 클릭 시 해당 채팅방으로 이동 가능)
                 Map<String, String> clientNotiData = new HashMap<>();
                 clientNotiData.put("title", clientTitle);
                 clientNotiData.put("content", clientContent);
+                clientNotiData.put("roomId", roomId);
                 messagingTemplate.convertAndSend("/sub/user/" + userNo + "/notification", clientNotiData);
 
                 return roomId;
+        }
+
+        /** 기존 채팅방에 대한 1:1 채팅 요청 알림 전송 (전문가찾기/상담게시판에서 방 생성 시 호출용) */
+        @Transactional
+        public void sendChatRequestNotificationsForRoom(String roomId, Long userNo, Long lawyerNo) {
+                ChatRoom room = chatRoomRepository.findById(roomId)
+                                .orElseThrow(() -> new RuntimeException("존재하지 않는 채팅방입니다."));
+                if (!room.getUserNo().equals(userNo) || !room.getLawyerNo().equals(lawyerNo)) {
+                        throw new RuntimeException("해당 방의 참여자가 아닙니다.");
+                }
+                String clientName = userRepository.findById(userNo)
+                                .map(com.example.backend_main.common.entity.User::getUserNm)
+                                .orElse("의뢰인");
+                String lawyerName = userRepository.findById(lawyerNo)
+                                .map(com.example.backend_main.common.entity.User::getUserNm)
+                                .orElse("담당 변호사");
+
+                // 변호사에게: "OOO님이 1:1 채팅을 요청하였습니다."
+                String lawyerTitle = "상담 요청";
+                String lawyerContent = clientName + "님이 1:1 채팅을 요청하였습니다.";
+                Notification lawyerNoti = Notification.builder()
+                                .userNo(lawyerNo)
+                                .msgTitle(lawyerTitle)
+                                .msgContent(lawyerContent)
+                                .roomId(roomId)
+                                .readYn("N")
+                                .build();
+                notificationRepository.save(lawyerNoti);
+                Map<String, String> lawyerNotiData = new HashMap<>();
+                lawyerNotiData.put("title", lawyerTitle);
+                lawyerNotiData.put("content", lawyerContent);
+                lawyerNotiData.put("roomId", roomId);
+                messagingTemplate.convertAndSend("/sub/user/" + lawyerNo + "/notification", lawyerNotiData);
+
+                // 일반인에게: "OOO 변호사에게 1:1 채팅을 요청하였습니다."
+                String clientTitle = "요청 완료";
+                String clientContent = lawyerName + " 변호사에게 1:1 채팅을 요청하였습니다.";
+                Notification clientNoti = Notification.builder()
+                                .userNo(userNo)
+                                .msgTitle(clientTitle)
+                                .msgContent(clientContent)
+                                .roomId(roomId)
+                                .readYn("N")
+                                .build();
+                notificationRepository.save(clientNoti);
+                Map<String, String> clientNotiData = new HashMap<>();
+                clientNotiData.put("title", clientTitle);
+                clientNotiData.put("content", clientContent);
+                clientNotiData.put("roomId", roomId);
+                messagingTemplate.convertAndSend("/sub/user/" + userNo + "/notification", clientNotiData);
         }
 
         // ------------------------------------------------------------------
@@ -190,6 +247,35 @@ public class ChatService {
                                                 .message(msg.getMessage())
                                                 .msgType(msg.getMsgType())
                                                 .fileUrl(msg.getFileUrl())
+                                                .sendDt(msg.getSendDt())
+                                                .build())
+                                .collect(Collectors.toList());
+        }
+
+        /** 페이지네이션: 최신 size개 또는 before 이전 size개 조회 (스크롤 올릴 때 이전 메시지용) */
+        public List<ChatMessageDTO> getChatHistoryPaged(String roomId, Long reqUserNo, int size, LocalDateTime before) {
+                ChatRoom room = chatRoomRepository.findById(roomId)
+                                .orElseThrow(() -> new RuntimeException("존재하지 않는 채팅방입니다."));
+                if (!room.getUserNo().equals(reqUserNo) && !room.getLawyerNo().equals(reqUserNo)) {
+                        throw new RuntimeException("이 방의 채팅 내역을 볼 권한이 없습니다.");
+                }
+                PageRequest page = PageRequest.of(0, Math.min(size, 100));
+                List<ChatMessage> list;
+                if (before == null) {
+                        list = chatMessageRepository.findByRoomIdOrderBySendDtDesc(roomId, page);
+                        Collections.reverse(list);
+                } else {
+                        list = chatMessageRepository.findByRoomIdAndSendDtBeforeOrderBySendDtDesc(roomId, before, page);
+                        Collections.reverse(list);
+                }
+                return list.stream()
+                                .map(msg -> ChatMessageDTO.builder()
+                                                .roomId(msg.getRoomId())
+                                                .senderNo(msg.getSenderNo())
+                                                .message(msg.getMessage())
+                                                .msgType(msg.getMsgType())
+                                                .fileUrl(msg.getFileUrl())
+                                                .sendDt(msg.getSendDt())
                                                 .build())
                                 .collect(Collectors.toList());
         }
