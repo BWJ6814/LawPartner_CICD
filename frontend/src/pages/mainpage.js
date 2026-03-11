@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-/*
-Link 컴포넌트 사용 : <a> 태그 대신 Link를 사용했습니다. 이는 SPA 환경에서 페이지 전체를 
-새로고침 하지 않고 필요한 부분만 갈아 끼워 속도를 높이기 위함입니다.
-*/
-
-import winterimg from '../common/img/윈터증사.webp'
+import api, { API_BASE_URL } from '../common/api/axiosConfig';
 
 const MainPage = () => {
   const navigate = useNavigate();
   const [searchCategory, setSearchCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [featuredLawyers, setFeaturedLawyers] = useState([]);
+
+  useEffect(() => {
+    api.get('/api/lawyers')
+      .then((res) => setFeaturedLawyers(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setFeaturedLawyers([]));
+  }, []);
 
   // 상단 검색: 카테고리 + 질문 입력 후 AI 페이지로 이동하여 자동 질의
   const handleSearchSubmit = (e) => {
@@ -223,37 +225,46 @@ const MainPage = () => {
             </div>
           </div>
 
-          {/* 우측 변호사 프로필 카드 */}
+          {/* 우측: 최적의 변호사 카드 (실제 API 데이터) */}
           <div className="lg:w-1/2 w-full">
-            <div className="bg-white rounded-3xl p-8 text-gray-900 shadow-2xl relative">
-              <div className="absolute top-6 right-6 text-gray-200 text-6xl opacity-20">
-                <i className="fas fa-quote-right"></i>
-              </div>
-              <div className="flex items-center space-x-6 mb-6">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-blue-50 shadow-md">
-                  <img src={winterimg} alt="김민지 변호사" className="w-full h-full object-cover" />
+            {featuredLawyers.length > 0 ? (
+              <Link to={`/experts/${featuredLawyers[0].userNo}`} className="block">
+                <div className="bg-white rounded-3xl p-8 text-gray-900 shadow-2xl relative hover:shadow-xl transition-shadow">
+                  <div className="absolute top-6 right-6 text-gray-200 text-6xl opacity-20">
+                    <i className="fas fa-quote-right"></i>
+                  </div>
+                  <div className="flex items-center space-x-6 mb-6">
+                    <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-blue-50 shadow-md bg-slate-200">
+                      {featuredLawyers[0].imgUrl ? (
+                        <img src={featuredLawyers[0].imgUrl.startsWith('http') ? featuredLawyers[0].imgUrl : `${API_BASE_URL}${featuredLawyers[0].imgUrl}`} alt={featuredLawyers[0].userNm} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-2xl font-black text-slate-400">{featuredLawyers[0].userNm?.substring(0, 1) || '변'}</div>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-2xl font-black text-gray-900">{featuredLawyers[0].userNm || '변호사'} 변호사</h4>
+                      <p className="text-blue-600 font-bold text-sm mb-1">자격증: 변호사</p>
+                      <p className="text-gray-500 text-xs font-medium">전문분야: {featuredLawyers[0].specialtyStr || '일반 법률 상담'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2 mb-6">
+                    <div className="flex text-yellow-400 text-sm">
+                      {[...Array(5)].map((_, i) => <i key={i} className={`fas fa-star ${i < Math.floor(featuredLawyers[0].rating || 0) ? '' : 'opacity-30'}`}></i>)}
+                    </div>
+                    <span className="font-bold text-gray-900">{(featuredLawyers[0].rating ?? 0).toFixed(1)}</span>
+                    <span className="text-gray-400 text-xs font-medium">(후기 {featuredLawyers[0].reviewCount ?? 0}건)</span>
+                  </div>
+                  <div className="bg-gray-50 p-5 rounded-2xl text-sm border border-gray-100">
+                    <p className="text-gray-600 font-medium">실제 후기 및 평점 데이터를 반영한 추천 변호사입니다. 프로필 보기 →</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-2xl font-black text-gray-900">김민지 변호사</h4>
-                  <p className="text-blue-600 font-bold text-sm mb-1">자격증: 변호사</p>
-                  <p className="text-gray-500 text-xs font-medium">전문분야: 형사/민사 · 교통사고 전문</p>
-                </div>
+              </Link>
+            ) : (
+              <div className="bg-white rounded-3xl p-8 text-gray-500 shadow-2xl text-center">
+                <p className="font-bold">등록된 변호사가 없습니다.</p>
+                <Link to="/experts" className="inline-block mt-4 text-blue-600 font-bold text-sm hover:underline">전문가 찾기</Link>
               </div>
-              
-              <div className="flex items-center space-x-2 mb-6">
-                <div className="flex text-yellow-400 text-sm">
-                  {[...Array(5)].map((_, i) => <i key={i} className="fas fa-star"></i>)}
-                </div>
-                <span className="font-bold text-gray-900">5.0</span>
-                <span className="text-gray-400 text-xs font-medium">(후기 128건수)</span>
-              </div>
-
-              <div className="space-y-3 bg-gray-50 p-5 rounded-2xl text-sm border border-gray-100">
-                <p><span className="font-bold text-gray-900 mr-2">고객 리뷰 1:</span> <span className="text-gray-600">변호사님이 친절하게 잘 변호해주셔서 잘 끝냈습니다.</span></p>
-                <p><span className="font-bold text-gray-900 mr-2">고객 리뷰 2:</span> <span className="text-gray-600">소송 걸려서 막막했는데 변호사님 덕분에 잘 해결되었습니다.</span></p>
-                <p><span className="font-bold text-gray-900 mr-2">고객 리뷰 3:</span> <span className="text-gray-600">억울한 일이 많았는데 변호사님 덕분에 민사로 소송해서 잘 풀렸습니다.</span></p>
-              </div>
-            </div>
+            )}
           </div>
 
         </div>

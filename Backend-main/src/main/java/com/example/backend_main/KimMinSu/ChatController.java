@@ -125,6 +125,27 @@ public class ChatController {
         return ResultVO.ok("상담이 종료되었습니다.", null);
     }
 
+    // 상담 종료 후 의뢰인이 변호사 리뷰 작성
+    @PostMapping("/room/{roomId}/review")
+    public ResultVO<Void> submitReview(
+            @PathVariable String roomId,
+            @RequestHeader("Authorization") String token,
+            @RequestBody java.util.Map<String, Object> body
+    ) {
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
+        Object r = body.get("rating");
+        Object c = body.get("content");
+        double rating = r instanceof Number ? ((Number) r).doubleValue() : Double.parseDouble(String.valueOf(r));
+        String content = c != null ? c.toString() : "";
+        try {
+            chatService.submitReview(roomId, userNo, rating, content);
+            return ResultVO.ok("리뷰가 등록되었습니다.", null);
+        } catch (RuntimeException e) {
+            return ResultVO.fail("BAD_REQUEST", e.getMessage());
+        }
+    }
+
     // 2. 캘린더 일정 확정 (의뢰인이 수락 누를 때 호출) — 요청자가 해당 방 참여자인지 검증
     @PostMapping("/calendar/confirm")
     public ResultVO<Void> confirmSchedule(

@@ -9,6 +9,8 @@ import com.example.backend_main.common.repository.ChatRoomRepository;
 import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.dto.ChatMessageDTO;
+import com.example.backend_main.ky.entity.Review;
+import com.example.backend_main.ky.repository.ReviewRepository;
 import com.example.backend_main.dto.ChatRoomDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +53,7 @@ public class ChatService {
 
         private final org.apache.tika.Tika tika = new org.apache.tika.Tika();
         private final CalendarEventRepository calendarEventRepository;
+        private final ReviewRepository reviewRepository;
 
         @Value("${chat.file.upload-dir}")
         private String uploadDir;
@@ -336,6 +339,27 @@ public class ChatService {
                                 .message("ST05")
                                 .build();
                 messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, statusMsg);
+        }
+
+        /** 상담 종료(ST05)된 방에서 의뢰인이 해당 변호사에게 리뷰 등록 */
+        @Transactional
+        public void submitReview(String roomId, Long writerNo, double rating, String content) {
+                ChatRoom room = chatRoomRepository.findById(roomId)
+                                .orElseThrow(() -> new RuntimeException("방이 없습니다."));
+                if (!room.getUserNo().equals(writerNo))
+                        throw new RuntimeException("의뢰인만 리뷰를 작성할 수 있습니다.");
+                if (!"ST05".equals(room.getProgressCode()))
+                        throw new RuntimeException("상담이 종료된 후에만 리뷰를 작성할 수 있습니다.");
+                Long lawyerNo = room.getLawyerNo();
+                if (lawyerNo == null) throw new RuntimeException("변호사 정보가 없습니다.");
+                Review review = Review.builder()
+                                .lawyerNo(lawyerNo)
+                                .writerNo(writerNo)
+                                .stars(rating)
+                                .content(content != null ? content.trim() : "")
+                                .replyNo(null)
+                                .build();
+                reviewRepository.save(review);
         }
 
         // 2. 캘린더 동시 저장 로직 — 요청자가 해당 방 의뢰인/변호사인지 검증, 날짜 검증

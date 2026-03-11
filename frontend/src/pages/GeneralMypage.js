@@ -254,7 +254,7 @@ const GeneralMyPage = () => {
                 toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             />
 
-            <main className="flex-1 flex flex-col h-full overflow-hidden">
+            <main className="flex-1 min-h-0 flex flex-col">
                 <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
 
                     {/* 환영 문구 - 데이터 바인딩 */}
@@ -340,13 +340,13 @@ const GeneralMyPage = () => {
                         </div>
                     </div>
 
-                    {/* 캘린더 */}
+                    {/* 캘린더 — 고정 높이로 스크롤 한 곳만, 터치/클릭 편하게 */}
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shadow-md mb-8">
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="flex justify-between items-center mb-4">
                             <h3 className="font-bold text-slate-800 text-lg">내 재판/상담 일정</h3>
+                            <p className="text-xs text-slate-400 font-medium">날짜 클릭: 새 일정 · 일정 클릭: 수정/삭제</p>
                         </div>
-
-                        <div className="calendar-container">
+                        <div className="calendar-container min-h-[380px]">
                             <FullCalendar
                                 plugins={[dayGridPlugin, interactionPlugin]}
                                 initialView="dayGridMonth"

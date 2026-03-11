@@ -41,6 +41,11 @@ const ChatList = () => {
     const [toastMsg, setToastMsg] = useState(null);
 
     const [pendingCalendarAction, setPendingCalendarAction] = useState(null);
+    /** 상담 종료 후 의뢰인 리뷰 작성 모달 */
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewContent, setReviewContent] = useState('');
+    const [reviewSubmittedRooms, setReviewSubmittedRooms] = useState(() => new Set());
 
     /**
      * 채팅/캘린더용 날짜+시간 표시 포맷 (날짜·시간만 깔끔하게)
@@ -237,6 +242,20 @@ const ChatList = () => {
         setPendingCalendarAction(dateStr);
     };
 
+    /** 상담 종료 후 변호사 리뷰 제출 */
+    const submitReview = async () => {
+        if (!roomId) return;
+        try {
+            await api.post(`/api/chat/room/${roomId}/review`, { rating: reviewRating, content: reviewContent }, getAuthHeader());
+            setReviewSubmittedRooms(prev => new Set([...prev, roomId]));
+            setShowReviewModal(false);
+            alert('리뷰가 등록되었습니다.');
+        } catch (e) {
+            const msg = e.response?.data?.message || e.message || '리뷰 등록에 실패했습니다.';
+            alert(msg);
+        }
+    };
+
     // ★ [핵심 추가] 모달에서 '예, 확정합니다' 눌렀을 때 실행되는 찐 로직
     const executeCalendarAccept = async () => {
         if (!pendingCalendarAction) return;
@@ -311,7 +330,7 @@ const ChatList = () => {
     });
 
     return (
-        <div className="flex h-screen bg-[#f1f5f9] overflow-hidden font-sans text-slate-900">
+        <div className="flex flex-1 min-h-0 bg-[#f1f5f9] overflow-hidden font-sans text-slate-900">
             <DashboardSidebar isSidebarOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
             <main className="flex-1 flex flex-col bg-slate-100 min-w-0 relative">
 
@@ -380,7 +399,17 @@ const ChatList = () => {
                         ) : (
                             <>
                                 {currentRoomStatus === 'ST01' && <div className="bg-orange-50 p-2 text-center text-orange-600 text-sm font-bold">대기 중입니다. 변호사의 수락을 기다려주세요.</div>}
-                                {currentRoomStatus === 'ST05' && <div className="bg-slate-200 p-2 text-center text-slate-600 text-sm font-bold">종료된 상담입니다.</div>}
+                                {currentRoomStatus === 'ST05' && (
+                                    <div className="bg-slate-100 p-3 flex items-center justify-center gap-4 flex-wrap">
+                                        <span className="text-slate-600 text-sm font-bold">종료된 상담입니다.</span>
+                                        {!isLawyer && currentRoom?.lawyerNo && !reviewSubmittedRooms.has(roomId) && (
+                                            <button onClick={() => { setReviewRating(5); setReviewContent(''); setShowReviewModal(true); }} className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-600 transition shadow-sm">
+                                                <i className="fas fa-star mr-1.5"></i> 변호사 리뷰 작성
+                                            </button>
+                                        )}
+                                        {!isLawyer && reviewSubmittedRooms.has(roomId) && <span className="text-green-600 text-sm font-bold">리뷰를 작성하셨습니다.</span>}
+                                    </div>
+                                )}
 
                                 <div ref={chatContainerRef} className="flex-1 p-8 overflow-y-auto bg-gray-50/50">
                                     {chatLog.map((msg, index) => {
@@ -504,6 +533,30 @@ const ChatList = () => {
                     </div>
                 )}
 
+                {/* 상담 종료 후 의뢰인 → 변호사 리뷰 작성 모달 */}
+                {showReviewModal && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm">
+                        <div className="bg-white p-6 rounded-2xl w-[340px] shadow-2xl">
+                            <h3 className="font-black text-lg mb-3 text-slate-800">변호사 리뷰 작성</h3>
+                            <p className="text-slate-600 text-sm mb-3">상담은 어떠셨나요? 별점과 한마디를 남겨주세요.</p>
+                            <div className="flex gap-1 mb-4">
+                                {[1,2,3,4,5].map((n) => (
+                                    <button key={n} type="button" onClick={() => setReviewRating(n)}
+                                            className={`w-10 h-10 rounded-full border-2 transition ${reviewRating >= n ? 'bg-amber-400 border-amber-500 text-white' : 'bg-slate-100 border-slate-200 text-slate-400'}`}>
+                                        <i className="fas fa-star text-sm"></i>
+                                    </button>
+                                ))}
+                            </div>
+                            <textarea value={reviewContent} onChange={(e) => setReviewContent(e.target.value)}
+                                      placeholder="한마디 남기기 (선택)"
+                                      className="w-full p-3 border border-slate-200 rounded-xl text-sm resize-none h-20 mb-4 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                            <div className="flex gap-2">
+                                <button onClick={() => setShowReviewModal(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold">취소</button>
+                                <button onClick={submitReview} className="flex-1 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600">등록</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 토스트 알림 */}
                 {toastMsg && (

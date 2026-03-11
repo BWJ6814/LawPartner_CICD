@@ -35,8 +35,10 @@ const LayoutManager = ({ auth, onLoginUpdate, children }) => {
     const isAdminRoute = location.pathname.startsWith('/admin');
     const isAiChatRoute = location.pathname === '/ai-chat';
 
-    // ai-chat: 헤더 고정, 메인 영역만 스크롤 (페이지 전체 스크롤 방지)
-    const isFixedLayout = isAiChatRoute;
+    // ai-chat / 채팅 / 일반마이페이지: 고정 높이 + 메인만 스크롤 (카톡·챗GPT 방식)
+    const isChatRoute = location.pathname.startsWith('/chatList') || location.pathname.startsWith('/lawyer-chat');
+    const isGeneralMypageRoute = location.pathname.startsWith('/general-mypage');
+    const isFixedLayout = isAiChatRoute || isChatRoute || isGeneralMypageRoute;
 
     return (
         <div className={`flex flex-col bg-gray-50 text-slate-900 font-sans ${isFixedLayout ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
