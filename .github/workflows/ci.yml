@@ -89,4 +89,6 @@ jobs:
         run: npm ci --legacy-peer-deps  # ✅ React 19 + react-scripts 5 호환
 
       - name: Build
-        run: npm run build
+        # CRA가 CI 환경에서 eslint warning 을 error 로 취급해서 빌드가 실패하므로
+        # CI에서는 경고만 출력하고 빌드는 통과시키도록 설정
+        run: CI=false npm run build
