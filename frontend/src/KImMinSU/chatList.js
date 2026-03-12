@@ -4,6 +4,7 @@ import DashboardSidebar from '../common/components/DashboardSidebar';
 import api, { API_BASE_URL } from '../common/api/axiosConfig';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
+import './chatList.css';
 
 const ChatList = () => {
     const { roomId } = useParams();
@@ -41,6 +42,18 @@ const ChatList = () => {
     const [toastMsg, setToastMsg] = useState(null);
 
     const [pendingCalendarAction, setPendingCalendarAction] = useState(null);
+    /** 상담 종료 후 의뢰인 리뷰 작성 모달 */
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewContent, setReviewContent] = useState('');
+    const [reviewSubmittedRooms, setReviewSubmittedRooms] = useState(() => new Set());
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+    /** 스크롤 시 이전 메시지 로드: 더 있을지 여부, 로딩 중, 최초 로드 완료 */
+    const [hasMoreOlder, setHasMoreOlder] = useState(true);
+    const [loadingOlder, setLoadingOlder] = useState(false);
+    const [initialHistoryDone, setInitialHistoryDone] = useState(false);
+    const HISTORY_PAGE_SIZE = 40;
 
     /**
      * 채팅/캘린더용 날짜+시간 표시 포맷 (날짜·시간만 깔끔하게)
@@ -110,17 +123,28 @@ const ChatList = () => {
         }
     }, [roomId, rooms, userNo]);
 
-    // 4. 방 변경 시 과거 내역 + 웹소켓 연결 (헤더 추가 완료)
+    // 4. 방 변경 시 과거 내역(페이지네이션) + 웹소켓 연결 (헤더 추가 완료)
     useEffect(() => {
         if (!roomId) return;
 
         setChatLog([]);
         setWsConnected(false);
+        setInitialHistoryDone(false);
+        setHasMoreOlder(true);
 
-        // ★ [핵심 2] 여기서 토큰 안 보내서 공통 헤더 누락 에러 났던 거임
-        api.get(`/api/chat/history/${roomId}`, getAuthHeader())
-            .then(res => setChatLog(res.data.data || []))
-            .catch(() => setChatLog([]));
+        // 최신 HISTORY_PAGE_SIZE개만 먼저 로드 (스크롤 올리면 이전 메시지 추가 로드)
+        api.get(`/api/chat/history/${roomId}`, { ...getAuthHeader(), params: { size: HISTORY_PAGE_SIZE } })
+            .then(res => {
+                const list = res.data.data || [];
+                setChatLog(list);
+                setHasMoreOlder(list.length >= HISTORY_PAGE_SIZE);
+                setInitialHistoryDone(true);
+            })
+            .catch(() => {
+                setChatLog([]);
+                setInitialHistoryDone(true);
+                setHasMoreOlder(false);
+            });
 
         api.post(`/api/chat/room/${roomId}/read`, {}, getAuthHeader()).catch(() => {});
 
@@ -237,6 +261,23 @@ const ChatList = () => {
         setPendingCalendarAction(dateStr);
     };
 
+    /** 상담 종료 후 변호사 리뷰 제출 (한 번만 등록되도록 버튼 비활성화) */
+    const submitReview = async () => {
+        if (!roomId || isSubmittingReview) return;
+        setIsSubmittingReview(true);
+        try {
+            await api.post(`/api/chat/room/${roomId}/review`, { rating: reviewRating, content: reviewContent }, getAuthHeader());
+            setReviewSubmittedRooms(prev => new Set([...prev, roomId]));
+            setShowReviewModal(false);
+            alert('리뷰가 등록되었습니다.');
+        } catch (e) {
+            const msg = e.response?.data?.message || e.message || '리뷰 등록에 실패했습니다.';
+            alert(msg);
+        } finally {
+            setIsSubmittingReview(false);
+        }
+    };
+
     // ★ [핵심 추가] 모달에서 '예, 확정합니다' 눌렀을 때 실행되는 찐 로직
     const executeCalendarAccept = async () => {
         if (!pendingCalendarAction) return;
@@ -297,12 +338,56 @@ const ChatList = () => {
         recognitionRef.current = recognition;
     };
 
+    // 새 메시지 추가 시 맨 아래로 스크롤 (이전 메시지 로드로 prepend 시에는 스크롤 유지)
+    const isPrependRef = useRef(false);
     useEffect(() => {
-        if (chatContainerRef.current) {
-            const { scrollHeight, clientHeight } = chatContainerRef.current;
-            chatContainerRef.current.scrollTo({ top: scrollHeight - clientHeight, behavior: "smooth" });
+        if (!chatContainerRef.current) return;
+        if (isPrependRef.current) {
+            isPrependRef.current = false;
+            return;
         }
+        const el = chatContainerRef.current;
+        el.scrollTo({ top: el.scrollHeight - el.clientHeight, behavior: "smooth" });
     }, [chatLog]);
+
+    /** 스크롤 맨 위 근처에서 이전 메시지 더 불러오기 */
+    const loadOlderMessages = useCallback(() => {
+        if (!roomId || !hasMoreOlder || loadingOlder || chatLog.length === 0) return;
+        const oldest = chatLog[0];
+        let before = null;
+        if (typeof oldest.sendDt === 'string') before = oldest.sendDt;
+        else if (Array.isArray(oldest.sendDt) && oldest.sendDt.length >= 5)
+            before = `${oldest.sendDt[0]}-${String(oldest.sendDt[1]).padStart(2,'0')}-${String(oldest.sendDt[2]).padStart(2,'0')}T${String(oldest.sendDt[3]).padStart(2,'0')}:${String(oldest.sendDt[4]).padStart(2,'0')}:00`;
+        if (!before) return;
+        setLoadingOlder(true);
+        const prevScrollHeight = chatContainerRef.current ? chatContainerRef.current.scrollHeight : 0;
+        api.get(`/api/chat/history/${roomId}`, { ...getAuthHeader(), params: { size: HISTORY_PAGE_SIZE, before } })
+            .then(res => {
+                const list = res.data.data || [];
+                if (list.length > 0) {
+                    isPrependRef.current = true;
+                    setChatLog(prev => [...list, ...prev]);
+                    setHasMoreOlder(list.length >= HISTORY_PAGE_SIZE);
+                } else {
+                    setHasMoreOlder(false);
+                }
+                requestAnimationFrame(() => {
+                    if (chatContainerRef.current && prevScrollHeight > 0) {
+                        const newScrollHeight = chatContainerRef.current.scrollHeight;
+                        chatContainerRef.current.scrollTop = newScrollHeight - prevScrollHeight;
+                    }
+                });
+            })
+            .catch(() => setHasMoreOlder(false))
+            .finally(() => setLoadingOlder(false));
+    }, [roomId, hasMoreOlder, loadingOlder, chatLog, getAuthHeader]);
+
+    /** 채팅 영역 스크롤 핸들러: 맨 위 근처면 이전 메시지 로드 */
+    const handleChatScroll = useCallback(() => {
+        const el = chatContainerRef.current;
+        if (!el || !initialHistoryDone) return;
+        if (el.scrollTop < 120 && hasMoreOlder && !loadingOlder) loadOlderMessages();
+    }, [initialHistoryDone, hasMoreOlder, loadingOlder, loadOlderMessages]);
 
     const filteredRooms = rooms.filter(room => {
         const matchStatus = filterStatus === 'ALL' || room.progressCode === filterStatus;
@@ -311,11 +396,11 @@ const ChatList = () => {
     });
 
     return (
-        <div className="flex h-screen bg-[#f1f5f9] overflow-hidden font-sans text-slate-900">
+        <div className="flex flex-1 min-h-0 bg-[#f1f5f9] overflow-hidden font-sans text-slate-900" style={{ height: '100%', minHeight: 0 }}>
             <DashboardSidebar isSidebarOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-            <main className="flex-1 flex flex-col bg-slate-100 min-w-0 relative">
+            <main className="flex-1 flex flex-col min-h-0 bg-slate-100 min-w-0 relative" style={{ minHeight: 0, overflow: 'hidden', height: '100%' }}>
 
-                <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm z-10 shrink-0">
+                <header className="h-20 shrink-0 flex-none bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm z-10">
                     <div className="flex items-center gap-3">
                         <h2 className="text-lg font-black text-navy-dark tracking-tight">채팅 목록</h2>
                         {roomId && (
@@ -333,7 +418,7 @@ const ChatList = () => {
                     )}
                 </header>
 
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex min-h-0 overflow-hidden" style={{ minHeight: 0, flex: '1 1 0%' }}>
                     <section className="w-80 bg-white border-r border-slate-200 flex flex-col shadow-inner shrink-0 hidden lg:flex">
                         <div className="p-6 border-b border-slate-100 bg-white space-y-4">
                             <div className="relative">
@@ -374,50 +459,83 @@ const ChatList = () => {
                         </div>
                     </section>
 
-                    <section className="flex-1 flex flex-col bg-white min-w-0 relative">
+                    <section className="flex-1 flex flex-col min-h-0 min-w-0 bg-white relative overflow-hidden" style={{ minHeight: 0, flex: '1 1 0%', display: 'flex', flexDirection: 'column' }}>
                         {!roomId ? (
                             <div className="flex-1 flex items-center justify-center bg-slate-50 font-bold text-slate-400">방을 선택해주세요.</div>
                         ) : (
                             <>
-                                {currentRoomStatus === 'ST01' && <div className="bg-orange-50 p-2 text-center text-orange-600 text-sm font-bold">대기 중입니다. 변호사의 수락을 기다려주세요.</div>}
-                                {currentRoomStatus === 'ST05' && <div className="bg-slate-200 p-2 text-center text-slate-600 text-sm font-bold">종료된 상담입니다.</div>}
+                                {currentRoomStatus === 'ST01' && <div className="flex-none bg-orange-50 p-2 text-center text-orange-600 text-sm font-bold">대기 중입니다. 변호사의 수락을 기다려주세요.</div>}
+                                {currentRoomStatus === 'ST05' && (
+                                    <div className="flex-none bg-slate-100 p-3 flex items-center justify-center gap-4 flex-wrap border-b border-slate-200">
+                                        <span className="text-slate-600 text-sm font-bold">종료된 상담입니다.</span>
+                                        {!isLawyer && currentRoom?.lawyerNo && !reviewSubmittedRooms.has(roomId) && (
+                                            <button onClick={() => { setReviewRating(5); setReviewContent(''); setShowReviewModal(true); }} className="bg-[#1e3a5f] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#2d4a6f] transition shadow-sm">
+                                                <i className="fas fa-star mr-1.5"></i> 변호사 리뷰 작성
+                                            </button>
+                                        )}
+                                        {!isLawyer && reviewSubmittedRooms.has(roomId) && <span className="text-slate-600 text-sm font-bold">리뷰를 작성하셨습니다.</span>}
+                                    </div>
+                                )}
 
-                                <div ref={chatContainerRef} className="flex-1 p-8 overflow-y-auto bg-gray-50/50">
+                                {/* 채팅 내역 스크롤 영역 - 반드시 스크롤 가능하도록 */}
+                                <div
+                                    ref={chatContainerRef}
+                                    className="chat-scroll-area flex-1 min-h-0 overflow-x-hidden px-4 sm:px-6 py-4 bg-[#e8ecf1]"
+                                    style={{ flex: '1 1 0%', overflowY: 'auto', minHeight: 0, WebkitOverflowScrolling: 'touch' }}
+                                    onScroll={handleChatScroll}
+                                >
+                                    {loadingOlder && (
+                                        <div className="flex justify-center py-3 text-slate-500 text-xs font-semibold">
+                                            <i className="fas fa-spinner fa-spin mr-1.5"></i> 이전 메시지 불러오는 중...
+                                        </div>
+                                    )}
+                                    {!hasMoreOlder && chatLog.length > 0 && (
+                                        <div className="text-center py-2 text-slate-500 text-[11px] font-semibold">처음 메시지입니다.</div>
+                                    )}
+                                    {chatLog.length === 0 && initialHistoryDone && !loadingOlder && (
+                                        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                                            <div className="w-16 h-16 rounded-full bg-slate-200/80 flex items-center justify-center mb-3">
+                                                <i className="fas fa-comments text-2xl text-slate-400"></i>
+                                            </div>
+                                            <p className="text-sm font-bold">아직 메시지가 없어요</p>
+                                            <p className="text-xs mt-1">첫 메시지를 보내 보세요.</p>
+                                        </div>
+                                    )}
                                     {chatLog.map((msg, index) => {
                                         const isMyMessage = Number(msg.senderNo) === Number(userNo);
                                         const profileImg = msg.profileUrl || (currentRoom && !isMyMessage ? currentRoom.targetProfileImg : null);
                                         return (
-                                            <div key={index} className={`flex items-start space-x-3 mb-6 ${isMyMessage ? 'justify-end' : ''}`}>
+                                            <div key={index} className={`flex items-end gap-2 mb-4 ${isMyMessage ? 'flex-row-reverse' : 'flex-row'}`}>
                                                 {!isMyMessage && (
                                                     profileImg
-                                                        ? <img src={profileImg} alt="profile" className="w-10 h-10 rounded-full object-cover shadow-sm shrink-0 border border-slate-200" />
-                                                        : <div className="w-10 h-10 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-600 text-[13px] font-black shadow-sm shrink-0">{targetName ? targetName.substring(0, 1) : '상'}</div>
+                                                        ? <img src={profileImg} alt="profile" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-sm" />
+                                                        : <div className="w-9 h-9 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 text-xs font-bold shrink-0 border-2 border-white shadow-sm">{targetName ? targetName.substring(0, 1) : '상'}</div>
                                                 )}
-                                                <div className={`space-y-1 ${isMyMessage ? 'flex flex-col items-end' : ''}`}>
-                                                    {!isMyMessage && <p className="text-[11px] font-bold text-slate-500 px-1">{msg.senderName || targetName}</p>}
-                                                    <div className={`p-3.5 rounded-2xl text-[13px] font-medium shadow-sm border ${isMyMessage ? 'bg-navy-main text-white rounded-tr-none' : 'bg-white text-slate-800 rounded-tl-none'}`}>
+                                                <div className={`max-w-[75%] sm:max-w-[65%] ${isMyMessage ? 'items-end' : 'items-start'} flex flex-col`}>
+                                                    {!isMyMessage && <span className="text-[11px] font-bold text-slate-500 mb-0.5 px-1">{msg.senderName || targetName}</span>}
+                                                    <div className={`px-4 py-2.5 rounded-2xl text-[13px] leading-relaxed ${isMyMessage ? 'bg-[#1e3a5f] text-white rounded-br-md shadow-md' : 'bg-white text-slate-800 rounded-bl-md shadow-sm border border-slate-100'}`}>
                                                         {msg.msgType === 'CALENDAR' ? (
-                                                            <div className="flex flex-col items-center bg-white text-slate-800 p-4 rounded-xl border border-blue-100 min-w-[200px]">
-                                                                <div className="w-9 h-9 bg-blue-50 rounded-full flex items-center justify-center mb-2">
-                                                                    <i className="fas fa-calendar-day text-blue-500 text-sm"></i>
+                                                            <div className={`flex flex-col items-center p-3 rounded-xl min-w-[180px] ${isMyMessage ? 'bg-white/15 text-white' : 'bg-slate-50 text-slate-800 border border-slate-100'}`}>
+                                                                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-2">
+                                                                    <i className="fas fa-calendar-day text-sm"></i>
                                                                 </div>
-                                                                <p className="text-[12px] font-bold text-slate-500 mb-0.5">상담 일정 제안</p>
-                                                                <p className="font-black text-[15px] text-blue-900 tracking-tight">{formatDateTimeClean(msg.message)}</p>
+                                                                <p className="text-[11px] font-bold opacity-90 mb-0.5">상담 일정 제안</p>
+                                                                <p className="font-bold text-sm">{formatDateTimeClean(msg.message)}</p>
                                                                 {!isLawyer && !isMyMessage && currentRoomStatus === 'ST02' && (
-                                                                    <button onClick={() => openCalendarConfirmModal(msg.message)} className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg shadow-sm hover:bg-blue-700 text-[12px] font-black transition">
+                                                                    <button onClick={() => openCalendarConfirmModal(msg.message)} className="mt-2 w-full bg-blue-600 text-white py-1.5 rounded-lg text-[11px] font-bold hover:bg-blue-700 transition">
                                                                         수락하기
                                                                     </button>
                                                                 )}
                                                             </div>
                                                         ) : msg.msgType === 'FILE' ? (
-                                                            <div className="flex flex-col space-y-2">
+                                                            <div className="flex flex-col space-y-1.5">
                                                                 {msg.message && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.message)
-                                                                    ? <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer"><img src={msg.fileUrl} alt={msg.message} className="max-w-xs rounded-lg shadow-sm border border-slate-200 cursor-pointer hover:opacity-80 transition" /></a>
-                                                                    : <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline font-bold text-blue-500"><i className="fas fa-file-alt text-lg"></i><span className="truncate">{msg.message}</span></a>
+                                                                    ? <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer"><img src={msg.fileUrl} alt={msg.message} className="max-w-[220px] rounded-lg border border-slate-200/50 cursor-pointer hover:opacity-90 transition" /></a>
+                                                                    : <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline font-bold opacity-90"><i className="fas fa-file-alt"></i><span className="truncate max-w-[180px]">{msg.message}</span></a>
                                                                 }
-                                                                <a href={`${msg.fileUrl}?isDownload=true`} className="text-[11px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md w-max hover:bg-slate-200 transition font-black flex items-center gap-1.5 shadow-sm mt-1"><i className="fas fa-download"></i> 저장하기</a>
+                                                                <a href={`${msg.fileUrl}?isDownload=true`} className="text-[10px] opacity-80 hover:opacity-100 flex items-center gap-1 w-max"><i className="fas fa-download"></i> 저장</a>
                                                             </div>
-                                                        ) : msg.message}
+                                                        ) : <span className="break-words">{msg.message}</span>}
                                                     </div>
                                                 </div>
                                             </div>
@@ -425,15 +543,16 @@ const ChatList = () => {
                                     })}
                                 </div>
 
-                                <div className="p-6 border-t border-slate-100 bg-white">
-                                    <div className="relative bg-slate-50 rounded-2xl p-4 border border-slate-200">
+                                {/* 채팅 입력창 - 항상 하단에 고정 표시 */}
+                                <div className="flex-none shrink-0 w-full p-4 border-t-2 border-slate-200 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.08)]" style={{ flexShrink: 0 }}>
+                                    <div className="relative bg-slate-100 rounded-2xl p-3 border border-slate-200 max-w-4xl mx-auto">
                                         <textarea disabled={currentRoomStatus === 'ST05'}
                                                   placeholder={currentRoomStatus === 'ST05' ? "상담이 종료되어 채팅할 수 없습니다." : "메시지를 입력하세요."}
-                                                  className="w-full bg-transparent border-none outline-none text-sm font-medium resize-none disabled:opacity-50"
+                                                  className="w-full bg-transparent border-none outline-none text-sm font-medium resize-none disabled:opacity-50 min-h-[44px]"
                                                   rows="2" value={message} onChange={(e) => setMessage(e.target.value)}
                                                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
                                         />
-                                        <div className="flex justify-between items-center mt-3 border-t border-slate-200 pt-3">
+                                        <div className="flex justify-between items-center mt-2 border-t border-slate-200 pt-2">
                                             <div className="flex space-x-5 text-slate-400">
                                                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" />
                                                 <button onClick={() => fileInputRef.current.click()} disabled={currentRoomStatus === 'ST05' || isUploading} className={`transition ${isUploading ? 'text-gray-300 cursor-wait' : 'hover:text-blue-600'}`}>
@@ -449,7 +568,7 @@ const ChatList = () => {
                                                 )}
                                             </div>
                                             <button onClick={() => handleSendMessage()} disabled={currentRoomStatus === 'ST05' || !message.trim() || !wsConnected}
-                                                    className="bg-navy-main text-white px-6 py-2 rounded-xl text-xs font-black disabled:bg-slate-300 transition">전송</button>
+                                                    className="bg-navy-main text-white px-4 py-1.5 rounded-lg text-xs font-black disabled:bg-slate-300 transition">전송</button>
                                         </div>
                                     </div>
                                 </div>
@@ -504,6 +623,37 @@ const ChatList = () => {
                     </div>
                 )}
 
+                {/* 상담 종료 후 의뢰인 → 변호사 리뷰 작성 모달 (페이지 베이스 색상) */}
+                {showReviewModal && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm">
+                        <div className="bg-white p-6 rounded-2xl w-[340px] shadow-2xl border border-slate-200">
+                            <h3 className="font-black text-lg mb-3 text-slate-800">변호사 리뷰 작성</h3>
+                            <p className="text-slate-600 text-sm mb-3">상담은 어떠셨나요? 별점과 한마디를 남겨주세요.</p>
+                            <div className="flex gap-1 mb-4">
+                                {[1,2,3,4,5].map((n) => (
+                                    <button key={n} type="button" onClick={() => setReviewRating(n)}
+                                            className={`w-10 h-10 rounded-full border-2 transition ${reviewRating >= n ? 'bg-[#1e3a5f] border-[#1e3a5f] text-white' : 'bg-slate-100 border-slate-200 text-slate-400'}`}>
+                                        <i className="fas fa-star text-sm"></i>
+                                    </button>
+                                ))}
+                            </div>
+                            <textarea value={reviewContent} onChange={(e) => setReviewContent(e.target.value)}
+                                      placeholder="한마디 남기기 (선택)"
+                                      disabled={isSubmittingReview}
+                                      className="w-full p-3 border border-slate-200 rounded-xl text-sm resize-none h-20 mb-4 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] disabled:opacity-60" />
+                            <div className="flex gap-2">
+                                <button onClick={() => setShowReviewModal(false)} disabled={isSubmittingReview} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 disabled:opacity-60">취소</button>
+                                <button onClick={submitReview} disabled={isSubmittingReview} className="flex-1 py-2.5 bg-[#1e3a5f] text-white rounded-xl text-sm font-bold hover:bg-[#2d4a6f] disabled:opacity-60 disabled:cursor-not-allowed">
+                                    {isSubmittingReview ? (
+                                        <span><i className="fas fa-spinner fa-spin mr-1.5"></i>등록 중...</span>
+                                    ) : (
+                                        '등록'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 토스트 알림 */}
                 {toastMsg && (

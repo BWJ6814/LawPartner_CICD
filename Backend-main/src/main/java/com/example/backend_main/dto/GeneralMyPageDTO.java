@@ -36,6 +36,9 @@ public class GeneralMyPageDTO {
     // 5. 캘린더 일정
     private List<CalendarEventDTO> calendarEvents;
 
+    // 6. 내가 적은 리뷰 (변호사 상담 후 작성)
+    private List<MyReviewDTO> myReviews;
+
     @Data
     public static class ConsultationItemDTO {
         private String roomId;
@@ -62,6 +65,17 @@ public class GeneralMyPageDTO {
         private String start;  // YYYY-MM-DD
         @NotBlank(message = "색상을 입력해주세요.")
         private String backgroundColor; // 색상 코드
+    }
+
+    /** 내가 적은 리뷰 (변호사 상담 후 작성) */
+    @Data
+    public static class MyReviewDTO {
+        private Long reviewNo;
+        private Long lawyerNo;
+        private String lawyerName;
+        private Double stars;
+        private String content;
+        private String regDate;
     }
 
     // 프로필 조회 응답

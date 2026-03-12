@@ -402,9 +402,11 @@ export default function ExpertsPage() {
             });
 
             const room = res.data;
-            const roomId = room?.id ?? room?.roomId;
+            const roomId = room?.roomId ?? room?.id;
 
             if (roomId) {
+                // 변호사·의뢰인에게 1:1 채팅 요청 알림 전송 (클릭 시 해당 채팅방 이동)
+                api.post("/api/chat/room/notify", { roomId, userNo, lawyerNo }).catch(() => {});
                 navigate(`/chatList/${roomId}`);
             } else {
                 navigate("/chatList");
