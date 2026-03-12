@@ -49,7 +49,12 @@ const AIChatPage = () => {
         const logs = Array.isArray(res.data) ? res.data : [];
         const mapped = logs.flatMap(l => ([
             { text: l.question, isUser: true },
-            { text: l.answer, isUser: false, sources: [] }
+            {
+                text: l.answer,
+                isUser: false,
+                // 백엔드에서 내려주는 relatedCases(List<String>)를 그대로 사용
+                sources: Array.isArray(l.relatedCases) ? l.relatedCases : []
+            }
         ]));
         setMessages(mapped.length > 0 ? mapped : [
             { text: "안녕하세요. LAW PARTNER 입니다.\n법률 문제에 대해 판례 분석과 법적 절차를 기반으로 답변해 드립니다.\n어떤 도움이 필요하신가요?", isUser: false }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,12 @@ public class AiChatController {
             m.put("question", l.getQuestion());
             m.put("answer", l.getAnswer());
             m.put("regDt", l.getRegDt());
+            // RELATED_CASES(CLOB)에 직렬화되어 저장된 판례들을 다시 List<String>으로 풀어서 전달
+            String relatedCasesStr = l.getRelatedCases();
+            List<String> relatedCases = (relatedCasesStr == null || relatedCasesStr.isBlank())
+                    ? List.of()
+                    : Arrays.asList(relatedCasesStr.split("\\n\\n"));
+            m.put("relatedCases", relatedCases);
             return m;
         }).toList();
         return ResponseEntity.ok(result);
@@ -136,6 +143,9 @@ public class AiChatController {
                     .user(user)
                     .question(question)
                     .answer(answer)
+                    .relatedCases(relatedCases == null || relatedCases.isEmpty()
+                            ? null
+                            : String.join("\n\n", relatedCases))
                     .tokenUsage(0L)
                     .build();
             aiChatLogRepository.save(log);
