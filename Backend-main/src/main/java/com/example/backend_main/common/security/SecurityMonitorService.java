@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -69,7 +72,16 @@ public class SecurityMonitorService {
             String message = String.format("🚨 *[긴급 보안 알림]* 🚨\n- *발생 IP:* %s\n- *에러 유형:* %s\n- *내용:* 1분 내 50회 이상 비정상 요청 감지. DDoS 공격 또는 매크로 봇이 의심됩니다. 서버 로그를 확인하세요!", ip, errorType);
             Map<String, String> payload = Map.of("text", message);
 
-            restTemplate.postForEntity(slackWebhookUrl, payload, String.class);
+            // 헤더에 에러코드·출처 추가 (관리자/모니터링에서 필터링·라우팅 시 활용)
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-Source", "BATCH");           // 배치/스케줄러 발신 구분
+            headers.set("X-Error-Code", errorType != null ? errorType : "UNKNOWN");
+            headers.set("X-Alert-IP", ip != null ? ip : "");
+            headers.set("X-Service", "LAWPARTNER-SECURITY");
+
+            HttpEntity<Map<String, String>> request = new HttpEntity<>(payload, headers);
+            restTemplate.postForEntity(slackWebhookUrl, request, String.class);
         } catch (Exception e) {
             log.error("슬랙 알림 전송 실패: {}", e.getMessage());
         }
