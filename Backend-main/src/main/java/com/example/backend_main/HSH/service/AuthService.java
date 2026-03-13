@@ -21,7 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -125,10 +124,10 @@ public class AuthService {
 
         // 1. 유저 찾기 및 비번 대조 (ErrorCode.INVALID_INPUT 또는 별도 LOGIN_FAIL 사용)
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_INPUT, "아이디 또는 비밀번호가 일치하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, "아이디 또는 비밀번호가 일치하지 않습니다."));
 
         if (!passwordEncoder.matches(password, user.getUserPw())) {
-            throw new CustomException(ErrorCode.INVALID_INPUT, "아이디 또는 비밀번호가 일치하지 않습니다.");
+            throw new CustomException(ErrorCode.INVALID_PASSWORD, "아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
         // 2. 상태 검사 (ErrorCode.ACCESS_DENIED 또는 ILLEGAL_STATE)
@@ -210,7 +209,7 @@ public class AuthService {
 
         // 쿠키가 없거나 유효하지 않으면 컷!
         if (oldRefreshToken == null || !jwtTokenProvider.validateToken(oldRefreshToken)) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED, "세션이 만료되었습니다. 다시 로그인해주세요.");
+            throw new CustomException(ErrorCode.EXPIRED_TOKEN, "세션이 만료되었습니다. 다시 로그인해주세요.");
         }
 
         // 2. 토큰에서 이메일 추출
@@ -219,10 +218,10 @@ public class AuthService {
         // 3. DB에서 유저 대조
         String emailHash = hashUtil.generateHash(email);
         User user = userRepository.findByEmailHash(emailHash)
-                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "사용자를 찾을 수 없습니다.")); // ✅ 수정
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
         if ("S03".equals(user.getStatusCode()) || "S99".equals(user.getStatusCode())) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED, "이용이 정지되거나 탈퇴한 계정입니다."); // ✅ 수정
+            throw new CustomException(ErrorCode.ACCESS_DENIED, "이용이 정지되거나 탈퇴한 계정입니다.");
         }
 
         // 4. 저장소 토큰 대조 (탈취 방지)
@@ -230,24 +229,27 @@ public class AuthService {
 
         if (!savedToken.getTokenValue().equals(oldRefreshToken)) {
             refreshTokenService.deleteToken(savedToken);
-            throw new CustomException(ErrorCode.ACCESS_DENIED, "비정상적인 접근이 감지되었습니다. 다시 로그인해주세요."); // ✅ 수정
+            throw new CustomException(ErrorCode.INVALID_TOKEN, "비정상적인 접근이 감지되었습니다. 다시 로그인해주세요.");
         }
 
-        // 5. 권한 객체 생성
+        // 5. ★★★ 토큰 검증 성공 후, 즉시 기존 토큰을 무효화(삭제)합니다.
+        // 이렇게 하면 동일한 토큰으로 동시에 재발급을 요청하는 경쟁 상태(Race Condition)를 막을 수 있습니다.
+        refreshTokenService.deleteToken(savedToken);
+
+        // 6. 권한 객체 생성
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
                 new SimpleGrantedAuthority(user.getRoleCode())
         );
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(email, null, authorities);
 
-        // 6. 새로운 토큰 세트 발급
+        // 7. 새로운 토큰 세트 발급
         TokenDTO newTokenDTO = jwtTokenProvider.createToken(
                 auth, user.getUserNo(), user.getUserNm(), user.getNickNm()
         );
 
-        // 7. RTR (Refresh Token Rotation) - 기존 토큰 폐기 후 새 토큰 덮어쓰기
-        LocalDateTime newExpireDt = LocalDateTime.now().plusDays(7);
-        savedToken.updateToken(newTokenDTO.getRefreshToken(), newExpireDt);
+        // 8. RTR (Refresh Token Rotation) - 새로 발급된 리프레시 토큰을 DB에 저장합니다.
+        refreshTokenService.saveRefreshToken(user.getUserNo(), newTokenDTO.getRefreshToken());
 
         return newTokenDTO;
     }

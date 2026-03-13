@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -37,16 +38,20 @@ public class FileService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
+    // ★★★ 허용할 파일 확장자 및 MIME 타입 목록 (보안 강화)
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("pdf", "jpg", "jpeg", "png");
+    private static final List<String> ALLOWED_MIME_TYPES = Arrays.asList("application/pdf", "image/jpeg", "image/png");
 
     @Transactional
     public LawyerDocument storeFile(MultipartFile file, Long userNo, String docType) {
         User user = userRepository.findById(userNo)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+        // ★★★ 1. getOriginalFilename() null 체크 강화
+        String originalFileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename(), "파일 이름이 없습니다."));
 
         try {
+            // 2. 기본 유효성 검사
             if (file.isEmpty()) {
                 throw new CustomException(ErrorCode.FILE_UPLOAD_ERROR, "빈 파일은 업로드할 수 없습니다.");
             }
@@ -54,16 +59,23 @@ public class FileService {
                 throw new CustomException(ErrorCode.FILE_UPLOAD_ERROR, "파일 이름에 부적절한 문자가 포함되어 있습니다.");
             }
 
+            // ★★★ 3. 확장자 및 MIME 타입 이중 검증
             String extension = StringUtils.getFilenameExtension(originalFileName);
-            if (!isAllowedExtension(extension)) {
-                throw new CustomException(ErrorCode.FILE_UPLOAD_ERROR, "허용되지 않는 파일 형식입니다. (허용: " + ALLOWED_EXTENSIONS + ")");
+            String mimeType = file.getContentType();
+
+            if (!isAllowed(extension, mimeType)) {
+                throw new CustomException(ErrorCode.FILE_UPLOAD_ERROR, "허용되지 않는 파일 형식입니다.");
             }
 
+            // 4. 서버에 저장될 파일명 생성 (UUID 사용)
             String savedName = UUID.randomUUID().toString() + "." + extension;
             Path targetLocation = Paths.get(uploadDir).resolve(savedName);
+
+            // 5. 파일 저장
             Files.createDirectories(targetLocation.getParent());
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
+            // 6. DB에 메타데이터 저장
             LawyerDocument doc = LawyerDocument.builder()
                     .user(user)
                     .docType(docType)
@@ -89,12 +101,14 @@ public class FileService {
         try {
             Path filePath = Paths.get(doc.getFilePath()).resolve(doc.getSavedName()).normalize();
             Resource resource = new UrlResource(filePath.toUri());
-            if (resource.exists()) {
+            if (resource.exists() && resource.isReadable()) {
                 return resource;
             } else {
+                log.error("파일을 찾을 수 없거나 읽을 수 없습니다. 경로: {}", filePath);
                 throw new CustomException(ErrorCode.DATA_NOT_FOUND, "파일을 찾을 수 없습니다.");
             }
         } catch (MalformedURLException ex) {
+            log.error("파일 경로가 잘못되었습니다. 경로: {}", doc.getFilePath(), ex);
             throw new CustomException(ErrorCode.DATA_NOT_FOUND, "파일 경로가 잘못되었습니다.");
         }
     }
@@ -105,7 +119,11 @@ public class FileService {
                 .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "파일 정보를 찾을 수 없습니다."));
     }
 
-    private boolean isAllowedExtension(String extension) {
-        return extension != null && ALLOWED_EXTENSIONS.contains(extension.toLowerCase());
+    // ★★★ 확장자와 MIME 타입을 함께 검증하는 헬퍼 메서드
+    private boolean isAllowed(String extension, String mimeType) {
+        if (extension == null || mimeType == null) {
+            return false;
+        }
+        return ALLOWED_EXTENSIONS.contains(extension.toLowerCase()) && ALLOWED_MIME_TYPES.contains(mimeType.toLowerCase());
     }
 }

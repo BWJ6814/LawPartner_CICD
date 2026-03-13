@@ -3,6 +3,7 @@ package com.example.backend_main.common.security;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -25,10 +26,10 @@ public class SecurityMonitorService {
 
     private final RestTemplate restTemplate = new RestTemplate(); // HTTP 요청용
 
-    /**
-     * [도입 원인] 해커나 봇(Bot)이 짧은 시간에 악의적인 요청을 쏟아부을 때 이를 감지하기 위함
-     * [기대 결과] 특정 IP가 1분 안에 50회 이상 에러를 유발하면 즉시 슬랙 알림 발송
-     */
+    /*
+     [도입 원인] 해커나 봇(Bot)이 짧은 시간에 악의적인 요청을 쏟아부을 때 이를 감지하기 위함
+     [기대 결과] 특정 IP가 1분 안에 50회 이상 에러를 유발하면 즉시 슬랙 알림 발송
+    */
     public void trackAndAlert(String clientIp, String errorType) {
         if (clientIp == null || clientIp.isEmpty()) return;
 
@@ -43,19 +44,21 @@ public class SecurityMonitorService {
         }
     }
 
-    /**
-     * 매 1분마다 카운트를 0으로 초기화 (스케줄러)
-     * 이 코드가 작동하려면 메인 애플리케이션 클래스에 @EnableScheduling 이 붙어있어야 합니다.
-     */
+    /*
+     매 1분마다 카운트를 0으로 초기화 (스케줄러)
+     이 코드가 작동하려면 메인 애플리케이션 클래스에 @EnableScheduling 이 붙어있어야 합니다.
+    */
     @Scheduled(fixedRate = 60000) // 60초마다 실행
     public void resetCounts() {
         errorCountMap.clear();
     }
 
-    /**
-     * 슬랙으로 실제 알림을 전송하는 메서드
-     */
-    private void sendSlackAlert(String ip, String errorType) {
+    /*
+     슬랙으로 실제 알림을 전송하는 메서드
+     [개선] @Async를 붙여서, 알림 보내느라 원래 요청이 느려지는 것을 방지 (별도 스레드에서 실행)
+    */
+    @Async
+    protected void sendSlackAlert(String ip, String errorType) {
         if (slackWebhookUrl == null || slackWebhookUrl.isEmpty()) {
             log.warn("슬랙 웹훅 URL이 설정되지 않아 알림을 보낼 수 없습니다. (IP: {})", ip);
             return;
