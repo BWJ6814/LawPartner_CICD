@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
+import { AttachedFilesFromAiProvider } from './common/context/AttachedFilesFromAiContext';
 import Header from './common/components/Header';
 import Footer from './common/components/Footer';
 import MainPage from './pages/mainpage';
@@ -99,8 +100,9 @@ function App() {
 
     return (
         <BrowserRouter>
-            <LayoutManager auth={auth} onLoginUpdate={updateAuth}>
-                <Routes>
+            <AttachedFilesFromAiProvider>
+                <LayoutManager auth={auth} onLoginUpdate={updateAuth}>
+                    <Routes>
                     {/* 기본 페이지 */}
                     <Route path="/" element={<MainPage />} />
 
@@ -157,8 +159,9 @@ function App() {
                         path="*"
                         element={<div className="text-center p-20 font-bold text-xl text-slate-500">404 Not Found</div>}
                     />
-                </Routes>
-            </LayoutManager>
+                    </Routes>
+                </LayoutManager>
+            </AttachedFilesFromAiProvider>
         </BrowserRouter>
     );
 }

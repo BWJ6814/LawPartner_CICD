@@ -35,9 +35,6 @@ message : 기본 안내 문구
     console.log(serverError.code); // "JSON_PARSE_ERROR" 출력
     toast.error(serverError.message); // "요청 데이터 형식이 잘못되었습니다." 출력
 }
-
-
-
 */
 @Getter
 @RequiredArgsConstructor
@@ -52,6 +49,8 @@ public enum ErrorCode {
     DUPLICATE_USER_ID(HttpStatus.BAD_REQUEST, "AUTH-001", "이미 사용 중인 아이디입니다."),
     DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "AUTH-002", "이미 가입된 이메일입니다."),
     DUPLICATE_PHONE(HttpStatus.BAD_REQUEST, "AUTH-003", "이미 가입된 휴대폰 번호입니다."),
+    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH-004", "비밀번호 형식이 올바르지 않습니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH-005", "존재하지 않는 회원입니다."),
 
     // 3. 스프링 웹 / 파라미터 / JSON 바인딩 에러
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "입력값 검증에 실패했습니다."),
@@ -67,10 +66,13 @@ public enum ErrorCode {
     DUPLICATE_DATA(HttpStatus.CONFLICT, "DUPLICATE_DATA", "이미 존재하는 데이터입니다."),
     DB_CONSTRAINT_ERROR(HttpStatus.CONFLICT, "DB_CONSTRAINT_ERROR", "데이터베이스 제약 조건 위배 오류입니다."),
     FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE", "업로드 가능한 파일 용량을 초과했습니다."),
+    FILE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_UPLOAD_ERROR", "파일 업로드 중 오류가 발생했습니다."),
 
     // 5. 보안
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "해당 기능을 실행할 권한이 없습니다."),
     ENCRYPTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SYS-001", "데이터 암호화 중 오류가 발생했습니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401", "유효하지 않은 토큰입니다."),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-402", "만료된 토큰입니다."),
 
     // 6. 서버 에러
     SYSTEM_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SYSTEM_ERROR", "서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.");
