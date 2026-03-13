@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Settings } from 'lucide-react';
-import api, { API_BASE_URL } from '../api/axiosConfig';
+import api, { API_BASE_URL } from '../../common/api/axiosConfig';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
 

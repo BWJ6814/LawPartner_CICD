@@ -87,8 +87,12 @@ const GeneralMyPage = () => {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userRole');
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('userNo');
         localStorage.removeItem('userId');
+        localStorage.removeItem('userNm');
+        localStorage.removeItem('nickNm');
+        localStorage.removeItem('userEmail');
         alert("로그아웃 되었습니다.");
         navigate('/');
     };
