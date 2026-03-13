@@ -21,6 +21,9 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, email = '', phone = '
         }
 
         try {
+            // 유효한 이메일 확보 (없으면 고정 임시값 사용)
+            const userEmail = email && email.includes('@') ? email : 'payment@lawpartner.com';
+
             const response = await window.PortOne.requestPayment({
                 storeId: 'store-f9cf8251-06cc-4fb4-a661-e66b17586cc2',
                 channelKey: 'channel-key-3ee761d6-41ec-48e1-8898-51fe9e22b136',
@@ -31,8 +34,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, email = '', phone = '
                 payMethod: 'CARD',
                 customer: {
                     fullName: localStorage.getItem('userNm') || '사용자',
-                    phoneNumber: phone || '',
-                    email: email || '',
+                    email: userEmail,
                 },
             });
 

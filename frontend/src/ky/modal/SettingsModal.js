@@ -5,8 +5,12 @@ import PasswordTab from './PasswordTab';
 import PaymentTab from './PaymentTab';
 import WithdrawTab from './WithdrawTab';
 
-const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubscribed, setIsSubscribed }) => {
-    const [activeTab, setActiveTab] = useState('profile');
+const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubscribed, setIsSubscribed, initialTab }) => {
+    const [activeTab, setActiveTab] = useState(initialTab || 'profile');
+
+    useEffect(() => {
+        if (isOpen) setActiveTab(initialTab || 'profile');
+    }, [isOpen, initialTab]);
     const userRole = localStorage.getItem('userRole');
 
     const [profileData, setProfileData] = useState({
