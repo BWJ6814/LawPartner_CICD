@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../common/api/axiosConfig';
+import { AttachedFilesFromAiContext } from '../common/context/AttachedFilesFromAiContext';
 import { LayoutGrid, CheckCircle, CloudUpload, X, FileText } from 'lucide-react';
 
 const CATEGORIES = [
@@ -17,13 +18,24 @@ const CATEGORIES = [
 const WriteQuestionPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { filesFromAi, clearFilesFromAi } = useContext(AttachedFilesFromAiContext);
+    const aiPrefillAppliedRef = useRef(false);
 
-    // AI 채팅에서 '상담내용으로 글쓰기'로 넘어올 때 제목/내용 자동 입력
+    // AI 채팅에서 '상담내용으로 글쓰기'로 넘어올 때 제목/내용 및 첨부 파일 반영
     useEffect(() => {
+        if (aiPrefillAppliedRef.current) return;
         const state = location.state;
         if (state?.title) setTitle(state.title);
         if (state?.content) setContent(state.content);
-    }, [location]);
+        const routedFiles = Array.isArray(state?.filesFromAi) ? state.filesFromAi : [];
+        const merged = routedFiles.length > 0 ? routedFiles : (filesFromAi || []);
+        if (state?.fromAiChatWithFiles && merged?.length > 0) {
+            setFiles(prev => [...prev, ...merged]);
+            clearFilesFromAi();
+        }
+        // location/state 변화로 effect가 반복 실행되며 파일이 누적되는 것을 방지
+        if (state?.fromAiChatWithFiles) aiPrefillAppliedRef.current = true;
+    }, [location, filesFromAi, clearFilesFromAi]);
 
     // [리액트] useRef는 DOM 요소에 직접 접근할 때 사용해요.
     // 여기서는 숨겨진 <input type="file">을 클릭하기 위해 사용합니다.
@@ -232,6 +244,8 @@ const WriteQuestionPage = () => {
                                     ))}
                                 </div>
                             )}
+
+                            
                         </div>
                     </div>
                 </div>
@@ -246,7 +260,7 @@ const WriteQuestionPage = () => {
                             className="w-5 h-5 text-blue-600 border-gray-300 rounded cursor-pointer"
                         />
                         <label htmlFor="secretYn" className="text-gray-700 font-bold cursor-pointer">
-                            비밀글 (작성자와 담당 변호사만 열람)
+                            비밀글
                         </label>
                     </div>
 
