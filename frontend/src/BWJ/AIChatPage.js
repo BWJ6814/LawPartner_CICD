@@ -1,9 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../common/api/axiosConfig';
+import { AttachedFilesFromAiContext } from '../common/context/AttachedFilesFromAiContext';
 
 const AIChatPage = () => {
     const navigate = useNavigate();
+    const { setFilesFromAi } = useContext(AttachedFilesFromAiContext);
     const [searchParams] = useSearchParams();
     const userNo = (() => {
         const v = localStorage.getItem('userNo');
@@ -18,10 +20,22 @@ const AIChatPage = () => {
     const [expandedSources, setExpandedSources] = useState(new Set()); // "msgIdx-srcIdx" 형태로 저장
     const [rooms, setRooms] = useState([]);
     const [currentRoomNo, setCurrentRoomNo] = useState(null);
+    const [isSummarizing, setIsSummarizing] = useState(false);
+    const [attachedFiles, setAttachedFiles] = useState([]);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
 
     const SOURCE_PREVIEW_LEN = 200; // 더보기 전 표시할 글자 수
+
+    const getFileKey = (file) => `${file.name}-${file.size}-${file.lastModified}`;
+
+    const removeAttachedFileByKey = (fileKey) => {
+        setAttachedFiles(prev => prev.filter(f => getFileKey(f) !== fileKey));
+        setMessages(prev => prev.map(m => {
+            if (!m?.attachments?.length) return m;
+            return { ...m, attachments: m.attachments.filter(a => a.key !== fileKey) };
+        }));
+    };
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -30,7 +44,7 @@ const AIChatPage = () => {
     // 메인페이지 검색에서 넘어온 question이 있으면 자동으로 한 번만 전송
     const initialQuestionSent = useRef(false);
     useEffect(() => {
-        const question = searchParams.get('question');
+                const question = searchParams.get('question');
         if (question?.trim() && !initialQuestionSent.current) {
             initialQuestionSent.current = true;
             sendMessage(question.trim());
@@ -74,7 +88,47 @@ const AIChatPage = () => {
         loadRooms().catch(console.error);
     }, []);
 
-    const sendMessage = async (questionText) => {
+    // AI 답변을 한 번에 넣지 않고, 타이핑 애니메이션처럼 조금씩 추가해서 보여주는 함수
+    const animateAiMessage = (fullText, sources) => {
+        const typingInterval = 15; // ms 단위, 중간 정도 속도
+        let index = 0;
+
+        // 우선 빈 AI 메시지를 하나 추가
+        setMessages(prev => [
+            ...prev,
+            {
+                text: '',
+                isUser: false,
+                sources: sources || []
+            }
+        ]);
+
+        const intervalId = setInterval(() => {
+            index += 5; // 한 번에 추가할 글자 수 (중간 속도)
+            setMessages(prev => {
+                if (prev.length === 0) return prev;
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                const lastMsg = updated[lastIdx];
+
+                // 마지막 메시지가 AI 메시지가 아니면 그대로 둠
+                if (!lastMsg || lastMsg.isUser) return prev;
+
+                const nextText = fullText.slice(0, index);
+                updated[lastIdx] = {
+                    ...lastMsg,
+                    text: nextText
+                };
+                return updated;
+            });
+
+            if (index >= fullText.length) {
+                clearInterval(intervalId);
+            }
+        }, typingInterval);
+    };
+
+    const sendMessage = async (questionText, options = {}) => {
         const finalQuestion = typeof questionText === 'string' ? questionText : input;
         if (!finalQuestion.trim()) return;
 
@@ -87,15 +141,17 @@ const AIChatPage = () => {
             const res = await api.post('/api/ai/consult', {
                 question: userMsg.text,
                 userNo: userNo,
-                roomNo: currentRoomNo
+                roomNo: currentRoomNo,
+                // FAQ 등에서 RAG를 끄고 싶을 때 사용
+                disableRag: options.disableRag === true
             });
             const data = res.data?.data ?? res.data;
-            const aiMsg = {
-                text: data?.answer ?? res.data?.answer,
-                isUser: false,
-                sources: data?.related_cases ?? res.data?.related_cases ?? []
-            };
-            setMessages(prev => [...prev, aiMsg]);
+            const hideSources = options.hideSources === true;
+            const fullText = data?.answer ?? res.data?.answer ?? '';
+            const sources = hideSources ? [] : (data?.related_cases ?? res.data?.related_cases ?? []);
+
+            // AI 답변을 한 번에 넣지 않고, 아래로 쭉 타이핑되듯이 나타나게 함
+            animateAiMessage(fullText, sources);
             // 첫 질문이면 백엔드가 새 방을 만들어 roomNo 반환 → 현재 방으로 지정
             const newRoomNo = data?.roomNo ?? res.data?.roomNo;
             if (newRoomNo != null) setCurrentRoomNo(newRoomNo);
@@ -108,22 +164,39 @@ const AIChatPage = () => {
         }
     };
 
-    // 대화 내용을 요약하여 상담게시판 작성 페이지로 이동
-    const handleSummarizeAndWrite = () => {
-        const summaryTitle = messages.length > 0
-            ? (messages.find(m => m.isUser)?.text?.slice(0, 30) || "AI 상담 내용") + (messages.find(m => m.isUser)?.text?.length > 30 ? "..." : "")
-            : "AI 상담 내용";
-        const summaryContent = messages.map(m =>
-            `${m.isUser ? "[나]" : "[LAW PARTNER]"}\n${m.text}`
-        ).join("\n\n");
-        navigate('/write', { state: { title: summaryTitle, content: summaryContent } });
+    // 상담 내용을 LLM으로 변호사 상담용 양식(제목·사건 개요·현재 상황·변호사님께 드리는 질문·참고 판례)으로 정리 후 글쓰기 페이지로 이동
+    const handleSummarizeAndWrite = async () => {
+        const payload = {
+            messages: messages.map(m => ({
+                isUser: m.isUser,
+                text: m.text || '',
+                sources: m.sources || []
+            }))
+        };
+        setIsSummarizing(true);
+        try {
+            const res = await api.post('/api/ai/summarize-consult', payload);
+            const data = res.data?.data ?? res.data;
+            if (!data || typeof data !== 'object') throw new Error('정리된 데이터를 받지 못했습니다.');
+            const title = data.title ?? 'AI 법률 상담 내용';
+            const content = data.content ?? '';
+            // Context + router state 둘 다에 넣어서(레이스/리렌더 타이밍 이슈 방지)
+            setFilesFromAi(attachedFiles);
+            navigate('/write', { state: { title, content, fromAiChatWithFiles: true, filesFromAi: attachedFiles } });
+        } catch (err) {
+            console.error(err);
+            alert('상담 내용 정리에 실패했습니다. 네트워크와 AI 서버(파이썬)를 확인해주세요.');
+        } finally {
+            setIsSummarizing(false);
+        }
     };
 
     const faqList = [
-        { icon: "📄", title: "내용증명 작성 가이드" },
-        { icon: "🏠", title: "임대차 보호법 해설" },
-        { icon: "⚖️", title: "민사 소송 절차" },
-        { icon: "📝", title: "계약서 법적 검토" }
+        { title: "내용증명 작성 가이드" },
+        { title: "임대차 보호법 해설" },
+        { title: "민사 소송 절차" },
+        // 계약서 업로드가 필요한 항목은 제거하고, 많이 사용할만한 질문으로 교체
+        { title: "이혼 절차 및 준비 서류" }
     ];
 
     return (
@@ -173,10 +246,9 @@ const AIChatPage = () => {
                         {faqList.map((faq, idx) => (
                             <button
                                 key={idx}
-                                onClick={() => sendMessage(faq.title)}
-                                className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-white hover:border hover:border-gray-200 transition flex items-center gap-2"
+                                onClick={() => sendMessage(faq.title, { hideSources: true, disableRag: true })}
+                                className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-white hover:border hover:border-gray-200 transition"
                             >
-                                <span className="text-base">{faq.icon}</span>
                                 <span className="truncate">{faq.title}</span>
                             </button>
                         ))}
@@ -201,6 +273,27 @@ const AIChatPage = () => {
                                 }`}>
                                     <span className="whitespace-pre-wrap">{msg.text}</span>
                                 </div>
+                                {msg.isUser && msg.attachments && msg.attachments.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-2 max-w-[520px]">
+                                        {msg.attachments.map((a) => (
+                                            <div
+                                                key={a.key}
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm"
+                                            >
+                                                <span className="font-mono text-gray-400">@</span>
+                                                <span className="truncate max-w-[360px]" title={a.name}>{a.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeAttachedFileByKey(a.key)}
+                                                    className="ml-1 text-gray-400 hover:text-red-600"
+                                                    aria-label="첨부 파일 삭제"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                 {!msg.isUser && msg.sources && msg.sources.length > 0 && (
                                     <div className="mt-2 w-full border border-gray-200 rounded-lg p-3 bg-gray-50 text-sm">
                                         <div className="font-bold text-gray-700 mb-2">📚 참고 판례 ({msg.sources.length}건)</div>
@@ -237,8 +330,9 @@ const AIChatPage = () => {
                         </div>
                     ))}
                     {isLoading && (
-                        <div className="flex gap-4 max-w-4xl mx-auto">
-                            <div className="text-gray-500 py-2">판례를 분석 중입니다...</div>
+                        <div className="flex gap-3 items-center max-w-4xl mx-auto text-gray-500 py-2">
+                            <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                            <div>AI가 답변을 준비하고 있습니다...</div>
                         </div>
                     )}
                     <div ref={messagesEndRef} />
@@ -247,38 +341,53 @@ const AIChatPage = () => {
                 {/* ⌨️ 하단 입력창 영역 (플로팅) */}
                 <div className="shrink-0 w-full max-w-4xl mx-auto px-6 pb-4 pt-1">
                     {/* 요약 후 작성 / 파일 추가 버튼 */}
-                    <div className="flex items-center gap-2 mb-2">
-                        <button
-                            onClick={handleSummarizeAndWrite}
-                            disabled={messages.length <= 1}
-                            className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                            📋 상담내용으로 글쓰기
-                        </button>
-                        <div className="relative">
+                    <div className="mb-2">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleSummarizeAndWrite}
+                                disabled={messages.length <= 1 || isSummarizing}
+                                className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            >
+                                {isSummarizing ? '정리 중...' : '📋 상담내용으로 글쓰기'}
+                            </button>
+                            <div className="relative">
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept="image/*,video/*"
+                                accept=".pdf,.doc,.docx,.hwp,.txt,image/*"
                                 multiple
                                 className="hidden"
                                 onChange={(e) => {
                                     if (e.target.files?.length) {
-                                        // TODO: 파일 첨부 서버 연동
-                                        console.log('첨부 파일:', e.target.files);
-                                        alert(`파일 ${e.target.files.length}개가 선택되었습니다. (연동 예정)`);
+                                        const picked = Array.from(e.target.files);
+                                        const withKeys = picked.map(f => ({
+                                            key: getFileKey(f),
+                                            name: f.name,
+                                            file: f
+                                        }));
+                                        setAttachedFiles(prev => [...prev, ...picked]);
+                                        const count = picked.length;
+                                        setMessages(prev => ([
+                                            ...prev,
+                                            {
+                                                text: `파일 ${count}개가 추가되었습니다.`,
+                                                isUser: true,
+                                                attachments: withKeys
+                                            }
+                                        ]));
                                     }
                                     e.target.value = '';
                                 }}
                             />
                             <button
+                                type="button"
                                 onClick={() => fileInputRef.current?.click()}
                                 className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition flex items-center gap-1"
                             >
-                                📎 파일 추가
+                                {attachedFiles.length > 0 ? `📎 파일 추가 (${attachedFiles.length})` : '📎 파일 추가'}
                             </button>
-                        </div>
-                        <button
+                            </div>
+                            <button
                             onClick={() => {
                                 const url = prompt('URL을 입력하세요');
                                 if (url) {
@@ -287,9 +396,10 @@ const AIChatPage = () => {
                                 }
                             }}
                             className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition"
-                        >
-                            🔗 URL
-                        </button>
+                            >
+                                🔗 URL
+                            </button>
+                        </div>
                     </div>
 
                     <div className="relative shadow-lg rounded-2xl border border-gray-100 bg-white/95 backdrop-blur-sm">
