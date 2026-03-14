@@ -27,7 +27,7 @@ export default function ReviewsModal({ isOpen, onClose, reviews }) {
 
     const filteredReviews = filter === "all"
         ? reviews
-        : reviews.filter(r => r.stars === Number(filter));
+        : reviews.filter(r => Math.round(r.stars) === Number(filter));
 
     const totalPages = Math.ceil(filteredReviews.length / PAGE_SIZE);
     const pagedReviews = filteredReviews.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);

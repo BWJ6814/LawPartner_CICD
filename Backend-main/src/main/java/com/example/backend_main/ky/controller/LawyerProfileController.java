@@ -109,8 +109,14 @@ public class LawyerProfileController {
         file.transferTo(new File(uploadDir + fileName));
         String imgUrl = "/uploads/" + fileName;
 
-        // LawyerInfo에 URL 저장
-        lawyerInfoRepository.findById(lawyerNo).ifPresent(info -> info.setImgUrl(imgUrl));
+        // LawyerInfo에 URL 저장 (없으면 새로 생성)
+        LawyerInfo info = lawyerInfoRepository.findById(lawyerNo).orElseGet(() -> {
+            com.example.backend_main.common.entity.User user =
+                    userRepository.findById(lawyerNo).orElseThrow();
+            return LawyerInfo.builder().user(user).licenseFile("").build();
+        });
+        info.setImgUrl(imgUrl);
+        lawyerInfoRepository.save(info);
 
         return ResultVO.ok("업로드 성공", imgUrl);
     }

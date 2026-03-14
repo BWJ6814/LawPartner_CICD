@@ -26,7 +26,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, email = '', phone = '
 
             const response = await window.PortOne.requestPayment({
                 storeId: 'store-f9cf8251-06cc-4fb4-a661-e66b17586cc2',
-                channelKey: 'channel-key-3ee761d6-41ec-48e1-8898-51fe9e22b136',
+                channelKey: 'channel-key-a008c4fe-fed4-4574-a8c1-d90a18cc8c0c',
                 paymentId: `lawpartner_${new Date().getTime()}`,
                 orderName: 'LawPartner 프리미엄 구독',
                 totalAmount: 10000,
@@ -35,6 +35,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentSuccess, email = '', phone = '
                 customer: {
                     fullName: localStorage.getItem('userNm') || '사용자',
                     email: userEmail,
+                    phoneNumber: phone || '01000000000',
                 },
             });
 
