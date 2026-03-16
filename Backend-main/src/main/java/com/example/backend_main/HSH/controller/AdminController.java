@@ -2,6 +2,7 @@ package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.HSH.service.InquiryService;
+import com.example.backend_main.HSH.service.LawyerService;
 import com.example.backend_main.common.annotation.ActionLog;
 import com.example.backend_main.common.entity.BannedWord;
 import com.example.backend_main.common.entity.BlacklistIp;
@@ -13,12 +14,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +46,7 @@ public class AdminController {
 
     private final AdminService adminService;
     private final InquiryService inquiryService;
+    private final LawyerService lawyerService;
 
     // ==================================================================================
     // 👤 회원 관리
@@ -78,6 +86,33 @@ public class AdminController {
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         adminService.createSubAdmin(joinDto, userDetails.getUserId());
         return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.", null);
+    }
+
+    @GetMapping("/lawyers/{userNo}/license")
+    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @ActionLog(action = "DOWNLOAD_LAWYER_LICENSE", target = "TB_LAWYER_INFO")
+    public ResponseEntity<Resource> downloadLawyerLicense(@PathVariable Long userNo) {
+        Resource resource = lawyerService.loadLicenseFile(userNo);
+        String filename = resource.getFilename();
+
+        String mimeType = lawyerService.detectLicenseMimeType(userNo);
+        MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        if (mimeType != null) {
+            try {
+                mediaType = MediaType.parseMediaType(mimeType);
+            } catch (IllegalArgumentException ignored) {
+                // fallback to OCTET_STREAM
+            }
+        }
+
+        ContentDisposition contentDisposition = ContentDisposition.builder("inline")
+                .filename(filename, StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .body(resource);
     }
 
     // ==================================================================================

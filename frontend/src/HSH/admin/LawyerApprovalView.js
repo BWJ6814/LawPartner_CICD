@@ -3,7 +3,7 @@ import React from 'react';
 import { Users } from 'lucide-react';
 import { Card } from './AdminComponents';
 
-export default function LawyerApprovalView({ users, handleUserStatusChange }) {
+export default function LawyerApprovalView({ users, handleUserStatusChange, handleViewLicense }) {
   const applicants = users.filter(u => u.statusCode === 'S02' || u.roleCode === 'ROLE_ASSOCIATE');
 
   return (
@@ -22,12 +22,20 @@ export default function LawyerApprovalView({ users, handleUserStatusChange }) {
                 </div>
               </div>
             </div>
-            <button 
-              onClick={() => handleUserStatusChange(user.userId, 'S01')} 
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700"
-            >
-              자격 검증 및 승인 (S01)
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleViewLicense && handleViewLicense(user.userNo)}
+                className="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200"
+              >
+                자격증 확인하기
+              </button>
+              <button 
+                onClick={() => handleUserStatusChange(user.userId, 'S01')} 
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700"
+              >
+                자격 검증 및 승인 (S01)
+              </button>
+            </div>
           </div>
         ))}
         {applicants.length === 0 && (

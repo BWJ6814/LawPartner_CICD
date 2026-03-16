@@ -237,6 +237,32 @@ export default function AdminPage() {
     } catch (e) { toast.error(e.response?.data?.message || "블라인드 처리 중 오류가 발생했습니다."); }
   };
 
+  const handleViewLicense = async (userNo) => {
+    if (!userNo) {
+      toast.error("대상 회원 정보를 찾을 수 없습니다.");
+      return;
+    }
+    try {
+      const response = await api.get(`/api/admin/lawyers/${userNo}/license`, {
+        responseType: 'blob'
+      });
+
+      const contentType = response.headers['content-type'] || 'application/octet-stream';
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (error) {
+      const status = error.response?.status;
+      if (status === 404) {
+        toast.error(error.response?.data?.message || "등록된 자격증 파일이 없거나 삭제되었습니다.");
+      } else if (status === 403) {
+        toast.error("해당 자격증 파일을 볼 수 있는 권한이 없습니다.");
+      } else {
+        toast.error(error.response?.data?.message || "자격증 파일을 불러오는 중 오류가 발생했습니다.");
+      }
+    }
+  };
+
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
@@ -277,7 +303,7 @@ export default function AdminPage() {
     switch (activeMenu) {
       case 'dashboard': return <DashboardView {...commonProps} />;
       case 'user-manage': return <UserManagementView users={users} setSelectedItem={setSelectedItem} setShowModal={setShowModal} />;
-      case 'lawyer-approve': return <LawyerApprovalView users={users} handleUserStatusChange={handleUserStatusChange} />;
+      case 'lawyer-approve': return <LawyerApprovalView users={users} handleUserStatusChange={handleUserStatusChange} handleViewLicense={handleViewLicense} />;
       case 'audit-log': return <AuditLogView logs={logs} searchParams={searchParams} setSearchParams={setSearchParams} handleSearch={handleSearch} handleReset={handleReset} handleKeyDown={handleKeyDown} handleExcelDownload={handleExcelDownload} hasPermission={hasPermission} />;
       case 'blacklist': return <BlacklistView blacklist={blacklist} newIp={newIp} setNewIp={setNewIp} newReason={newReason} setNewReason={setNewReason} handleAddBlacklist={handleAddBlacklist} handleUnblock={handleUnblock} />;
       case 'security-policy': return <SecurityPolicyView bannedWords={bannedWords} newWord={newWord} setNewWord={setNewWord} handleAddBannedWord={handleAddBannedWord} handleDeleteBannedWord={handleDeleteBannedWord} />;

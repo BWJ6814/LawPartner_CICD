@@ -2,17 +2,25 @@ package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.entity.LawyerInfo;
 import com.example.backend_main.common.entity.User;
+import com.example.backend_main.common.exception.CustomException;
+import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.repository.LawyerInfoRepository;
 import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika; // ★ Tika 추가
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 @Service
@@ -109,6 +117,51 @@ public class LawyerService {
 
         return savedName;
     }
+    
+    @Transactional(readOnly = true)
+    public Resource loadLicenseFile(Long userNo) {
+        LawyerInfo lawyerInfo = lawyerInfoRepository.findById(userNo)
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "변호사 정보를 찾을 수 없습니다."));
 
+        String savedName = lawyerInfo.getLicenseFile();
+        if (savedName == null || savedName.isBlank()) {
+            throw new CustomException(ErrorCode.DATA_NOT_FOUND, "등록된 자격증 파일이 없습니다.");
+        }
 
+        try {
+            Path filePath = Paths.get(uploadPath).resolve(savedName).normalize();
+
+            if (!Files.exists(filePath) || !Files.isReadable(filePath)) {
+                log.error("자격증 파일을 찾을 수 없거나 읽을 수 없습니다. 경로: {}", filePath);
+                throw new CustomException(ErrorCode.DATA_NOT_FOUND, "자격증 파일을 찾을 수 없습니다.");
+            }
+
+            return new UrlResource(filePath.toUri());
+        } catch (MalformedURLException e) {
+            log.error("자격증 파일 경로가 잘못되었습니다. userNo: {}, fileName: {}", userNo, savedName, e);
+            throw new CustomException(ErrorCode.DATA_NOT_FOUND, "자격증 파일 경로가 올바르지 않습니다.");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public String detectLicenseMimeType(Long userNo) {
+        LawyerInfo lawyerInfo = lawyerInfoRepository.findById(userNo)
+                .orElseThrow(() -> new CustomException(ErrorCode.DATA_NOT_FOUND, "변호사 정보를 찾을 수 없습니다."));
+
+        String savedName = lawyerInfo.getLicenseFile();
+        if (savedName == null || savedName.isBlank()) {
+            return null;
+        }
+
+        try {
+            Path filePath = Paths.get(uploadPath).resolve(savedName).normalize();
+            if (!Files.exists(filePath) || !Files.isReadable(filePath)) {
+                return null;
+            }
+            return tika.detect(filePath.toFile());
+        } catch (Exception e) {
+            log.warn("자격증 MIME 타입 분석 중 오류 발생. userNo: {}, fileName: {}", userNo, savedName, e);
+            return null;
+        }
+    }
 }
