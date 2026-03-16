@@ -8,6 +8,14 @@ import lombok.Getter;
 # [ResultVO]
 - 모든 API 응답을 담는 표준 식판
 - 성공 여부, 메시지, 코드, 그리고 데이터(객체)를 하나로 묶어줍니다.
+
+프론트에서는 다음과 같은 JSON을 받게 됨
+{
+  "success": false,
+  "code": "AUTH-005",
+  "message": "존재하지 않는 회원입니다.",
+  "data": null
+}
 */
 @Getter
 @Builder

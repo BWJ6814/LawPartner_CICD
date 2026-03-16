@@ -26,6 +26,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtTokenProvider jwtTokenProvider;
 
+    /** 운영 시 application.properties에 app.websocket.allowed-origins=https://도메인 입력. 없으면 개발용 * */
+    @org.springframework.beans.factory.annotation.Value("${app.websocket.allowed-origins:*}")
+    private String allowedOriginPattern;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/sub");
@@ -34,8 +38,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String pattern = (allowedOriginPattern != null && !allowedOriginPattern.isBlank()) ? allowedOriginPattern.trim() : "*";
+        String[] patterns = pattern.contains(",") ? pattern.split("\\s*,\\s*") : new String[]{pattern};
         registry.addEndpoint("/ws-stomp")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns(patterns)
                 .withSockJS();
     }
 

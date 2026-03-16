@@ -44,8 +44,11 @@ const ProfileCard = () => {
         navigate('/login');
     };
 
+    const [settingsInitialTab, setSettingsInitialTab] = useState('profile');
+
     // 구독하기 버튼: 설정 모달의 결제탭으로 이동
     const handleSubscribeClick = () => {
+        setSettingsInitialTab('payment');
         setIsSettingsModalOpen(true);
     };
 
@@ -83,7 +86,7 @@ const ProfileCard = () => {
                         <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
                         <div className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
                             <button
-                                onClick={() => { setIsDropdownOpen(false); setIsSettingsModalOpen(true); }}
+                                onClick={() => { setIsDropdownOpen(false); setSettingsInitialTab('profile'); setIsSettingsModalOpen(true); }}
                                 className="w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors flex items-center gap-3"
                             >
                                 <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,6 +129,7 @@ const ProfileCard = () => {
                 setProfileImage={setProfileImage}
                 isSubscribed={isSubscribed}
                 setIsSubscribed={setIsSubscribed}
+                initialTab={settingsInitialTab}
             />
         </>
     );

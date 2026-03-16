@@ -43,7 +43,9 @@ Thumbs.db
 backend-ai/db/
 
 # [log 파일]
+/Backend-main/logs/
 logs/
 *.log
+
 
 backend-ai/db/

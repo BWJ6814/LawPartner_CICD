@@ -1,5 +1,6 @@
 package com.example.backend_main.common.security;
 
+import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.vo.ResultVO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +36,7 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
 
         // 3. 표준 식판(ResultVO)에 AUTH-403 코드와 메시지 담기
         // 로그인은 되어있으나, 권한이 없기에 메인페이지로 돌려보내거나, 접근 불가 알림 처리..
-        ResultVO<Void> result = ResultVO.fail("AUTH-403", "해당 페이지에 접근할 권한이 없습니다.");
+        ResultVO<Void> result = ResultVO.fail(ErrorCode.ACCESS_DENIED);
 
         // 4. JSON으로 변환하여 리액트에게 전송
         String jsonResponse = objectMapper.writeValueAsString(result);

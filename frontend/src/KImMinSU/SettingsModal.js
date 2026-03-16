@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import api from '../common/api/axiosConfig'; // 경로 확인 필요!
+import api from '../common/api/axiosConfig';
 
 // [초심자 핵심] 부모 컴포넌트에서 onSaveName 이라는 함수를 props로 넘겨줘야 사이드바 렌더링이 됨
 const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
@@ -83,9 +83,9 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
         if (!phoneInput.trim()) throw new Error("전화번호를 입력해주세요.");
 
         const formData = new FormData();
-        formData.append('newName', nameInput); // 백엔드 변수명이랑 맞춰라
-        formData.append('newEmail', emailInput);
-        formData.append('newPhone', phoneInput);
+        formData.append('name', nameInput);   // ProfileUpdateDTO: name, email, phone
+        formData.append('email', emailInput);
+        formData.append('phone', phoneInput);
         if (imageFile) {
             formData.append('profileImage', imageFile);
         }

@@ -1,5 +1,6 @@
 package com.example.backend_main.common.security;
 
+import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.vo.ResultVO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,7 +49,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         // AUTH : 로그인 관련 - 누구세요?
         // 401 : HTTP 상태 코드 401에서 따온 숫자
         // AUTH-401 : 당신이 누구신지는 모르겠으니, 신분증(JWT토큰)을 가져오세요!
-        ResultVO<Void> result = ResultVO.fail("AUTH-401","로그인이 필요한 서비스입니다.");
+        ResultVO<Void> result = ResultVO.fail(ErrorCode.INVALID_TOKEN);;
 
         // 6. 식판(객체)을 문자열(JSON)로 바꿔서 손님(리액트)에게 전송합니다.
         // 자바 객체(ResultVO)를 이렉트가 읽을 수 있는 텍스트(JSON) 으로 변환하는 마법의 도구

@@ -85,11 +85,7 @@ const ChatList = () => {
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
-    // ★ [핵심 1] 모든 API 요청에 신분증(토큰)을 자동으로 붙여주는 도구
-    const getAuthHeader = useCallback(() => {
-        return { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` } };
-    }, []);
-
+    // 공통 axios(axiosConfig)가 요청 인터셉터로 Authorization 자동 부착 → API 호출 시 헤더 따로 넘기지 않음
     const showNotification = useCallback((msg) => {
         setToastMsg(msg);
         setTimeout(() => setToastMsg(null), 3000);
@@ -99,12 +95,12 @@ const ChatList = () => {
         currentRoomIdRef.current = roomId;
     }, [roomId]);
 
-    // 1. 채팅방 목록 불러오기 (헤더 추가 완료)
+    // 1. 채팅방 목록 불러오기 (공통 api가 토큰 자동 부착)
     const loadRooms = useCallback(() => {
-        api.get('/api/chat/rooms', getAuthHeader())
+        api.get('/api/chat/rooms')
             .then(res => setRooms(res.data.data || []))
             .catch(() => setRooms([]));
-    }, [getAuthHeader]);
+    }, []);
 
     useEffect(() => {
         loadRooms();
@@ -133,7 +129,7 @@ const ChatList = () => {
         setHasMoreOlder(true);
 
         // 최신 HISTORY_PAGE_SIZE개만 먼저 로드 (스크롤 올리면 이전 메시지 추가 로드)
-        api.get(`/api/chat/history/${roomId}`, { ...getAuthHeader(), params: { size: HISTORY_PAGE_SIZE } })
+        api.get(`/api/chat/history/${roomId}`, { params: { size: HISTORY_PAGE_SIZE } })
             .then(res => {
                 const list = res.data.data || [];
                 setChatLog(list);
@@ -146,7 +142,7 @@ const ChatList = () => {
                 setHasMoreOlder(false);
             });
 
-        api.post(`/api/chat/room/${roomId}/read`, {}, getAuthHeader()).catch(() => {});
+        api.post(`/api/chat/room/${roomId}/read`, {}).catch(() => {});
 
         let isMounted = true;
         const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
@@ -212,7 +208,7 @@ const ChatList = () => {
     const handleStatusChange = async (type) => {
         try {
             const endpoint = type === 'ACCEPT' ? `/api/chat/room/accept/${roomId}` : `/api/chat/room/close/${roomId}`;
-            await api.put(endpoint, {}, getAuthHeader());
+            await api.put(endpoint, {});
 
             alert(type === 'ACCEPT' ? "상담을 수락했습니다." : "상담을 종료했습니다.");
             setCurrentRoomStatus(type === 'ACCEPT' ? 'ST02' : 'ST05');
@@ -266,7 +262,7 @@ const ChatList = () => {
         if (!roomId || isSubmittingReview) return;
         setIsSubmittingReview(true);
         try {
-            await api.post(`/api/chat/room/${roomId}/review`, { rating: reviewRating, content: reviewContent }, getAuthHeader());
+            await api.post(`/api/chat/room/${roomId}/review`, { rating: reviewRating, content: reviewContent });
             setReviewSubmittedRooms(prev => new Set([...prev, roomId]));
             setShowReviewModal(false);
             alert('리뷰가 등록되었습니다.');
@@ -282,7 +278,7 @@ const ChatList = () => {
     const executeCalendarAccept = async () => {
         if (!pendingCalendarAction) return;
         try {
-            await api.post('/api/chat/calendar/confirm', { roomId, date: pendingCalendarAction }, getAuthHeader());
+            await api.post('/api/chat/calendar/confirm', { roomId, date: pendingCalendarAction });
             // 시스템 메시지를 로봇처럼 안 하고 깔끔하게 포맷팅해서 던짐
             handleSendMessage('TEXT', `[일정 확정] ${formatDateTimeClean(pendingCalendarAction)} 예약이 완료되었습니다.`);
             setPendingCalendarAction(null); // 모달 닫기
@@ -301,11 +297,8 @@ const ChatList = () => {
         formData.append("file", file);
         formData.append("roomId", roomId);
         try {
-            const token = localStorage.getItem('accessToken');
-            // 헤더 추가 완료
-            await api.post('/api/chat/files', formData, {
-                headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` }
-            });
+            // 공통 api가 FormData 시 Content-Type 자동 처리 + 요청 인터셉터로 Authorization 부착
+            await api.post('/api/chat/files', formData);
         } catch { alert("파일 업로드에 실패했습니다."); }
         finally {
             setIsUploading(false);
@@ -361,7 +354,7 @@ const ChatList = () => {
         if (!before) return;
         setLoadingOlder(true);
         const prevScrollHeight = chatContainerRef.current ? chatContainerRef.current.scrollHeight : 0;
-        api.get(`/api/chat/history/${roomId}`, { ...getAuthHeader(), params: { size: HISTORY_PAGE_SIZE, before } })
+        api.get(`/api/chat/history/${roomId}`, { params: { size: HISTORY_PAGE_SIZE, before } })
             .then(res => {
                 const list = res.data.data || [];
                 if (list.length > 0) {
@@ -380,7 +373,7 @@ const ChatList = () => {
             })
             .catch(() => setHasMoreOlder(false))
             .finally(() => setLoadingOlder(false));
-    }, [roomId, hasMoreOlder, loadingOlder, chatLog, getAuthHeader]);
+    }, [roomId, hasMoreOlder, loadingOlder, chatLog]);
 
     /** 채팅 영역 스크롤 핸들러: 맨 위 근처면 이전 메시지 로드 */
     const handleChatScroll = useCallback(() => {
