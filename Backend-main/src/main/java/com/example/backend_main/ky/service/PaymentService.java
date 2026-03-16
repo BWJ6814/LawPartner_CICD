@@ -1,5 +1,6 @@
 package com.example.backend_main.ky.service;
 
+import com.example.backend_main.ky.dto.SubscriptionInfoDTO;
 import com.example.backend_main.ky.entity.Subscription;
 import com.example.backend_main.ky.repository.SubscriptionRepository;
 import com.example.backend_main.common.entity.User;
@@ -11,7 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -75,5 +79,38 @@ public class PaymentService {
                 .paymentId(paymentId)
                 .amount(paidAmount)
                 .build());
+    }
+
+    // 구독 상태 및 결제 내역 조회
+    public SubscriptionInfoDTO getSubscriptionInfo(Long userNo) {
+        boolean subscribed = subscriptionRepository.existsByUser_UserNo(userNo);
+
+        List<Subscription> subs = subscriptionRepository.findByUser_UserNoOrderBySubDtDesc(userNo);
+
+        String nextPaymentDate = null;
+        if (subscribed && !subs.isEmpty()) {
+            nextPaymentDate = subs.get(0).getSubDt()
+                    .plusMonths(1)
+                    .format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일"));
+        }
+
+        List<SubscriptionInfoDTO.PaymentHistoryItem> history = subs.stream()
+                .map(s -> SubscriptionInfoDTO.PaymentHistoryItem.builder()
+                        .date(s.getSubDt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                        .amount(s.getAmount())
+                        .build())
+                .collect(Collectors.toList());
+
+        return SubscriptionInfoDTO.builder()
+                .subscribed(subscribed)
+                .nextPaymentDate(nextPaymentDate)
+                .history(history)
+                .build();
+    }
+
+    // 구독 취소
+    @Transactional
+    public void cancelSubscription(Long userNo) {
+        subscriptionRepository.deleteByUser_UserNo(userNo);
     }
 }

@@ -1,14 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../../common/api/axiosConfig';
 import PaymentModal from './PaymentModal';
 
 const PaymentTab = ({ isSubscribed, setIsSubscribed, email, phone }) => {
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [nextPaymentDate, setNextPaymentDate] = useState('');
+    const [history, setHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const handleSubscriptionToggle = () => {
+    // 구독 상태 및 결제 내역 불러오기
+    const fetchSubscriptionInfo = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get('/api/payment/status');
+            const data = res.data.data;
+            setIsSubscribed(data.subscribed);
+            setNextPaymentDate(data.nextPaymentDate || '');
+            setHistory(data.history || []);
+        } catch (err) {
+            console.error('구독 정보 로딩 실패:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchSubscriptionInfo();
+    }, []);
+
+    const handleSubscriptionToggle = async () => {
         if (isSubscribed) {
             if (window.confirm('구독을 취소하시겠습니까?')) {
-                setIsSubscribed(false);
-                console.log('구독 취소');
+                try {
+                    await api.post('/api/payment/cancel');
+                    setIsSubscribed(false);
+                    setNextPaymentDate('');
+                    setHistory([]);
+                    alert('구독이 취소되었습니다.');
+                } catch (err) {
+                    alert('구독 취소 중 오류가 발생했습니다.');
+                }
             }
         } else {
             setIsPaymentModalOpen(true);
@@ -16,9 +47,13 @@ const PaymentTab = ({ isSubscribed, setIsSubscribed, email, phone }) => {
     };
 
     const handlePaymentSuccess = () => {
-        setIsSubscribed(true);
-        console.log('구독 완료');
+        setIsPaymentModalOpen(false);
+        fetchSubscriptionInfo(); // 결제 성공 후 최신 정보 다시 조회
     };
+
+    if (loading) {
+        return <div className="flex items-center justify-center h-40 text-gray-400">로딩 중...</div>;
+    }
 
     return (
         <>
@@ -35,23 +70,23 @@ const PaymentTab = ({ isSubscribed, setIsSubscribed, email, phone }) => {
                                 </div>
                                 <div className="flex items-center justify-between text-sm text-gray-600">
                                     <span>다음 결제일</span>
-                                    <span>2026년 3월 16일</span>
+                                    <span>{nextPaymentDate}</span>
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                                <h4 className="font-semibold text-gray-900 mb-2">결제 내역</h4>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600">2026-02-16</span>
-                                        <span className="font-semibold">₩29,900</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600">2026-01-16</span>
-                                        <span className="font-semibold">₩29,900</span>
+                            {history.length > 0 && (
+                                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                                    <h4 className="font-semibold text-gray-900 mb-2">결제 내역</h4>
+                                    <div className="space-y-2">
+                                        {history.map((item, idx) => (
+                                            <div key={idx} className="flex justify-between text-sm">
+                                                <span className="text-gray-600">{item.date}</span>
+                                                <span className="font-semibold">₩{item.amount.toLocaleString()}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </>
                     ) : (
                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-4 text-center">
