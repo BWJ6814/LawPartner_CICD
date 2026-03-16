@@ -1,0 +1,176 @@
+# Ai-Law-1 프로젝트 기능 명세 (대·중·소 분류)
+
+---
+
+## [대분류 1] Main Server
+
+### 중분류: Spring Framework
+- **소분류**
+  - Spring MVC (spring-boot-starter-web): REST API, BoardController, AuthController, AdminController, AiChatController, ChatController, LawyerDashboardController 등
+  - Spring AOP: LogingAspect(컨트롤러 접근 로깅, @ActionLog 관리자 행동 로깅), MaskingAspect(민감정보 마스킹)
+  - Spring Validation: @Valid, DTO 유효성 검사(NotBlank, Email 등) — AuthController join/login, AdminController, CustomerInquiryController, GeneralMyPageController
+  - Spring Data JPA: 엔티티·리포지토리(User, Board, AiChatRoom, ChatMessage, LawyerInfo, Review 등), Oracle 연동
+  - Spring JDBC: 저수준 DB 접근
+  - Spring Security: SecurityConfig(stateless, CORS, JWT 필터), 인증/인가 필터 체인
+  - Spring WebSocket: 실시간 변호사-사용자 채팅(WebSocketConfig, ChatController, ChatService)
+  - Spring Batch: spring-boot-starter-batch(배치 작업 인프라)
+  - Spring Scheduling: @Scheduled — SecurityMonitorService 등 주기 작업
+  - Spring Mail: spring-boot-starter-mail (이메일 발송 인프라)
+
+### 중분류: ORM·쿼리
+- **소분류**
+  - MyBatis: GeneralMyPageMapper.xml, MyBatis 기반 복잡 쿼리/마이페이지
+
+### 중분류: 유틸·파일·문서
+- **소분류**
+  - Apache POI: Excel 처리(poi, poi-ooxml 5.3.0)
+  - Apache Tika: tika-core(파일/문서 메타·타입 감지)
+
+### 중분류: 기타 메인 서버
+- **소분류**
+  - Lombok: DTO/엔티티 보일러플레이트 감소
+  - GlobalExceptionHandler: 전역 예외 처리, IpUtil 연동
+  - WebConfig: CORS·전역 설정
+  - ResultVO: 공통 API 응답 래퍼
+
+---
+
+## [대분류 2] UI/UX
+
+### 중분류: 프론트엔드 프레임워크
+- **소분류**
+  - React: React 19.2.4, SPA 구조
+  - React Router: react-router-dom 7.13.0 — 라우팅(/, /login, /admin/*, /ai-chat, /consultation, /mypage, /lawyer-dashboard 등)
+  - react-scripts: CRA 5.0.1 빌드·개발 서버
+
+### 중분류: 스타일·UI 컴포넌트
+- **소분류**
+  - Tailwind CSS: 유틸리티 기반 스타일
+  - Bootstrap 4: 그리드·컴포넌트
+  - Lucide React: 아이콘
+  - Phosphor Icons (@phosphor-icons/react): 아이콘
+  - react-icons: 아이콘
+
+### 중분류: 차트·캘린더·시각화
+- **소분류**
+  - FullCalendar: @fullcalendar/react, daygrid, timegrid, interaction — 일정(변호사 대시보드, 마이페이지 캘린더)
+  - Recharts: 차트(대시보드 통계 등)
+  - html2canvas: 화면 캡처
+
+### 중분류: UX·피드백
+- **소분류**
+  - react-toastify: 토스트 알림
+  - 모달·사이드바: SettingsModal, ProfileTab, PaymentTab, ScheduleCalendar, ReviewsModal, DashboardSidebar, Header, Footer
+
+### 중분류: 페이지·도메인 UI
+- **소분류**
+  - 메인/로그인/회원가입: MainPage, LoginPage, SignupPage (HSH)
+  - 관리자: AdminPage — DashboardView, UserManagementView, AuditLogView, BlacklistView, SecurityPolicyView, ContentSecurityView, LawyerApprovalView, AdminInquiryManage
+  - 상담 게시판: ConsultationBoard, ConsultationDetail, WriteQuestionPage (BWJ)
+  - AI 상담: AIChatPage (BWJ)
+  - 채팅: ChatList, Lawmainpage 채팅 (KImMinSU, ky)
+  - 변호사: Lawmainpage, ProfileCard, Sidebar, 결제·리뷰·일정 모달 (ky)
+  - 전문가/고객: ExpertsPage, ExpertDetailPage, CustomerHomePage, Customer list/write/detail/edit (pages)
+  - 마이페이지: GeneralMypage (KimMinSu)
+
+---
+
+## [대분류 3] AI Server
+
+### 중분류: RAG (Retrieval-Augmented Generation)
+- **소분류**
+  - LangChain: langchain, langchain-community, langchain-core — RAG 체인 구성
+  - LangChain Text Splitters: langchain-text-splitters — RecursiveCharacterTextSplitter(chunk 800, overlap 100)
+  - Embedding: GoogleGenerativeAIEmbeddings (models/gemini-embedding-001)
+  - Vector DB: Chroma (persist_directory=./db), 벡터 저장·검색
+  - LLM API: ChatGoogleGenerativeAI (gemini-2.5-flash), LangChain 연동
+  - RetrievalQA: from_chain_type, 한국어 법률 프롬프트, return_source_documents, search_kwargs k=2
+  - RAG 비활성화 옵션: disable_rag 시 순수 LLM 응답
+
+### 중분류: API 서버
+- **소분류**
+  - FastAPI: main.py — REST API
+  - Uvicorn: ASGI 서버
+  - Pydantic: QueryRequest, SummarizeConsultRequest 등 요청/응답 스키마
+
+### 중분류: AI 엔드포인트
+- **소분류**
+  - POST /chat: 질의 응답(RAG 또는 LLM), related_cases 반환
+  - POST /summarize-consult: 대화 요약(사건 개요, 현재 상황, 변호사 질문, 참고 판례)
+
+### 중분류: 통신 (Main ↔ AI Server)
+- **소분류**
+  - RestTemplate(Backend): Spring RestTemplate으로 http://localhost:8000/chat, /summarize-consult 호출 (AiChatController에서 Python RAG 서비스 프록시)
+  - Axios(Frontend): axiosConfig — API_BASE_URL(8080), Authorization Bearer, 401 시 /api/auth/refresh 후 재시도
+
+---
+
+## [대분류 4] Security / Auth
+
+### 중분류: 인증
+- **소분류**
+  - JWT (jjwt 0.12.6): Access Token(예: 60분), JwtTokenProvider 생성/검증
+  - Refresh Token: 7일 등 장기, HttpOnly 쿠키 저장, RefreshTokenService
+  - 로그인: POST /api/auth/login — AuthService, TokenDTO(accessToken, userNo, userNm, role 등)
+  - 토큰 갱신: POST /api/auth/refresh (쿠키 기반) → 새 access token
+  - CustomUserDetailsService: DB 기반 사용자 조회, Spring Security 연동
+
+### 중분류: 인가·필터
+- **소분류**
+  - JwtAuthenticationFilter: 요청 헤더에서 JWT 검증, SecurityContext 설정
+  - JwtAuthenticationEntryPoint / JwtAccessDeniedHandler: 미인증·권한 없음 처리
+  - SecurityConfig: stateless, CSRF 비활성화, CORS(localhost:3000), permitAll/역할 기반 규칙(주석 예정)
+  - 역할: ROLE_USER, ROLE_LAWYER, ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_OPERATOR — JWT·프론트 라우트 가드
+
+### 중분류: 보안 강화
+- **소분류**
+  - IpBlacklistFilter: IP 블랙리스트 차단
+  - SecurityMonitorService: @Scheduled 보안 모니터링
+  - AES: AesConfig, Aes256Util, Aes256Converter — 개인정보 암호화·마이그레이션(KeyRotationService, AesMigrationConfig)
+  - MaskingAspect: 로그·응답 시 민감정보 마스킹
+  - Admin Audit: AdminAudit 엔티티·AdminAuditRepository — 관리자 행동 이력
+  - AccessLog: AccessLog 엔티티·LogingAspect·AccessLogSpecification — 접근 로그
+  - BannedWord: 금칙어 관리(AdminController)
+  - BlacklistIp: IP 블랙리스트 엔티티·관리
+
+### 중분류: 프론트 인증
+- **소분류**
+  - localStorage: accessToken, userNm, userEmail, userNo, userRole, nickNm
+  - Cookie: refreshToken (HttpOnly)
+  - axios interceptor: Authorization Bearer 첨부, 401 시 refresh 후 재시도, 실패 시 /login 리다이렉트
+  - App.js: JWT payload 디코딩으로 만료 체크
+
+---
+
+## [대분류 5] 데이터 관리 / 전처리
+
+### 중분류: 메인 DB (Oracle)
+- **소분류**
+  - Oracle JDBC: ojdbc11
+  - JPA 엔티티: User(TB_USER), RefreshToken(TB_REFRESH_TOKEN), Board(TB_BOARD), BoardReply, BoardFile, AiChatRoom(TB_AI_CHAT_ROOM), AiChatLog, ChatRoom(TB_CHAT_ROOM), ChatMessage(TB_CHAT_MESSAGE), LawyerInfo(TB_LAWYER_INFO), Review(TB_REVIEW), CalendarEvent, CustomerInquiry(TB_CUSTOMER_INQUIRY), Notification, AdminAudit(TB_ADMIN_AUDIT), AccessLog(TB_ACCESS_LOG), BannedWord(TB_BANNED_WORD), BlacklistIp(TB_IP_BLACKLIST), Subscription 등
+  - DTO: BoardDetailDto, BoardBlindDto, AiChatLog, GeneralMyPageDTO 등
+  - SQL 스크립트: project.sql(HSH) — 테이블 DDL, add_related_cases_to_ai_chat_log.sql, delete_ai_chat_log_without_related_cases.sql
+
+### 중분류: AI 벡터 DB·데이터
+- **소분류**
+  - Chroma: backend-ai/db — 임베딩 벡터 저장
+  - Hugging Face: lawcompany/KLAID 데이터셋 — 법률 판례/문서
+  - update_db.py: KLAID 로드(segment 10k, 총 150k), RecursiveCharacterTextSplitter(800, 100), Document 생성, GoogleGenerativeAIEmbeddings, Chroma 배치(5000건 단위) 적재
+  - run.bat / run_update_db_2_to_15.bat: 서버 실행·DB 업데이트 실행
+
+### 중분류: 데이터 변환·유틸
+- **소분류**
+  - Aes256Converter: JPA 엔티티 필드 AES 암·복호화(개인정보)
+  - HashUtil: 비밀번호 등 해시
+  - IpUtil: 클라이언트 IP 추출(GlobalExceptionHandler, LogingAspect 공용)
+  - DTO·VO: ResultVO, TokenDTO, LoginRequestDto, UserJoinRequestDto 등 요청/응답 구조
+
+### 중분류: 마이그레이션·정책
+- **소분류**
+  - AesMigrationConfig / ForceExecuteConfig: AES 마이그레이션
+  - KeyRotationService: 키 로테이션
+  - AdminSecurityController: 관리자 보안·마이그레이션 관련 API
+
+---
+
+(끝)

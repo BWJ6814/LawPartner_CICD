@@ -1,0 +1,74 @@
+import axios from 'axios';
+
+// 공통: 백엔드 주소 (API 호출·WebSocket·이미지 URL 등 한 곳에서 관리)
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+
+const api = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    // 🔑 핵심 1: 쿠키(RefreshToken)를 주고받기 위해 반드시 true 설정
+    withCredentials: true,
+});
+
+// 1. 요청 인터셉터 (AccessToken 부착)
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        if (config.data instanceof FormData) {
+            delete config.headers['Content-Type'];
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// 2. 응답 인터셉터 (Silent Refresh 로직)
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+
+        // 401(만료) 에러 발생 시 작동
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            try {
+                // 🔑 핵심 2: 본문에 refreshToken을 담지 않습니다.
+                // 쿠키에 담겨 자동으로 날아가기 때문에 빈 객체{}만 보냅니다.
+                // 인터셉터가 없는 순수 axios를 사용합니다.
+                const res = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {}, {
+                    withCredentials: true // 여기서도 쿠키 전송은 필수!
+                });
+
+                if (res.data && res.data.success) {
+                    const newAccessToken = res.data.data.accessToken;
+
+                    // 새 액세스 토큰만 업데이트 (리프레시 토큰은 백엔드가 Set-Cookie로 갱신해줌)
+                    localStorage.setItem('accessToken', newAccessToken);
+
+                    // 원래 실패했던 요청 재시도
+                    originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+                    return api(originalRequest);
+                }
+            } catch (refreshError) {
+                // ✅ 백엔드가 실제로 400/401 응답한 경우만 세션 만료 처리
+                // 네트워크 단절, 서버 다운 등의 에러는 로그아웃하지 않음
+                if (refreshError.response) {
+                    console.warn("🚨 세션이 만료되었습니다. 다시 로그인해 주세요.");
+                    localStorage.clear();
+                    window.location.href = '/login';
+                }
+                return Promise.reject(refreshError);
+            }
+        }
+
+        return Promise.reject(error);
+    }
+);
+
+export default api;
