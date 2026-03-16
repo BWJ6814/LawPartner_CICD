@@ -271,6 +271,8 @@ CREATE TABLE TB_AI_CHAT_LOG (
     TOKEN_USAGE    NUMBER DEFAULT 0,
     -- 등록 일시 사용자가 질문하고 AI가 답변을 완료해서 DB에 저장되는 순간.
     REG_DT         DATE DEFAULT SYSDATE,
+    -- RAG 관련 판례 목록(줄바꿈 구분 문자열). AI 답변 시 참고한 판례 저장.
+    RELATED_CASES  CLOB,
     -- AI 응답 속도 측정용도 처리 가능.. 이건 선택사항..
     -- ELAPSED_TIME   NUMBER,  -- 단위: 밀리초 (ms)
     CONSTRAINT PK_AI_CHAT_LOG PRIMARY KEY (LOG_NO),
