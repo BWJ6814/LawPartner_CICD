@@ -31,7 +31,7 @@ public class LawyerService {
     private final LawyerInfoRepository lawyerInfoRepository;
 
     // ★ [경로 통일] FileController와 똑같은 경로로 수정했습니다.
-    private final String uploadPath = "C:/LP_uploads/licenses/";
+    private final String uploadPath = "Z:/LP_uploads/licenses/";
 
     // ★ [보안] 파일 위변조 감지 도구 소환
     private final Tika tika = new Tika();

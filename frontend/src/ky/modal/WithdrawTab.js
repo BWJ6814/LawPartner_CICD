@@ -68,8 +68,12 @@ const WithdrawTab = () => {
                     const pw = withdrawPwRef.current?.value;
                     if (!pw) { alert('비밀번호를 입력해주세요.'); return; }
                     if (window.confirm('정말로 탈퇴하시겠습니까?\n탈퇴 후에는 모든 데이터가 삭제되며 복구할 수 없습니다.')) {
-                        api.delete('/api/mypage/account', { data: { password: pw } })
-                            .then(() => {
+                        api.delete('/api/ky/account', { data: { password: pw } })
+                            .then(res => {
+                                if (!res.data?.success) {
+                                    alert(res.data?.message || '탈퇴 처리에 실패했습니다.');
+                                    return;
+                                }
                                 alert('탈퇴 처리가 완료되었습니다.');
                                 localStorage.clear();
                                 window.location.href = '/';
