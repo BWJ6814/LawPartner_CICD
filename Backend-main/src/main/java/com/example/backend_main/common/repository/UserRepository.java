@@ -80,7 +80,22 @@ Repository : 식자재 창고 AI 관리자
 @Repository : DB와 연결된 실제 시민(Entity)을 선언하고, [TB_USER]라는 특정 구역(테이블)에 살 것임을 지정합니다.
 extends JpaRepository<User, Long> : JpaRepository를 상속받아 기본적인 CRUD 기능을 자동으로 가지도록 처리!
 
+#### JpaRepository<T, ID> ####
+JpaRepository는 스프링 데이터 JPA에서 제공하는 인터페이스로, 기본적인 CRUD 기능을 자동으로 가지도록 처리합니다.
+<T, ID> 괄호 안에 있는 T와 ID는 제네릭(Generic) 타입으로, 이 Repository가 전담해서 관리할 엔티티(Entity)의 타입과 기본키(PK)의 타입을 지정합니다.
 
+T(Type) : 이 Repository가 전담해서 관리할 엔티티(Entity)의 타입을 지정합니다. 
+    EX) User -> TB_USER
+ID(Identifier) : 이 Repository가 전담해서 관리할 엔티티(Entity)의 기본키(PK)의 타입을 지정합니다. 
+    EX) Long -> USER_NO (자바에서 Long 타입으로 선언이 되어있기 때문에 long로 선언)
+
+검색 예시 
+findById(1L) --> SELECT * FROM TB_USER WHERE USER_NO = 1
+
+--> DTO가 아닌 Entity를 사용하는 이유 ?
+Repository의 유일한 존재 이유는 DB(데이터베이스)와의 직접적인 통신입니다.
+- 엔티티 : 실제 DB 테이블의 구조(컬럼, 타입, 제약조건)를 자바 코드로 완벽하게 본떠 만든 [거울]이자 [설계도]
+- DTO : DB 구조와는 상관 X, 프론트엔드 화면이나 다른 계층으로 데이터를 포장해서 나르기 위한 [택배 상자]
 
 
 위 처리를 통해 가짜 구현체(Proxy)를 만들어줍니다.
