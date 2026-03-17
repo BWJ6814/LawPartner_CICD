@@ -2,6 +2,7 @@ package com.example.backend_main.HSH.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -12,10 +13,14 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MailService {
 
-    private final JavaMailSender mailSender;
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
 
     @Value("${spring.mail.username:}")
     private String defaultFrom;
+
+    @Value("${spring.mail.host:}")
+    private String mailHost;
 
     public void sendFindIdMail(String toEmail, String userId) {
         String subject = "[AI-Law] 아이디 찾기 안내";
@@ -48,6 +53,11 @@ public class MailService {
     }
 
     private void send(String toEmail, String subject, String text) {
+        if (mailHost == null || mailHost.isBlank() || mailSender == null) {
+            log.error("메일 발송 시도 실패 - 메일 설정 미구성 (spring.mail.host 미설정 또는 JavaMailSender 미등록)");
+            throw new RuntimeException("메일 발송 기능이 비활성화된 환경입니다. (spring.mail.host 미설정)");
+        }
+
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(toEmail);
