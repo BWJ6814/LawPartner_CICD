@@ -72,6 +72,7 @@ public class FindAccountService {
 
         user.setUserPw(encoded);
         user.setPwChangeRequired("Y");
+        userRepository.updatePwChangeRequiredToY(user.getUserNo());
 
         String email = user.getEmail();
         mailService.sendTempPasswordMail(email, tempPassword);
