@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import {
   LayoutDashboard, Users, ShieldAlert, FileText, Settings,
-  LogOut, Terminal, UserCheck, Ban, FileSearch, ShieldCheck, ChevronRight, XCircle, Lock
+  LogOut, Terminal, UserCheck, Ban, FileSearch, ShieldCheck, ChevronRight, XCircle, Lock, UserPlus
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -20,6 +20,7 @@ import BlacklistView from './BlacklistView';
 import SecurityPolicyView from './SecurityPolicyView';
 import ContentSecurityView from './ContentSecurityView';
 import AdminInquiryManage from './AdminInquiryManage';
+import CreateOperatorView from './CreateOperatorView';
 
 const ROLES = {
   USER: 'ROLE_USER',
@@ -193,6 +194,24 @@ export default function AdminPage() {
     } catch (e) { toast.error(e.response?.data?.message || "권한 변경 중 오류가 발생했습니다."); }
   };
 
+  const handleCreateOperator = async ({ userId, userPw, userNm, phone, email }) => {
+    try {
+      const res = await api.post('/api/admin/create-operator', {
+        userId,
+        userPw,
+        userNm,
+        phone,
+        email,
+      });
+      if (res.data.success) {
+        toast.success(res.data.message || "관리자 계정이 생성되었습니다.");
+        fetchDashboardData();
+      }
+    } catch (e) {
+      toast.error(e.response?.data?.message || "관리자 계정 생성 중 오류가 발생했습니다.");
+    }
+  };
+
   const handleAddBannedWord = async (e) => {
     e.preventDefault();
     if (!newWord.trim()) return;
@@ -304,6 +323,7 @@ export default function AdminPage() {
       case 'dashboard': return <DashboardView {...commonProps} />;
       case 'user-manage': return <UserManagementView users={users} setSelectedItem={setSelectedItem} setShowModal={setShowModal} />;
       case 'lawyer-approve': return <LawyerApprovalView users={users} handleUserStatusChange={handleUserStatusChange} handleViewLicense={handleViewLicense} />;
+      case 'create-operator': return <CreateOperatorView handleCreateOperator={handleCreateOperator} />;
       case 'audit-log': return <AuditLogView logs={logs} searchParams={searchParams} setSearchParams={setSearchParams} handleSearch={handleSearch} handleReset={handleReset} handleKeyDown={handleKeyDown} handleExcelDownload={handleExcelDownload} hasPermission={hasPermission} />;
       case 'blacklist': return <BlacklistView blacklist={blacklist} newIp={newIp} setNewIp={setNewIp} newReason={newReason} setNewReason={setNewReason} handleAddBlacklist={handleAddBlacklist} handleUnblock={handleUnblock} />;
       case 'security-policy': return <SecurityPolicyView bannedWords={bannedWords} newWord={newWord} setNewWord={setNewWord} handleAddBannedWord={handleAddBannedWord} handleDeleteBannedWord={handleDeleteBannedWord} />;
@@ -338,6 +358,15 @@ export default function AdminPage() {
           <MenuSection title="User Management" isOpen={isSidebarOpen} />
           <MenuItem icon={<Users size={20} />} label="회원 통합 관리" active={activeMenu === 'user-manage'} onClick={() => setActiveMenu('user-manage')} isOpen={isSidebarOpen} />
           <MenuItem icon={<FileText size={20} />} label="문의 답변 관리" active={activeMenu==='inquiry-manage'} onClick={()=>setActiveMenu('inquiry-manage')} isOpen={isSidebarOpen} />
+          {hasPermission([ROLES.SUPER_ADMIN]) && (
+            <MenuItem
+              icon={<UserPlus size={20} />}
+              label="관리자 계정 생성"
+              active={activeMenu === 'create-operator'}
+              onClick={() => setActiveMenu('create-operator')}
+              isOpen={isSidebarOpen}
+            />
+          )}
           {hasPermission([ROLES.SUPER_ADMIN, ROLES.ADMIN]) && (
             <>
               <MenuItem icon={<UserCheck size={20} />} label="변호사 승인" active={activeMenu === 'lawyer-approve'} onClick={() => setActiveMenu('lawyer-approve')} isOpen={isSidebarOpen} />
