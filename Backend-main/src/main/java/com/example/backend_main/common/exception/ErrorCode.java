@@ -73,6 +73,7 @@ public enum ErrorCode {
     ENCRYPTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SYS-001", "데이터 암호화 중 오류가 발생했습니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-401", "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH-402", "만료된 토큰입니다."),
+    RATE_LIMIT_EXCEEDED(HttpStatus.FORBIDDEN, "SEC-429", "요청이 너무 자주 발생했습니다. 잠시 후 다시 시도해주세요."),
 
     // 6. 서버 에러
     SYSTEM_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SYSTEM_ERROR", "서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.");

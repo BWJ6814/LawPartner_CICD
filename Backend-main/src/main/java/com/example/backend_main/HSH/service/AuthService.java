@@ -148,6 +148,9 @@ public class AuthService {
                 authentication, user.getUserNo(), user.getUserNm(), user.getNickNm()
         );
 
+        // 임시 비밀번호 사용 여부를 프론트에 전달
+        tokenDTO.setPasswordChangeRequired("Y".equalsIgnoreCase(user.getPwChangeRequired()));
+
         // 6. ✅ RefreshToken DB 저장 (토큰 재발급 검증용)
         refreshTokenService.saveRefreshToken(user.getUserNo(), tokenDTO.getRefreshToken());
 
@@ -247,6 +250,7 @@ public class AuthService {
         TokenDTO newTokenDTO = jwtTokenProvider.createToken(
                 auth, user.getUserNo(), user.getUserNm(), user.getNickNm()
         );
+        newTokenDTO.setPasswordChangeRequired("Y".equalsIgnoreCase(user.getPwChangeRequired()));
 
         // 8. RTR (Refresh Token Rotation) - 새로 발급된 리프레시 토큰을 DB에 저장합니다.
         refreshTokenService.saveRefreshToken(user.getUserNo(), newTokenDTO.getRefreshToken());

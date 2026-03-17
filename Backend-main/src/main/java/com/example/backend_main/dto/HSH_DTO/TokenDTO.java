@@ -21,4 +21,6 @@ public class TokenDTO {
     private Long userNo;
     // ★ 추가: 이메일과 유저 번호 필드
     private String email;
+    // 임시 비밀번호 사용 여부 플래그 (Y/N 또는 boolean으로 해석)
+    private boolean passwordChangeRequired;
 }

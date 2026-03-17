@@ -63,6 +63,10 @@ public class User {
     @Builder.Default
     private String statusCode = "S01"; // 상태 (S01:정상, S99:탈퇴 등)
 
+    @Column(name = "PW_CHANGE_REQUIRED", length = 1)
+    @Builder.Default
+    private String pwChangeRequired = "N"; // 임시 비밀번호 사용 여부 (Y: 로그인 후 비밀번호 변경 필요)
+
     @Column(name = "FAIL_CNT")
     @Builder.Default
     private Integer failCnt = 0; // 로그인 실패 횟수

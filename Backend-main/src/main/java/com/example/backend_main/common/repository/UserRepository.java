@@ -43,17 +43,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 8. 이메일 해시값으로 유저 찾기 (보안 검색용)
     Optional<User> findByEmailHash(String emailHash);
 
+    // 9. 계정 찾기용 조회
+    Optional<User> findByUserNmAndPhoneHash(String userNm, String phoneHash);
+
+    Optional<User> findByUserIdAndUserNmAndPhoneHashAndEmailHash(String userId, String userNm, String phoneHash, String emailHash);
+
     // ==================================================================================
     // 📊 대시보드 통계용 쿼리 (성능 최적화)
     // ==================================================================================
 
-    // 9. 기간별 가입자 수 (오늘/어제 비교용)
+    // 10. 기간별 가입자 수 (오늘/어제 비교용)
     long countByJoinDtBetween(LocalDateTime start, LocalDateTime end);
 
-    // 10. 특정 상태 회원 수 (변호사 승인 대기: S02)
+    // 11. 특정 상태 회원 수 (변호사 승인 대기: S02)
     long countByStatusCode(String statusCode);
 
-    // 11. 일별 가입자 통계 (차트용)
+    // 12. 일별 가입자 통계 (차트용)
     @Query(value = "SELECT TO_CHAR(JOIN_DT, 'YYYY-MM-DD') as \"date\", COUNT(*) as \"count\" " +
             "FROM TB_USER " +
             "WHERE JOIN_DT >= :sevenDaysAgo " +
