@@ -2,6 +2,8 @@ package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.BWJ.BoardRepository;
 import com.example.backend_main.common.annotation.Masking;
+import com.example.backend_main.HSH.dto.CreateOperatorRequestDto;
+import com.example.backend_main.HSH.util.PasswordUtil;
 import com.example.backend_main.common.entity.*;
 import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;
@@ -46,6 +48,7 @@ public class AdminService {
     private final BannedWordRepository bannedWordRepository;
     private final BoardRepository boardRepository;
     private final AdminAuditRepository adminAuditRepository;
+    private final com.example.backend_main.HSH.service.MailService mailService;
 
     // ✅ Aes256Util 의존성 제거 — JPA Converter가 자동 암호화/복호화 처리
 
@@ -159,7 +162,7 @@ public class AdminService {
     }
 
     @Transactional
-    public void createSubAdmin(UserJoinRequestDto joinDto, String currentAdminId) {
+    public void createSubAdmin(CreateOperatorRequestDto dto, String currentAdminId) {
 
         // 1. 요청자 슈퍼 관리자 확인
         User currentAdmin = userRepository.findByUserId(currentAdminId)
@@ -170,32 +173,39 @@ public class AdminService {
         }
 
         // 2. 아이디 중복 체크
-        if (userRepository.existsByUserId(joinDto.getUserId())) {
+        if (userRepository.existsByUserId(dto.getUserId())) {
             throw new CustomException(ErrorCode.DUPLICATE_DATA, "이미 사용 중인 아이디입니다.");
         }
 
         // 3. 해시값 생성 (검색용)
-        String emailHash = hashUtil.generateHash(joinDto.getEmail());
-        String phoneHash = hashUtil.generateHash(joinDto.getPhone());
+        String emailHash = hashUtil.generateHash(dto.getEmail());
+        String phoneHash = hashUtil.generateHash(dto.getPhone());
 
-        // 4. 하위 관리자 엔티티 생성 및 저장
-        // ✅ 평문 그대로 삽입 — JPA Converter가 자동으로 AES-256 암호화 처리
-        // (기존 try-catch 블록 전체 삭제 — 수동 암호화 불필요)
+        // 4. 임시 비밀번호 생성 및 암호화
+        String tempPassword = PasswordUtil.generateTempPassword();
+        String encodedPw = passwordEncoder.encode(tempPassword);
+
+        // 5. 하위 관리자 엔티티 생성 및 저장
         User subAdmin = User.builder()
-                .userId(joinDto.getUserId())
-                .userPw(passwordEncoder.encode(joinDto.getUserPw()))
-                .userNm(joinDto.getUserNm())
-                .email(joinDto.getEmail())   // 🔑 평문 삽입 → Converter가 암호화
-                .phone(joinDto.getPhone())   // 🔑 평문 삽입 → Converter가 암호화
+                .userId(dto.getUserId())
+                .userPw(encodedPw)
+                .userNm(dto.getUserNm())
+                .email(dto.getEmail())
+                .phone(dto.getPhone())
                 .emailHash(emailHash)
                 .phoneHash(phoneHash)
                 .roleCode("ROLE_OPERATOR")
                 .statusCode("S01")
+                .pwChangeRequired("Y")
                 .build();
 
         userRepository.save(subAdmin);
+        userRepository.updatePwChangeRequiredToY(subAdmin.getUserNo());
 
-        log.info("✅ [관리자 생성 완료] Admin[{}] created by SuperAdmin[{}]",
+        String email = subAdmin.getEmail();
+        mailService.sendTempPasswordMail(email, tempPassword);
+
+        log.info("✅ [관리자 생성 완료] Admin[{}] created by SuperAdmin[{}] (PW_CHANGE_REQUIRED=Y)",
                 subAdmin.getUserId(), currentAdmin.getUserId());
     }
 

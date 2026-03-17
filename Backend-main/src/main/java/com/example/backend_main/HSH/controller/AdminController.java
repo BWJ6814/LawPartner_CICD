@@ -1,5 +1,6 @@
 package com.example.backend_main.HSH.controller;
 
+import com.example.backend_main.HSH.dto.CreateOperatorRequestDto;
 import com.example.backend_main.HSH.service.AdminService;
 import com.example.backend_main.HSH.service.InquiryService;
 import com.example.backend_main.HSH.service.LawyerService;
@@ -9,7 +10,12 @@ import com.example.backend_main.common.entity.BlacklistIp;
 import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.*;
-import com.example.backend_main.dto.HSH_DTO.*;
+import com.example.backend_main.dto.HSH_DTO.AccessLogResponseDTO;
+import com.example.backend_main.dto.HSH_DTO.BannedWordDto;
+import com.example.backend_main.dto.HSH_DTO.InquiryDto;
+import com.example.backend_main.dto.HSH_DTO.UserListDto;
+import com.example.backend_main.dto.HSH_DTO.UserRoleUpdateDto;
+import com.example.backend_main.dto.HSH_DTO.UserStatusUpdateDto;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -82,9 +88,9 @@ public class AdminController {
     @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
     @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER")
     public ResultVO<String> createOperator(
-            @Valid @RequestBody UserJoinRequestDto joinDto,
+            @Valid @RequestBody CreateOperatorRequestDto dto,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        adminService.createSubAdmin(joinDto, userDetails.getUserId());
+        adminService.createSubAdmin(dto, userDetails.getUserId());
         return ResultVO.ok("하위 관리자(운영자)가 성공적으로 생성되었습니다.", null);
     }
 

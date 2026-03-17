@@ -13,8 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.util.Optional;
+import com.example.backend_main.HSH.util.PasswordUtil;
 
 @Slf4j
 @Service
@@ -67,7 +67,7 @@ public class FindAccountService {
 
         User user = optionalUser.get();
 
-        String tempPassword = generateTempPassword();
+        String tempPassword = PasswordUtil.generateTempPassword();
         String encoded = passwordEncoder.encode(tempPassword);
 
         user.setUserPw(encoded);
@@ -78,18 +78,5 @@ public class FindAccountService {
         mailService.sendTempPasswordMail(email, tempPassword);
     }
 
-    /**
-     * 영문 대소문자, 숫자를 섞은 임시 비밀번호 생성.
-     */
-    private String generateTempPassword() {
-        final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        SecureRandom random = new SecureRandom();
-        StringBuilder sb = new StringBuilder(12);
-        for (int i = 0; i < 12; i++) {
-            int idx = random.nextInt(chars.length());
-            sb.append(chars.charAt(idx));
-        }
-        return sb.toString();
-    }
 }
 

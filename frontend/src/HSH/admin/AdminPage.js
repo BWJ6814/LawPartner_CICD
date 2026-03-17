@@ -194,14 +194,14 @@ export default function AdminPage() {
     } catch (e) { toast.error(e.response?.data?.message || "권한 변경 중 오류가 발생했습니다."); }
   };
 
-  const handleCreateOperator = async ({ userId, userPw, userNm, phone, email }) => {
+  const handleCreateOperator = async ({ userId, userNm, phone, email, reason }) => {
     try {
       const res = await api.post('/api/admin/create-operator', {
         userId,
-        userPw,
         userNm,
         phone,
         email,
+        reason,
       });
       if (res.data.success) {
         toast.success(res.data.message || "관리자 계정이 생성되었습니다.");
