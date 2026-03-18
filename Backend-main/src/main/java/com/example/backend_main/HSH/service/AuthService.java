@@ -258,5 +258,18 @@ public class AuthService {
         return newTokenDTO;
     }
 
+    @Transactional
+    public void changePassword(Long userNo, String newPassword) {
+        User user = userRepository.findById(userNo)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
+        if (!"Y".equalsIgnoreCase(user.getPwChangeRequired())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT, "임시 비밀번호 변경 대상이 아닙니다.");
+        }
+
+        String encodedPw = passwordEncoder.encode(newPassword);
+        user.setUserPw(encodedPw);
+        user.setPwChangeRequired("N");
+        userRepository.save(user);
+    }
 }

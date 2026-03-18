@@ -25,17 +25,17 @@ public class FindAccountController {
     private final AccountRecoveryRateLimiter rateLimiter;
 
     @PostMapping("/find-id")
-    public ResultVO<Void> findId(
+    public ResultVO<String> findId(
             @Valid @RequestBody FindIdRequestDto dto,
             HttpServletRequest request
     ) {
-        String clientIp = IpUtil.getClientIp(request);
-        if (!rateLimiter.isAllowed(clientIp)) {
+        String clientIp = IpUtil.getRateLimitIp(request);
+        if (!rateLimiter.isAllowed(clientIp, dto.getEmail())) {
             throw new CustomException(ErrorCode.RATE_LIMIT_EXCEEDED);
         }
 
-        findAccountService.sendUserIdByEmail(dto);
-        return ResultVO.ok("아이디 찾기 요청이 정상적으로 처리되었습니다. 등록된 이메일을 확인해주세요.", null);
+        String maskedUserId = findAccountService.sendUserIdByEmail(dto);
+        return ResultVO.ok("아이디 찾기 요청이 정상적으로 처리되었습니다. 등록된 이메일을 확인해주세요.", maskedUserId);
     }
 
     @PostMapping("/find-password")
@@ -43,8 +43,8 @@ public class FindAccountController {
             @Valid @RequestBody FindPasswordRequestDto dto,
             HttpServletRequest request
     ) {
-        String clientIp = IpUtil.getClientIp(request);
-        if (!rateLimiter.isAllowed(clientIp)) {
+        String clientIp = IpUtil.getRateLimitIp(request);
+        if (!rateLimiter.isAllowed(clientIp, dto.getEmail())) {
             throw new CustomException(ErrorCode.RATE_LIMIT_EXCEEDED);
         }
 

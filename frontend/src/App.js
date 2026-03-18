@@ -16,6 +16,7 @@ import ChatList from './KImMinSU/chatList';
 import Lawmainpage from './ky/Lawmainpage';
 import LoginPage from './HSH/LoginPage';
 import SignupPage from './HSH/SignupPage';
+import ChangePasswordPage from './HSH/ChangePasswordPage';
 import ExpertsPage from './pages/ExpertsPage';
 import ExpertDetailPage from './pages/ExpertDetailPage';
 
@@ -137,6 +138,7 @@ function App() {
 
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
+                    <Route path="/change-password" element={<ChangePasswordPage />} />
 
                     <Route path="/lawyer-dashboard" element={<Lawmainpage />} />
                     <Route path="/lawyer-chat" element={<ChatList />} />

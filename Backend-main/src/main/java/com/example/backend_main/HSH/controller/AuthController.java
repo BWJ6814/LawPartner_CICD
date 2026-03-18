@@ -1,5 +1,6 @@
 package com.example.backend_main.HSH.controller;
 
+import com.example.backend_main.HSH.dto.ChangePasswordRequestDto;
 import com.example.backend_main.HSH.service.AuthService;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.HSH_DTO.LoginRequestDto;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseCookie;
 // 헤더 이름을 상수로 쓰기 위한 스프링 유틸리티 (중타 방지)
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.example.backend_main.common.security.CustomUserDetails;
 
 /*
  [AuthController]
@@ -135,6 +138,18 @@ public class AuthController {
         // 4. 보안을 위해 JSON 본문에서는 제거하고 전송
         newTokenDTO.setRefreshToken(null);
         return ResultVO.ok("토큰 재발급 성공", newTokenDTO);
+    }
+
+    @PutMapping("/change-password")
+    public ResultVO<Void> changePassword(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequestDto dto
+    ) {
+        if (userDetails == null || userDetails.getUserNo() == null) {
+            return ResultVO.fail("AUTH-401", "로그인이 필요합니다.");
+        }
+        authService.changePassword(userDetails.getUserNo(), dto.getNewPassword());
+        return ResultVO.ok("비밀번호가 성공적으로 변경되었습니다.", null);
     }
 
 }

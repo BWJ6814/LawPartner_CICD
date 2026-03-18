@@ -45,9 +45,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmailHash(String emailHash);
 
     // 9. 계정 찾기용 조회
-    Optional<User> findByUserNmAndPhoneHash(String userNm, String phoneHash);
+    Optional<User> findByUserNmAndEmailHash(String userNm, String emailHash);
 
-    Optional<User> findByUserIdAndUserNmAndPhoneHashAndEmailHash(String userId, String userNm, String phoneHash, String emailHash);
+    Optional<User> findByUserIdAndUserNmAndEmailHash(String userId, String userNm, String emailHash);
 
     // 9-1. 임시 비밀번호 저장 시 PW_CHANGE_REQUIRED = 'Y' 업데이트
     @Modifying

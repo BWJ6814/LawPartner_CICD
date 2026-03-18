@@ -40,3 +40,40 @@
     border-color: #1e3a8a; /* tailwind blue-900 */
     box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1);
 }
+
+/* Recovery Modal / Segment Control */
+.segment-container {
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 1rem;
+    position: relative;
+}
+
+.segment-btn {
+    position: relative;
+    z-index: 1;
+    transition: color 0.3s;
+}
+
+.segment-active-bg {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    width: calc(50% - 4px);
+    background: white;
+    border-radius: 0.8rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

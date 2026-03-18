@@ -1,5 +1,7 @@
 package com.example.backend_main.HSH.service;
 
+import com.example.backend_main.HSH.util.MaskingUtil;
+import com.example.backend_main.HSH.util.PasswordUtil;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;
@@ -14,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
-import com.example.backend_main.HSH.util.PasswordUtil;
 
 @Slf4j
 @Service
@@ -28,13 +29,14 @@ public class FindAccountService {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * 아이디 찾기: 이름 + 전화번호(원본)를 받아 PHONE_HASH로 사용자 조회 후, 등록된 이메일로 아이디를 전송한다.
+     * 아이디 찾기: 이름 + 이메일을 받아 EMAIL_HASH로 사용자 조회 후,
+     * 등록된 이메일로 아이디를 전송하고, 마스킹된 아이디를 반환한다.
      */
     @Transactional
-    public void sendUserIdByEmail(FindIdRequestDto dto) {
-        String phoneHash = hashUtil.generateHash(dto.getPhone());
+    public String sendUserIdByEmail(FindIdRequestDto dto) {
+        String emailHash = hashUtil.generateHash(dto.getEmail());
 
-        Optional<User> optionalUser = userRepository.findByUserNmAndPhoneHash(dto.getUserNm(), phoneHash);
+        Optional<User> optionalUser = userRepository.findByUserNmAndEmailHash(dto.getUserNm(), emailHash);
         if (optionalUser.isEmpty()) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND, "입력하신 정보와 일치하는 계정을 찾을 수 없습니다.");
         }
@@ -42,22 +44,22 @@ public class FindAccountService {
         User user = optionalUser.get();
         String email = user.getEmail(); // Aes256Converter를 통한 자동 복호화
         mailService.sendFindIdMail(email, user.getUserId());
+
+        return MaskingUtil.maskUserId(user.getUserId());
     }
 
     /**
-     * 비밀번호 찾기: 아이디 + 이름 + 전화번호 + 이메일을 모두 검증 후,
+     * 비밀번호 찾기: 아이디 + 이름 + 이메일을 검증 후,
      * 임시 비밀번호를 생성하여 저장(해시)하고, 이메일로 전송한다.
      * 저장 시 PW_CHANGE_REQUIRED = 'Y' 로 설정한다.
      */
     @Transactional
     public void resetPasswordAndSendTempPassword(FindPasswordRequestDto dto) {
-        String phoneHash = hashUtil.generateHash(dto.getPhone());
         String emailHash = hashUtil.generateHash(dto.getEmail());
 
-        Optional<User> optionalUser = userRepository.findByUserIdAndUserNmAndPhoneHashAndEmailHash(
+        Optional<User> optionalUser = userRepository.findByUserIdAndUserNmAndEmailHash(
                 dto.getUserId(),
                 dto.getUserNm(),
-                phoneHash,
                 emailHash
         );
 
@@ -72,7 +74,6 @@ public class FindAccountService {
 
         user.setUserPw(encoded);
         user.setPwChangeRequired("Y");
-        userRepository.updatePwChangeRequiredToY(user.getUserNo());
 
         String email = user.getEmail();
         mailService.sendTempPasswordMail(email, tempPassword);

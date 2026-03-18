@@ -10,47 +10,63 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 아이디/비밀번호 찾기 요청에 대한 IP 기반 간단 Rate Limiter.
- * - 동일 IP 기준 1분 동안 5회까지 허용, 6번째부터는 차단.
- * - TB_IP_BLACKLIST에는 영구 등록하지 않고, 메모리 카운트만 1분마다 초기화.
+ * 아이디/비밀번호 찾기 요청에 대한 이중 Rate Limiter.
+ *
+ * [잠금 1 - IP 기반] 1분 10회 제한
+ * - NAT 환경에서는 네트워크 단위로 동작 (공유기 IP 기준)
+ * - X-Forwarded-For 위조 방어를 위해 반드시 getRateLimitIp() 값을 전달받아야 함
+ *
+ * [잠금 2 - 이메일 기반] 1분 3회 제한
+ * - NAT 뒤의 여러 컴퓨터가 같은 계정을 공격하는 경우 차단
+ * - IP 관계없이 특정 계정을 보호하는 핵심 레이어
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AccountRecoveryRateLimiter {
 
-    private static final int MAX_REQUESTS_PER_MINUTE = 5;
+    private static final int MAX_IP_REQUESTS_PER_MINUTE    = 10;
+    private static final int MAX_EMAIL_REQUESTS_PER_MINUTE = 3;
 
-    private final Map<String, AtomicInteger> requestCountMap = new ConcurrentHashMap<>();
+    private final Map<String, AtomicInteger> ipCountMap    = new ConcurrentHashMap<>();
+    private final Map<String, AtomicInteger> emailCountMap = new ConcurrentHashMap<>();
     private final SecurityMonitorService securityMonitorService;
 
     /**
-     * 주어진 IP의 요청이 허용되는지 여부를 판단한다.
-     * 1분 내 호출 횟수가 5회를 초과하면 false를 반환하고, 보안 모니터링에 이벤트를 남긴다.
+     * IP와 이메일 두 잠금을 모두 통과해야 true를 반환한다.
+     *
+     * @param clientIp    IpUtil.getRateLimitIp()로 추출한 TCP 연결 IP (위조 불가)
+     * @param targetEmail 요청 대상 이메일 (계정 단위 잠금 키)
      */
-    public boolean isAllowed(String clientIp) {
-        if (clientIp == null || clientIp.isEmpty()) {
-            return true;
-        }
+    public boolean isAllowed(String clientIp, String targetEmail) {
+        boolean ipAllowed    = checkLimit(ipCountMap,    clientIp,    MAX_IP_REQUESTS_PER_MINUTE,    "IP");
+        boolean emailAllowed = checkLimit(emailCountMap, targetEmail, MAX_EMAIL_REQUESTS_PER_MINUTE, "EMAIL");
+        return ipAllowed && emailAllowed;
+    }
 
-        requestCountMap.putIfAbsent(clientIp, new AtomicInteger(0));
-        int current = requestCountMap.get(clientIp).incrementAndGet();
+    private boolean checkLimit(Map<String, AtomicInteger> countMap, String key, int maxCount, String keyType) {
+        if (key == null || key.isEmpty()) return true;
 
-        if (current > MAX_REQUESTS_PER_MINUTE) {
-            log.warn("⚠️ [AccountRecoveryRateLimiter] IP {} 가 1분 내 {}회 이상 계정 찾기 요청을 시도했습니다.", clientIp, MAX_REQUESTS_PER_MINUTE);
-            securityMonitorService.trackAndAlert(clientIp, "ACCOUNT_RECOVERY_RATE_LIMIT");
+        countMap.putIfAbsent(key, new AtomicInteger(0));
+        int current = countMap.get(key).incrementAndGet();
+
+        if (current > maxCount) {
+            log.warn("⚠️ [AccountRecoveryRateLimiter] {} '{}' 가 1분 내 {}회 초과 요청을 시도했습니다.", keyType, key, maxCount);
+            if ("IP".equals(keyType)) {
+                securityMonitorService.trackAndAlert(key, "ACCOUNT_RECOVERY_RATE_LIMIT");
+            }
             return false;
         }
-
         return true;
     }
 
     /**
-     * 1분마다 카운터 초기화.
+     * 1분마다 IP/이메일 카운터 모두 초기화.
      */
     @Scheduled(fixedRate = 60_000)
     public void resetCounters() {
-        requestCountMap.clear();
+        ipCountMap.clear();
+        emailCountMap.clear();
     }
 }
 

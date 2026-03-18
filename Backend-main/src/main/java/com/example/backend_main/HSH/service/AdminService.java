@@ -57,7 +57,7 @@ public class AdminService {
     // ==================================================================================
 
     @Transactional(readOnly = true)
-    @Masking(fields = {"phone"})
+    @Masking(fields = {"phone", "email"})
     public List<UserListDto> getAllUsers() {
         return userRepository.findAllByStatusCodeNot("S99").stream()
                 .map(user -> UserListDto.builder()

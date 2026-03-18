@@ -11,6 +11,16 @@ const LoginPage = () => {
     const [errorMsg, setErrorMsg] = useState('');       // 에러 메시지
     const [isError, setIsError] = useState(false);      // 에러 유무
     const [isRemember, setIsRemember] = useState(false); // 체크박스 상태용
+    const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
+    const [recoveryMode, setRecoveryMode] = useState('id');
+    const [recoveryForm, setRecoveryForm] = useState({
+        userNm: '',
+        userId: '',
+        email: '',
+    });
+    const [recoveryLoading, setRecoveryLoading] = useState(false);
+    const [recoveryMessage, setRecoveryMessage] = useState('');
+    const [recoveryError, setRecoveryError] = useState('');
 
     // 페이지 진입 시 로직 (이미 로그인 체크 + 접속 로그)
 
@@ -34,13 +44,6 @@ const LoginPage = () => {
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
         setIsError(false);
-
-        // 활동 정지 시뮬레이션
-        if(userId === 'blocked_user'){
-            setErrorMsg("활동 정지 회원입니다. 고객센터에 문의하세요.");
-            setIsError(true);
-            return;
-        }
 
         try {
             const response = await api.post('/api/auth/login', {
@@ -75,6 +78,11 @@ const LoginPage = () => {
                 
                 alert(`${nickname}님 환영합니다!`);
 
+                if (tokenData.passwordChangeRequired) {
+                    navigate('/change-password', { state: { userNo: tokenData.userNo } });
+                    return;
+                }
+
                 // 관리자 계열이면 무조건 관리자 페이지로, 그 외 나머지는 무조건 메인 홈페이지로!
                 if (role === 'ROLE_SUPER_ADMIN' || role === 'ROLE_ADMIN' || role === 'ROLE_OPERATOR') {
                     window.location.href = '/admin'; 
@@ -90,6 +98,64 @@ const LoginPage = () => {
             console.error("로그인 에러:", error);
             setErrorMsg("아이디 또는 비밀번호가 틀렸습니다!"); 
             setIsError(true);
+        }
+    };
+
+    const openRecoveryModal = () => {
+        setRecoveryMode('id');
+        setRecoveryForm({ userNm: '', userId: '', email: '' });
+        setRecoveryMessage('');
+        setRecoveryError('');
+        setIsRecoveryModalOpen(true);
+    };
+
+    const closeRecoveryModal = () => {
+        if (recoveryLoading) return;
+        setIsRecoveryModalOpen(false);
+        setRecoveryMode('id');
+        setRecoveryForm({ userNm: '', userId: '', email: '' });
+        setRecoveryMessage('');
+        setRecoveryError('');
+    };
+
+    const handleRecoveryChange = (e) => {
+        const { name, value } = e.target;
+        setRecoveryForm((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const setRecoveryTab = (mode) => {
+        setRecoveryMode(mode);
+        setRecoveryMessage('');
+        setRecoveryError('');
+    };
+
+    const handleRecoverySubmit = async (e) => {
+        e.preventDefault();
+        setRecoveryLoading(true);
+        setRecoveryMessage('');
+        setRecoveryError('');
+
+        try {
+            if (recoveryMode === 'id') {
+                const res = await api.post('/api/auth/find-id', {
+                    userNm: recoveryForm.userNm,
+                    email: recoveryForm.email,
+                });
+                const maskedUserId = res.data?.data;
+                const maskedPart = maskedUserId ? ` (아이디: ${maskedUserId})` : '';
+                setRecoveryMessage(`등록된 이메일로 아이디가 발송되었습니다.${maskedPart}`);
+            } else {
+                await api.post('/api/auth/find-password', {
+                    userId: recoveryForm.userId,
+                    userNm: recoveryForm.userNm,
+                    email: recoveryForm.email,
+                });
+                setRecoveryMessage('임시 비밀번호가 이메일로 발송되었습니다.');
+            }
+        } catch (error) {
+            setRecoveryError(error.response?.data?.message || '계정 찾기 처리 중 오류가 발생했습니다.');
+        } finally {
+            setRecoveryLoading(false);
         }
     };
 
@@ -170,8 +236,9 @@ const LoginPage = () => {
                             type="button"
                             // 우측 버튼도 좌측 글자와 동일하게 정렬되도록 미세 조정합니다.
                             className="text-xs font-bold text-blue-900 hover:text-blue-700 transition-colors relative top-[1px]"
+                            onClick={openRecoveryModal}
                         >
-                            비밀번호 찾기
+                            아이디 · 비밀번호 찾기
                         </button>
                     </div>
 
@@ -191,6 +258,119 @@ const LoginPage = () => {
                     </p>
                 </div>
             </div>
+
+            {isRecoveryModalOpen && (
+                <div className="modal-overlay px-4" onClick={closeRecoveryModal}>
+                    <div className="recovery-modal w-full max-w-[480px] glass-login rounded-[2.5rem] shadow-[0_20px_50px_rgba(30,58,138,0.18)] p-8 md:p-10 border border-white relative z-10 fade-in" onClick={(e) => e.stopPropagation()}>
+                        <div className="text-center mb-8">
+                            <div className="w-16 h-16 bg-blue-900 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-lg rotate-3">
+                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                            </div>
+                            <h3 className="text-3xl font-black text-slate-800 mb-2 tracking-tight">
+                                {recoveryMode === 'id' ? '아이디 찾기' : '비밀번호 찾기'}
+                            </h3>
+                            <p className="text-slate-500 font-medium text-sm">
+                                {recoveryMode === 'id' ? '가입 시 등록한 정보로 아이디를 확인하세요.' : '임시 비밀번호를 이메일로 발송해 드립니다.'}
+                            </p>
+                        </div>
+
+                        <div className="segment-container flex mb-8">
+                            <div
+                                className="segment-active-bg"
+                                style={{ transform: recoveryMode === 'pw' ? 'translateX(100%)' : 'translateX(0)' }}
+                            />
+                            <button
+                                type="button"
+                                className={`segment-btn flex-1 py-3 text-xs font-bold transition-all ${recoveryMode === 'id' ? 'text-slate-900' : 'text-slate-400'}`}
+                                onClick={() => setRecoveryTab('id')}
+                            >
+                                아이디 찾기
+                            </button>
+                            <button
+                                type="button"
+                                className={`segment-btn flex-1 py-3 text-xs font-bold transition-all ${recoveryMode === 'pw' ? 'text-slate-900' : 'text-slate-400'}`}
+                                onClick={() => setRecoveryTab('pw')}
+                            >
+                                비밀번호 찾기
+                            </button>
+                        </div>
+
+                        <form className="space-y-5" onSubmit={handleRecoverySubmit}>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">NAME</label>
+                                <input
+                                    type="text"
+                                    name="userNm"
+                                    required
+                                    placeholder="이름을 입력하세요"
+                                    className={inputStyle}
+                                    value={recoveryForm.userNm}
+                                    onChange={handleRecoveryChange}
+                                />
+                            </div>
+
+                            {recoveryMode === 'pw' && (
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">USER ID</label>
+                                    <input
+                                        type="text"
+                                        name="userId"
+                                        required
+                                        placeholder="아이디를 입력하세요"
+                                        className={inputStyle}
+                                        value={recoveryForm.userId}
+                                        onChange={handleRecoveryChange}
+                                    />
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-2">EMAIL</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    required
+                                    placeholder="example@lex.ai"
+                                    className={inputStyle}
+                                    value={recoveryForm.email}
+                                    onChange={handleRecoveryChange}
+                                />
+                                <p className="text-[10px] text-blue-600 font-bold ml-1">
+                                    ※ 가입 시 입력한 이메일로 본인 확인이 진행됩니다.
+                                </p>
+                            </div>
+
+                            {(recoveryMessage || recoveryError) && (
+                                <div className={`p-3.5 rounded-2xl text-center ${recoveryMessage ? 'bg-blue-50 border border-blue-100' : 'bg-red-50 border border-red-100'}`}>
+                                    <p className={`text-sm font-bold ${recoveryMessage ? 'text-blue-700' : 'text-red-600'}`}>
+                                        {recoveryMessage || recoveryError}
+                                    </p>
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={recoveryLoading}
+                                className="w-full bg-blue-900 text-white py-4 rounded-2xl font-black text-base shadow-xl hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {recoveryLoading ? '처리 중...' : (recoveryMode === 'id' ? '아이디 찾기' : '임시 비밀번호 발송')}
+                            </button>
+                        </form>
+
+                        <div className="mt-6 text-center">
+                            <button
+                                type="button"
+                                onClick={closeRecoveryModal}
+                                className="text-xs font-bold text-slate-400 hover:text-blue-900 transition-colors underline underline-offset-4"
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 };
