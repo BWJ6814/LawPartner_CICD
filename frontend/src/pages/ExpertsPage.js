@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../common/api/axiosConfig";
+import { API_BASE_URL } from "../common/api/axiosConfig";
 import {
     Sparkles,
     Gavel,
@@ -115,7 +116,7 @@ function inferMainCategory(tags) {
 function safeImage(url) {
     const u = (url || "").trim();
     if (!u) return "";
-    const base = process.env.REACT_APP_API_URL || "http://localhost:8080";
+    const base = API_BASE_URL;
     if (u.startsWith("/")) return `${base}${u}`;
     return u;
 }

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../common/api/axiosConfig";
 
 const TOKEN_KEY = "accessToken";
 
@@ -36,7 +37,7 @@ export default function CustomerWritePage() {
 
         try {
             const res = await axios.post(
-                "http://localhost:8080/api/customer/inquiries",
+                `${API_BASE_URL}/api/customer/inquiries`,
                 {
                     type,
                     title: title.trim(),

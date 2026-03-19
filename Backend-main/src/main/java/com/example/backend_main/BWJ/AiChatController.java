@@ -18,7 +18,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ai")
-@CrossOrigin(origins = "http://localhost:3000") // 리액트 허용
+@CrossOrigin(origins = {"http://192.168.0.43:3000", "http://localhost:3000"}) // 리액트 허용
 public class AiChatController {
 
     @Autowired
@@ -31,8 +31,8 @@ public class AiChatController {
     private UserRepository userRepository;
 
     // 파이썬 서버 주소
-    private final String PYTHON_SERVER_URL = "http://localhost:8000/chat";
-    private final String PYTHON_SUMMARIZE_URL = "http://localhost:8000/summarize-consult";
+    private final String PYTHON_SERVER_URL = "http://192.168.0.43:8000/chat";
+    private final String PYTHON_SUMMARIZE_URL = "http://192.168.0.43:8000/summarize-consult";
 
     @PostMapping("/rooms")
     public ResponseEntity<?> createRoom(@RequestBody Map<String, Object> payload) {
