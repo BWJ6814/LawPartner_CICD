@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../common/api/axiosConfig';
+import { setAccessToken } from '../common/api/axiosConfig';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -56,6 +57,8 @@ const LoginPage = () => {
             if (tokenData && tokenData.accessToken) {
                 // 모든 정보를 로컬 스토리지에 저장 (RBAC 연동의 핵심)
                 localStorage.setItem('accessToken', tokenData.accessToken);
+                // axios 인터셉터가 즉시 Authorization 헤더를 붙일 수 있도록 메모리 토큰도 동기화
+                setAccessToken(tokenData.accessToken);
                 localStorage.setItem('userNm', tokenData.userNm || "사용자");
                 // ★ 추가 저장: 이메일과 유저 번호
                 localStorage.setItem('userEmail', tokenData.email);

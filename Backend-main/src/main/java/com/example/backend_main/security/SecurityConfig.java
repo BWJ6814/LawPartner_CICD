@@ -86,7 +86,9 @@ public class SecurityConfig {
                                 "/api/lawyers/**",
                                 "/api/boards/**",
                                 "/api/ai/**",
+                                "/api/chat/files/download/**",
                                 "/images/profiles/**",
+                                "/uploads/**",
                                 "/ws-stomp/**",
                                 "/sub/**",
                                 "/pub/**"

@@ -70,7 +70,7 @@ public class AuthController {
         // 🍪 Refresh Token을 위한 보안 쿠키 생성
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokenDTO.getRefreshToken())
                 .httpOnly(true)    // JS 접근 차단 (보안 핵심)
-                .secure(true)      // HTTPS에서만 전송 (로컬 개발 시 false 가능)
+                .secure(false)     // 현재 HTTP 개발 환경에서 쿠키 전송 허용
                 .path("/")         // 모든 경로에서 사용
                 .maxAge(7 * 24 * 60 * 60) // 7일 유지
                 .sameSite("Lax")   // CSRF 방어
@@ -127,7 +127,7 @@ public class AuthController {
         // 2. 새로 발급받은 리프레시 토큰을 다시 보안 쿠키로 굽기
         ResponseCookie cookie = ResponseCookie.from("refreshToken", newTokenDTO.getRefreshToken())
                 .httpOnly(true)
-                .secure(true) // 로컬 환경이면 생략/false 가능
+                .secure(false) // 현재 HTTP 개발 환경에서 쿠키 전송 허용
                 .path("/")
                 .maxAge(7 * 24 * 60 * 60)
                 .sameSite("Lax")
