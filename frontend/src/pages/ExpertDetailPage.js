@@ -30,6 +30,7 @@ export default function ExpertDetailPage() {
         const fetchDetail = async () => {
             setIsLoading(true);
             setLoadMsg("");
+
             try {
                 const res = await api.get(`/api/lawyers/${id}`);
                 const d = res.data?.data ?? res.data;
@@ -54,11 +55,11 @@ export default function ExpertDetailPage() {
                     mainCategory: tags[0] || "기타",
                     intro: introText || "소개 정보가 없습니다.",
                     office: [officeName, officeAddr].filter(Boolean).join(" ") || "사무실 정보가 없습니다.",
-                    phone: d.phone ?? "미제공",
                     rating,
                     reviewCount,
                 });
             } catch (e) {
+                console.error("변호사 상세 조회 실패:", e);
                 setLoadMsg("상세 데이터를 불러오는 중 오류가 발생했습니다.");
                 setLawyer(null);
             } finally {
@@ -125,7 +126,11 @@ export default function ExpertDetailPage() {
             <div className="bg-white shadow-xl rounded-3xl p-10">
                 <div className="flex items-center gap-8 mb-10">
                     <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-lg">
-                        <img src={lawyer.image} alt={lawyer.name} className="w-full h-full object-cover" />
+                        <img
+                            src={lawyer.image}
+                            alt={lawyer.name}
+                            className="w-full h-full object-cover"
+                        />
                     </div>
 
                     <div>
@@ -165,7 +170,6 @@ export default function ExpertDetailPage() {
                 <section>
                     <h4 className="text-xl font-bold mb-2 border-b pb-2">사무실 정보</h4>
                     <p>주소: {lawyer.office}</p>
-                    <p>연락처: {lawyer.phone}</p>
                 </section>
 
                 <div className="mt-10">
