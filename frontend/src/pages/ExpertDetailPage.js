@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "../common/api/axiosConfig";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -43,15 +43,16 @@ export default function ExpertDetailPage() {
                 const officeAddr = d.officeAddr ?? d.office_addr ?? d.OFFICE_ADDR ?? "";
                 const rating = Number(d.rating || 0);
                 const reviewCount = Number(d.reviewCount || 0);
+                const tags = splitTags(specialtyStr);
 
                 setLawyer({
                     id: userNo,
                     name: userNm,
                     image: safeImage(imgUrl),
                     specialtyStr,
-                    mainCategory: splitTags(specialtyStr)[0] || "기타",
+                    tags,
+                    mainCategory: tags[0] || "기타",
                     intro: introText || "소개 정보가 없습니다.",
-                    careers: Array.isArray(d.careers) ? d.careers : [],
                     office: [officeName, officeAddr].filter(Boolean).join(" ") || "사무실 정보가 없습니다.",
                     phone: d.phone ?? "미제공",
                     rating,
@@ -98,7 +99,6 @@ export default function ExpertDetailPage() {
             const roomId = room?.roomId ?? room?.id;
 
             if (roomId) {
-                // 변호사·의뢰인에게 1:1 채팅 요청 알림 전송 (클릭 시 해당 채팅방 이동)
                 api.post("/api/chat/room/notify", { roomId, userNo, lawyerNo }).catch(() => {});
                 navigate(`/chatList/${roomId}`);
             } else {
@@ -109,8 +109,6 @@ export default function ExpertDetailPage() {
             alert("채팅방 생성 중 오류가 발생했습니다.");
         }
     };
-
-    const hasCareers = useMemo(() => (lawyer?.careers || []).length > 0, [lawyer]);
 
     if (isLoading) {
         return <div className="text-center py-20 font-bold text-slate-600">로딩중...</div>;
@@ -147,15 +145,20 @@ export default function ExpertDetailPage() {
                 </section>
 
                 <section className="mb-8">
-                    <h4 className="text-xl font-bold mb-2 border-b pb-2">경력</h4>
-                    {hasCareers ? (
-                        <ul className="list-disc pl-6 space-y-2">
-                            {lawyer.careers.map((c, idx) => (
-                                <li key={idx}>{c}</li>
+                    <h4 className="text-xl font-bold mb-3 border-b pb-2">주요 전문분야</h4>
+                    {lawyer.tags?.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {lawyer.tags.map((tag, idx) => (
+                                <span
+                                    key={idx}
+                                    className="px-4 py-2 rounded-full bg-slate-100 text-slate-700 font-semibold text-sm"
+                                >
+                                    {tag}
+                                </span>
                             ))}
-                        </ul>
+                        </div>
                     ) : (
-                        <p className="text-slate-500 font-semibold">경력 정보가 없습니다.</p>
+                        <p className="text-slate-500 font-semibold">전문분야 정보가 없습니다.</p>
                     )}
                 </section>
 
