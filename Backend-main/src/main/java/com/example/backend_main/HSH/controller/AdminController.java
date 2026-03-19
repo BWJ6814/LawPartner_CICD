@@ -59,13 +59,13 @@ public class AdminController {
     // ==================================================================================
 
     @GetMapping("/users")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN','ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN','OPERATOR')")
     public ResultVO<List<UserListDto>> getAllUsers() {
         return ResultVO.ok("전체 회원 목록을 성공적으로 불러왔습니다.", adminService.getAllUsers());
     }
 
     @PutMapping("/user/status")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @ActionLog(action = "UPDATE_USER_STATUS", target = "TB_USER")
     public ResultVO<Void> updateUserStatus(
             @Valid @RequestBody UserStatusUpdateDto dto,
@@ -75,7 +75,7 @@ public class AdminController {
     }
 
     @PutMapping("/user/role")
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @ActionLog(action = "UPDATE_USER_ROLE", target = "TB_USER")
     public ResultVO<Void> updateUserRole(
             @Valid @RequestBody UserRoleUpdateDto dto,
@@ -85,7 +85,7 @@ public class AdminController {
     }
 
     @PostMapping("/create-operator")
-    @PreAuthorize("hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @ActionLog(action = "CREATE_OPERATOR", target = "TB_USER")
     public ResultVO<String> createOperator(
             @Valid @RequestBody CreateOperatorRequestDto dto,
@@ -95,7 +95,7 @@ public class AdminController {
     }
 
     @GetMapping("/lawyers/{userNo}/license")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @ActionLog(action = "DOWNLOAD_LAWYER_LICENSE", target = "TB_LAWYER_INFO")
     public ResponseEntity<Resource> downloadLawyerLicense(@PathVariable Long userNo) {
         Resource resource = lawyerService.loadLicenseFile(userNo);
@@ -126,7 +126,7 @@ public class AdminController {
     // ==================================================================================
 
     @GetMapping("/logs")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')")
     public ResultVO<Page<AccessLogResponseDTO>> getAccessLogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
@@ -140,7 +140,7 @@ public class AdminController {
     }
 
     @GetMapping("/logs/download")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')")
     @ActionLog(action = "DOWNLOAD_EXCEL", target = "TB_ACCESS_LOG")
     public void downloadLogs(
             HttpServletResponse response,
@@ -149,7 +149,7 @@ public class AdminController {
     }
 
     @GetMapping("/logs/threats")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')")
     public ResultVO<List<AccessLogResponseDTO>> getRecentThreats() {
         return ResultVO.ok("최신 보안 위협 로그를 성공적으로 불러왔습니다.", adminService.getRecentThreats());
     }
@@ -159,13 +159,13 @@ public class AdminController {
     // ==================================================================================
 
     @GetMapping("/summary")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')")
     public ResultVO<Map<String, Object>> getAdminSummary() {
         return ResultVO.ok("요약 데이터를 성공적으로 불러왔습니다.", adminService.getAdminSummary());
     }
 
     @GetMapping("/status/daily")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')")
     public ResultVO<List<Map<String, Object>>> getDailyStats(
             @RequestParam(defaultValue = "7") int days) {
         return ResultVO.ok("통계 데이터를 성공적으로 불러왔습니다.", adminService.getDailyVisitStats(days));
@@ -176,13 +176,13 @@ public class AdminController {
     // ==================================================================================
 
     @GetMapping("/blacklist")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR')")
     public ResultVO<List<BlacklistIp>> getBlacklist() {
         return ResultVO.ok(adminService.getAllBlacklist());
     }
 
     @PostMapping("/blacklist")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @ActionLog(action = "IP 블랙리스트 추가", target = "보안 시스템")
     public ResultVO<Void> addBlacklist(
             @RequestBody Map<String, String> payload,
@@ -192,7 +192,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/blacklist")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @ActionLog(action = "IP 블랙리스트 해제", target = "보안 시스템")
     public ResultVO<Void> removeBlacklist(
             @RequestParam String ip,
@@ -207,7 +207,7 @@ public class AdminController {
     // ==================================================================================
 
     @PostMapping("/banned-words")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @ActionLog(action = "ADD_BANNED_WORD", target = "TB_BANNED_WORD")
     public ResultVO<Void> addBannedWord(
             @Valid @RequestBody BannedWordDto dto,
@@ -217,7 +217,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/banned-words/{wordNo}")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @ActionLog(action = "DELETE_BANNED_WORD", target = "TB_BANNED_WORD")
     public ResultVO<Void> deleteBannedWord(@PathVariable Long wordNo) {
         adminService.deleteBannedWord(wordNo);
@@ -225,7 +225,7 @@ public class AdminController {
     }
 
     @GetMapping("/banned-words")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR')")
     public ResultVO<List<BannedWord>> getBannedWords() {
         return ResultVO.ok("금지어 목록을 불러왔습니다.", adminService.getAllBannedWords());
     }
@@ -235,13 +235,13 @@ public class AdminController {
     // ==================================================================================
 
     @GetMapping("/boards")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')")
     public ResultVO<List<Board>> getAllBoards() {
         return ResultVO.ok(adminService.getAllBoards());
     }
 
     @PutMapping("/board/blind")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR')")
     @ActionLog(action = "TOGGLE_BLIND", target = "TB_BOARD")
     public ResultVO<Void> toggleBoardBlind(
             @Valid @RequestBody BoardBlindDto dto,
@@ -256,7 +256,7 @@ public class AdminController {
 
     // 전체 문의 목록 조회
     @GetMapping("/customer/inquiries")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR')")
     public ResultVO<List<InquiryDto.ListResponse>> getAllInquiries(
             @RequestParam(required = false) String status) {
         // ✅ 2. adminService 대신 inquiryService의 성능 최적화된 메서드 호출
@@ -265,7 +265,7 @@ public class AdminController {
 
     // 문의 상세 조회
     @GetMapping("/customer/inquiries/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR')")
     public ResultVO<InquiryDto.DetailResponse> getInquiryDetail(@PathVariable Long id) {
         // ✅ 3. 작성자 실명/ID가 포함된 상세 정보를 가져옴
         return ResultVO.ok("문의 상세를 성공적으로 불러왔습니다.", inquiryService.getInquiryDetail(id));
@@ -273,7 +273,7 @@ public class AdminController {
 
     // 관리자 답변 저장
     @PutMapping("/customer/inquiries/{id}/answer")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR')")
     @ActionLog(action = "SAVE_INQUIRY_ANSWER", target = "TB_CUSTOMER_INQUIRY")
     public ResultVO<Void> saveAnswer(
             @PathVariable Long id,
@@ -285,7 +285,7 @@ public class AdminController {
 
     // 문의 삭제
     @DeleteMapping("/customer/inquiries/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @ActionLog(action = "DELETE_INQUIRY", target = "TB_CUSTOMER_INQUIRY")
     public ResultVO<Void> deleteInquiry(@PathVariable Long id) {
         // ✅ 5. 삭제 권한 체크 후 처리
