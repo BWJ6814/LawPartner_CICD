@@ -21,6 +21,7 @@ import SecurityPolicyView from './SecurityPolicyView';
 import ContentSecurityView from './ContentSecurityView';
 import AdminInquiryManage from './AdminInquiryManage';
 import CreateOperatorView from './CreateOperatorView';
+import { logout } from '../../common/utils/logout';
 
 const ROLES = {
   USER: 'ROLE_USER',
@@ -379,7 +380,7 @@ export default function AdminPage() {
           <MenuItem icon={<FileSearch size={20} />} label="콘텐츠 보안 관리" active={activeMenu === 'content-security'} onClick={() => setActiveMenu('content-security')} isOpen={isSidebarOpen} />
         </nav>
         <div className="p-4 border-t border-slate-800">
-          <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} className="flex items-center gap-3 text-slate-400 hover:text-white w-full px-4 py-2">
+          <button onClick={logout} className="flex items-center gap-3 text-slate-400 hover:text-white w-full px-4 py-2">
             <LogOut size={20} />
             {isSidebarOpen && <span className="text-sm font-bold">로그아웃</span>}
           </button>

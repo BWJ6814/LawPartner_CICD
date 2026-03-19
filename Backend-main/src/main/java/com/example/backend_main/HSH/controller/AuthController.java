@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseCookie;
 // 헤더 이름을 상수로 쓰기 위한 스프링 유틸리티 (중타 방지)
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.example.backend_main.common.security.CustomUserDetails;
 
@@ -150,6 +151,14 @@ public class AuthController {
         }
         authService.changePassword(userDetails.getUserNo(), dto.getNewPassword());
         return ResultVO.ok("비밀번호가 성공적으로 변경되었습니다.", null);
+    }
+
+    @DeleteMapping("/logout")
+    public ResponseEntity<?> logout(
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
+        authService.logout(refreshToken, response);
+        return ResponseEntity.ok(ResultVO.ok("로그아웃 되었습니다.", null));
     }
 
 }

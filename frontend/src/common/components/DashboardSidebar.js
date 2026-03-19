@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import SettingsModal from '../../KImMinSU/SettingsModal';
 import LawyerSettingsModal from '../../ky/modal/SettingsModal';
 import api from '../../common/api/axiosConfig';
+import { logout } from '../utils/logout';
 
 const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
     const location = useLocation();
@@ -41,18 +42,7 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
         fetchDashboardData();
     }, []);
 
-    // ★ 로그아웃 로직 추가
-    const handleLogout = () => {
-        localStorage.removeItem('accessToken'); // 저장소 비우기
-        localStorage.removeItem('refreshToken'); // 리프레시 토큰도 같이 삭제
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userNm');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('userNo');
-        localStorage.removeItem('nickNm');
-        alert("로그아웃 되었습니다.");
-        navigate('/login');
-    };
+    // handleLogout 제거: 공통 logout 사용
 
     // 이름 기반으로 고정된 랜덤 배경색을 만들어주는 팩트 함수
     const getRandomColor = (name) => {
@@ -165,7 +155,7 @@ const DashboardSidebar = ({ isSidebarOpen, toggleSidebar }) => {
                                 </button>
                                 <div className="border-t border-slate-700 my-1" />
                                 <button
-                                    onClick={() => { setIsDropdownOpen(false); handleLogout(); }}
+                                    onClick={() => { setIsDropdownOpen(false); logout(); }}
                                     className="w-full px-4 py-2.5 text-left text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors flex items-center gap-3 font-bold text-sm"
                                 >
                                     <i className="fas fa-sign-out-alt w-4 text-center"></i> 로그아웃
