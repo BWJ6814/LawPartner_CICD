@@ -20,7 +20,7 @@ public class RefreshToken {
     @Column(name = "USER_NO", nullable = false, unique = true) // ★ unique 설정으로 1인 1토큰(중복 로그인 방지)
     private Long userNo;
 
-    @Column(name = "TOKEN_VALUE", nullable = false, length = 500)
+    @Column(name = "TOKEN_VALUE", nullable = false, length = 64)
     private String tokenValue;
 
     @Column(name = "EXPIRE_DT", nullable = false)
