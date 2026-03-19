@@ -70,7 +70,7 @@ const SORTS = [
     { key: "RECOMMEND", label: "추천순" },
     { key: "RATING", label: "평점순" },
     { key: "REVIEWS", label: "후기순" },
-    { key: "CAREER", label: "경력순" },
+    { key: "SPECIALTIES", label: "전문분야순" },
 ];
 
 /** ✅ 유틸리티 함수 */
@@ -82,10 +82,9 @@ function containsKoreanInsensitive(haystack, needle) {
 function recommendScore(expert) {
     const rating = Number(expert.rating || 0);
     const reviews = Number(expert.reviewCount || 0);
-    const career = Number(expert.careerYears || 0);
-    const responseRate = Number(expert.responseRate || 0);
+    const specialtiesCount = Number(expert.specialtiesCount || 0);
 
-    return rating * 60 + reviews * 2 + career * 3 + responseRate * 0.2;
+    return rating * 60 + reviews * 2 + specialtiesCount * 8;
 }
 
 function splitTags(specialtyStr) {
@@ -245,8 +244,6 @@ export default function ExpertsPage() {
                     const imgUrl = x.imgUrl ?? x.img_url ?? x.IMG_URL;
                     const rating = Number(x.rating || 0);
                     const reviewCount = Number(x.reviewCount || 0);
-                    const careerYears = Number(x.careerYears || 0);
-                    const responseRate = Number(x.responseRate || 0);
 
                     const tags = splitTags(specialtyStr);
                     const mainCategory = inferMainCategory(tags);
@@ -257,10 +254,9 @@ export default function ExpertsPage() {
                         name: name || "변호사",
                         mainCategory,
                         tags,
+                        specialtiesCount: tags.length,
                         rating,
                         reviewCount,
-                        careerYears,
-                        responseRate,
                         image: safeImage(imgUrl),
                     };
                 });
@@ -302,7 +298,7 @@ export default function ExpertsPage() {
                 e.name,
                 e.mainCategory,
                 (e.tags || []).join(" "),
-                `${e.careerYears || 0}년`,
+                `${e.specialtiesCount || 0}개`,
             ].join(" ");
             return containsKoreanInsensitive(hay, q);
         });
@@ -315,17 +311,17 @@ export default function ExpertsPage() {
             arr.sort((a, b) => {
                 if (b.rating !== a.rating) return b.rating - a.rating;
                 if (b.reviewCount !== a.reviewCount) return b.reviewCount - a.reviewCount;
-                return b.careerYears - a.careerYears;
+                return b.specialtiesCount - a.specialtiesCount;
             });
         } else if (sortKey === "REVIEWS") {
             arr.sort((a, b) => {
                 if (b.reviewCount !== a.reviewCount) return b.reviewCount - a.reviewCount;
                 if (b.rating !== a.rating) return b.rating - a.rating;
-                return b.careerYears - a.careerYears;
+                return b.specialtiesCount - a.specialtiesCount;
             });
-        } else if (sortKey === "CAREER") {
+        } else if (sortKey === "SPECIALTIES") {
             arr.sort((a, b) => {
-                if (b.careerYears !== a.careerYears) return b.careerYears - a.careerYears;
+                if (b.specialtiesCount !== a.specialtiesCount) return b.specialtiesCount - a.specialtiesCount;
                 if (b.rating !== a.rating) return b.rating - a.rating;
                 return b.reviewCount - a.reviewCount;
             });
@@ -405,7 +401,6 @@ export default function ExpertsPage() {
             const roomId = room?.roomId ?? room?.id;
 
             if (roomId) {
-                // 변호사·의뢰인에게 1:1 채팅 요청 알림 전송 (클릭 시 해당 채팅방 이동)
                 api.post("/api/chat/room/notify", { roomId, userNo, lawyerNo }).catch(() => {});
                 navigate(`/chatList/${roomId}`);
             } else {
@@ -441,7 +436,6 @@ export default function ExpertsPage() {
                 <p className="mt-3 text-slate-500 font-semibold">신뢰할 수 있는 법률 파트너를 만나보세요</p>
             </div>
 
-            {/* 카테고리 그리드 */}
             <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-3 mb-10">
                 {CATEGORY_GRID.map((c) => (
                     <button
@@ -471,7 +465,6 @@ export default function ExpertsPage() {
                 ))}
             </div>
 
-            {/* 검색 및 정렬 */}
             <div className="flex flex-col md:flex-row gap-4 mb-10">
                 <div className="flex-1 relative group">
                     <Search
@@ -519,7 +512,6 @@ export default function ExpertsPage() {
                 </div>
             </div>
 
-            {/* ✅ 1페이지에서만 추천 전문가 노출 */}
             {currentPage === 1 && (
                 <div
                     ref={recommendRef}
@@ -534,7 +526,7 @@ export default function ExpertsPage() {
                                 <h3 className="text-2xl font-black text-white">Premium 추천 전문가</h3>
                                 <p className="text-slate-300 font-bold mt-1">
                                     {sortKey === "RECOMMEND"
-                                        ? "평점, 후기, 경력을 종합한 추천 전문가"
+                                        ? "평점, 후기, 전문분야 수를 종합한 추천 전문가"
                                         : `${SORTS.find((s) => s.key === sortKey)?.label || "추천순"} 기준 상위 전문가`}
                                 </p>
                             </div>
@@ -591,33 +583,33 @@ export default function ExpertsPage() {
 
                                         <div className="grid grid-cols-3 gap-2 bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100">
                                             <div className="text-center">
-                                                <div className="text-[10px] text-slate-400 font-black uppercase">Career</div>
-                                                <div className="text-sm font-bold text-slate-900">{e.careerYears}년</div>
-                                            </div>
-                                            <div className="text-center border-x border-slate-200">
                                                 <div className="text-[10px] text-slate-400 font-black uppercase">Rating</div>
                                                 <div className="text-sm font-bold text-slate-900 flex items-center justify-center gap-0.5">
                                                     <Star size={12} fill="#f59e0b" className="text-yellow-500" />
                                                     {e.rating.toFixed(1)}
                                                 </div>
                                             </div>
-                                            <div className="text-center">
+                                            <div className="text-center border-x border-slate-200">
                                                 <div className="text-[10px] text-slate-400 font-black uppercase">Reviews</div>
                                                 <div className="text-sm font-bold text-slate-900">{e.reviewCount}</div>
                                             </div>
+                                            <div className="text-center">
+                                                <div className="text-[10px] text-slate-400 font-black uppercase">Specialties</div>
+                                                <div className="text-sm font-bold text-slate-900">{e.specialtiesCount}</div>
+                                            </div>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-1.5 mb-8 flex-grow">
+                                        <div className="flex flex-wrap content-start gap-2 mb-8 min-h-[72px] flex-grow">
                                             {visibleTags.map((t) => (
                                                 <span
                                                     key={t}
-                                                    className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-50 text-slate-500 border border-slate-200"
+                                                    className="inline-flex items-center justify-center h-8 px-3 rounded-full bg-slate-50 text-slate-600 border border-slate-200 text-[11px] font-bold leading-none whitespace-nowrap"
                                                 >
                                                     #{t}
                                                 </span>
                                             ))}
                                             {hiddenCount > 0 && (
-                                                <span className="text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-900 text-white border border-slate-900">
+                                                <span className="inline-flex items-center justify-center h-8 px-3 rounded-full bg-slate-900 text-white border border-slate-900 text-[11px] font-bold leading-none whitespace-nowrap">
                                                     +{hiddenCount}
                                                 </span>
                                             )}
@@ -645,7 +637,6 @@ export default function ExpertsPage() {
                 </div>
             )}
 
-            {/* 일반 목록 그리드 */}
             {pagedExperts.length > 0 && (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -672,7 +663,7 @@ export default function ExpertsPage() {
                                                 {e.name} 변호사
                                             </h4>
                                             <p className="text-xs font-bold text-slate-400">
-                                                {e.mainCategory} · 경력 {e.careerYears}년
+                                                {e.mainCategory} · 전문분야 {e.specialtiesCount}개
                                             </p>
                                         </div>
                                     </div>
@@ -681,21 +672,21 @@ export default function ExpertsPage() {
                                         <div className="flex text-yellow-400 text-xs">★★★★★</div>
                                         <span className="font-bold text-slate-800 text-sm">{e.rating.toFixed(1)}</span>
                                         <span className="text-slate-400 text-xs font-bold">
-                                            (후기 {e.reviewCount})
+                                            후기 {e.reviewCount} · 전문분야 {e.specialtiesCount}
                                         </span>
                                     </div>
 
-                                    <div className="flex flex-wrap gap-1.5 mb-8 flex-grow">
+                                    <div className="flex flex-wrap content-start gap-2 mb-8 min-h-[64px] flex-grow">
                                         {visibleTags.map((t) => (
                                             <span
                                                 key={t}
-                                                className="text-[10px] font-bold px-2 py-1 rounded-md bg-slate-50 text-slate-500 border border-slate-100"
+                                                className="inline-flex items-center justify-center h-7 px-3 rounded-full bg-slate-50 text-slate-600 border border-slate-200 text-[11px] font-bold leading-none whitespace-nowrap"
                                             >
                                                 #{t}
                                             </span>
                                         ))}
                                         {hiddenCount > 0 && (
-                                            <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-slate-900 text-white border border-slate-900">
+                                            <span className="inline-flex items-center justify-center h-7 px-3 rounded-full bg-slate-900 text-white border border-slate-900 text-[11px] font-bold leading-none whitespace-nowrap">
                                                 +{hiddenCount}
                                             </span>
                                         )}
@@ -720,7 +711,6 @@ export default function ExpertsPage() {
                         })}
                     </div>
 
-                    {/* 페이지네이션 */}
                     {totalPages > 1 && (
                         <div className="mt-10 flex items-center justify-center gap-2 flex-wrap">
                             <button
