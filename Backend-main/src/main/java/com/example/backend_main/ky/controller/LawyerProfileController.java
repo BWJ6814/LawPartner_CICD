@@ -26,7 +26,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/ky")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://192.168.0.43:3000", "http://localhost:3000"})
 public class LawyerProfileController {
 
     private final LawyerInfoRepository  lawyerInfoRepository;
