@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException
 # 1. 환경 변수(.env)에서 구글 API 키를 안전하게 불러옵니다.
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
-print("현재 적용된 API 키 앞부분:", api_key[:10] if api_key else "키 없음")
+print("API key prefix:", api_key[:10] if api_key else "none")
 
 # FastAPI 애플리케이션 객체를 생성합니다. (스프링 부트의 Application 역할)
 app = FastAPI()
@@ -27,7 +27,7 @@ def get_vector_db():
     if not os.path.exists(db_path):
         raise Exception("DB 폴더가 없습니다! 먼저 update_db.py를 실행해서 데이터를 넣어주세요.")
 
-    print("💾 학습된 크로마 DB를 성공적으로 불러왔습니다.")
+    print("Chroma DB loaded successfully.")
     return Chroma(persist_directory=db_path, embedding_function=embeddings)
 
 # 서버가 구동될 때 최초 1회만 DB 연결을 수행하여 메모리에 올려둡니다.

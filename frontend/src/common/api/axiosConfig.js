@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 공통: 백엔드 주소 (API 호출·WebSocket·이미지 URL 등 한 곳에서 관리)
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.0.43:8080';
 
 let accessToken = null;
 export const getAccessToken = () => accessToken;
@@ -12,6 +12,8 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    // 요청이 장시간 멈출 때 프론트가 무한 로딩 상태에 빠지지 않도록 제한
+    timeout: 65000,
     // 🔑 핵심 1: 쿠키(RefreshToken)를 주고받기 위해 반드시 true 설정
     withCredentials: true,
 });

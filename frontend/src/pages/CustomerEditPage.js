@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../common/api/axiosConfig";
 
 const TOKEN_KEY = "accessToken";
 
@@ -36,7 +37,7 @@ export default function CustomerEditPage() {
                 setLoadError("");
 
                 const res = await axios.get(
-                    `http://localhost:8080/api/customer/inquiries/${id}`,
+                    `${API_BASE_URL}/api/customer/inquiries/${id}`,
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -89,7 +90,7 @@ export default function CustomerEditPage() {
 
         try {
             const res = await axios.put(
-                `http://localhost:8080/api/customer/inquiries/${id}`,
+                `${API_BASE_URL}/api/customer/inquiries/${id}`,
                 {
                     type,
                     title: title.trim(),

@@ -8,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Value("${file.profile.resource-location:file:///Z:/profile_images/}")
+    @Value("${file.profile.resource-location:file:///C:/LP_upload/profile_images/}")
     private String profileResourceLocation;
 
     @Override
