@@ -1,5 +1,7 @@
 package com.example.backend_main.HSH.service;
 
+import com.example.backend_main.common.exception.CustomException;
+import com.example.backend_main.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +57,7 @@ public class MailService {
     private void send(String toEmail, String subject, String text) {
         if (mailHost == null || mailHost.isBlank() || mailSender == null) {
             log.error("메일 발송 시도 실패 - 메일 설정 미구성 (spring.mail.host 미설정 또는 JavaMailSender 미등록)");
-            throw new RuntimeException("메일 발송 기능이 비활성화된 환경입니다. (spring.mail.host 미설정)");
+            throw new CustomException(ErrorCode.SYSTEM_ERROR, "메일 발송 기능이 비활성화된 환경입니다.");
         }
 
         try {
@@ -69,7 +71,7 @@ public class MailService {
             mailSender.send(message);
         } catch (Exception e) {
             log.error("메일 전송 실패 - to: {}, subject: {}, error: {}", toEmail, subject, e.getMessage());
-            throw new RuntimeException("메일 전송 중 오류가 발생했습니다.", e);
+            throw new CustomException(ErrorCode.SYSTEM_ERROR, "메일 전송에 실패했습니다. 잠시 후 다시 시도해주세요.");
         }
     }
 }

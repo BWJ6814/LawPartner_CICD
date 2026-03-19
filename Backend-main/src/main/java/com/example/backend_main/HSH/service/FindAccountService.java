@@ -1,7 +1,7 @@
 package com.example.backend_main.HSH.service;
 
-import com.example.backend_main.HSH.util.MaskingUtil;
-import com.example.backend_main.HSH.util.PasswordUtil;
+import com.example.backend_main.common.util.MaskingUtil;
+import com.example.backend_main.common.util.PasswordUtil;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;

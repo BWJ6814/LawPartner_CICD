@@ -2,6 +2,7 @@ package com.example.backend_main.common.security;
 
 import com.example.backend_main.common.entity.BlacklistIp;
 import com.example.backend_main.common.repository.BlacklistIpRepository;
+import com.example.backend_main.common.util.IpUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +37,7 @@ public class IpBlacklistFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         // 1. 요청 IP 추출
-        String ip = getClientIp(request);
+        String ip = IpUtil.getClientIp(request);
 
         // 2. 캐시 갱신 (1분이 지났다면 DB에서 새로 긁어와 메모리에 덮어쓰기)
         refreshCacheIfNecessary();
@@ -84,19 +85,5 @@ public class IpBlacklistFilter extends OncePerRequestFilter {
         }
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        // [보안 주의점] 해커가 X-Forwarded-For 헤더를 조작(IP 스푸핑)하여 우회할 수 있습니다.
-        // 실제 운영 배포 시에는 AWS ALB나 Nginx 같은 리버스 프록시 단에서
-        // 외부에서 들어오는 가짜 X-Forwarded-For 헤더를 초기화(Drop)하도록 인프라 설정이 반드시 필요합니다.
-
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) ip = request.getHeader("Proxy-Client-IP");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) ip = request.getHeader("WL-Proxy-Client-IP");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) ip = request.getRemoteAddr();
-
-        if (ip != null && ip.contains(",")) ip = ip.split(",")[0].trim();
-        if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) ip = "127.0.0.1";
-
-        return ip;
-    }
+    // ✅ getClientIp() 삭제 — IpUtil.getClientIp()로 완전 대체
 }

@@ -1,4 +1,4 @@
-package com.example.backend_main.HSH.util;
+package com.example.backend_main.common.util;
 
 import java.security.SecureRandom;
 
@@ -21,4 +21,3 @@ public final class PasswordUtil {
         return sb.toString();
     }
 }
-

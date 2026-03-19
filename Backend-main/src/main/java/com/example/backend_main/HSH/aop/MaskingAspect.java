@@ -1,6 +1,6 @@
 package com.example.backend_main.HSH.aop;
 
-import com.example.backend_main.HSH.util.MaskingUtil;
+import com.example.backend_main.common.util.MaskingUtil;
 import com.example.backend_main.common.annotation.Masking;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;

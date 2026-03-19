@@ -3,7 +3,7 @@ package com.example.backend_main.HSH.service;
 import com.example.backend_main.BWJ.BoardRepository;
 import com.example.backend_main.common.annotation.Masking;
 import com.example.backend_main.HSH.dto.CreateOperatorRequestDto;
-import com.example.backend_main.HSH.util.PasswordUtil;
+import com.example.backend_main.common.util.PasswordUtil;
 import com.example.backend_main.common.entity.*;
 import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;
