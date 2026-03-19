@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 공통: 백엔드 주소 (API 호출·WebSocket·이미지 URL 등 한 곳에서 관리)
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.0.43:8080';
 
 let accessToken = null;
 export const getAccessToken = () => accessToken;

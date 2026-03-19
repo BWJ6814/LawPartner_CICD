@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../common/api/axiosConfig";
 
 const TOKEN_KEY = "accessToken";
 
@@ -40,7 +41,7 @@ export default function CustomerListPage() {
             try {
                 setIsLoading(true);
 
-                const res = await axios.get("http://localhost:8080/api/customer/inquiries", {
+                const res = await axios.get(`${API_BASE_URL}/api/customer/inquiries`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },

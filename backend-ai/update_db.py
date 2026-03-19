@@ -40,7 +40,7 @@ def add_more_data_to_db(segment: int):
         return
 
     print(f"📥 허깅페이스에서 KLAID 데이터를 다운로드 중입니다... (세그먼트 {segment}: {start}~{end}건)")
-    ds = load_dataset("lawcompany/KLAID", split=f"train[{start}:{end}]")
+    ds = load_dataset("parquet", data_files="hf://datasets/lawcompany/KLAID@~parquet/ljp/train/*.parquet", split=f"train[{start}:{end}]")
 
     print("⚙️ 다운받은 데이터를 800자 크기로 쪼개는 중...")
 
