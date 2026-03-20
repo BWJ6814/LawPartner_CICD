@@ -360,7 +360,17 @@ const ChatList = () => {
         };
         recognition.onerror = (e) => {
             if (e.error === 'no-speech') return;
-            alert("마이크 기능이 작동하지 않습니다.");
+
+            // e.error 값에 따라 원인/조치가 달라서 메시지를 구체화
+            if (e.error === 'not-allowed') {
+                alert("마이크 권한이 거부되었습니다. 브라우저 사이트 설정에서 마이크 허용 후 새로고침하세요.");
+            } else if (e.error === 'service-not-allowed') {
+                alert("마이크 음성 인식 서비스가 차단되었습니다. HTTPS(또는 localhost) 환경에서 다시 시도해보세요.");
+            } else if (e.error === 'audio-capture') {
+                alert("마이크를 찾을 수 없습니다. 입력 장치를 확인해주세요.");
+            } else {
+                alert(`마이크 기능이 작동하지 않습니다. (${e.error || 'unknown error'})`);
+            }
             setIsRecording(false);
         };
         recognition.onend = () => setIsRecording(false);
