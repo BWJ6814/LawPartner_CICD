@@ -113,8 +113,7 @@ function App() {
     // 보안 체크 헬퍼
     const isAdmin = () => {
         const currentRole = localStorage.getItem('userRole'); // ★ State 대신 Storage에서 직접 확인
-        const currentToken = localStorage.getItem('accessToken');
-        return !!currentToken && ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR'].includes(currentRole);
+        return !!getAccessToken() && ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR'].includes(currentRole);
     }
 
     if (!authReady) return null;
