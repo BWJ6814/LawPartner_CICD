@@ -44,6 +44,7 @@ const ChatList = () => {
     const [pendingCalendarAction, setPendingCalendarAction] = useState(null);
     const [pendingCalendarRejectDate, setPendingCalendarRejectDate] = useState(null);
     const [calendarRejectReason, setCalendarRejectReason] = useState('');
+    const [isCalendarDecisionDone, setIsCalendarDecisionDone] = useState(false);
     /** 상담 종료 후 의뢰인 리뷰 작성 모달 */
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewRating, setReviewRating] = useState(5);
@@ -120,6 +121,20 @@ const ChatList = () => {
             setTargetName(opponentName || '상대방');
         }
     }, [roomId, rooms, userNo]);
+
+    useEffect(() => {
+        if (!roomId) return;
+        setIsCalendarDecisionDone(false);
+    }, [roomId]);
+
+    useEffect(() => {
+        // 확정/거절 메시지가 있으면 해당 채팅방에서는 일정 제안 응답 버튼 재클릭 방지
+        const decided = chatLog.some((msg) =>
+            (msg.msgType === 'TEXT' && (msg.message || '').includes('[일정 확정]')) ||
+            (msg.msgType === 'TEXT' && (msg.message || '').trim() === '거절했습니다.')
+        );
+        if (decided) setIsCalendarDecisionDone(true);
+    }, [chatLog]);
 
     // 4. 방 변경 시 과거 내역(페이지네이션) + 웹소켓 연결 (헤더 추가 완료)
     useEffect(() => {
@@ -283,6 +298,7 @@ const ChatList = () => {
             await api.post('/api/chat/calendar/confirm', { roomId, date: pendingCalendarAction });
             // 시스템 메시지를 로봇처럼 안 하고 깔끔하게 포맷팅해서 던짐
             handleSendMessage('TEXT', `[일정 확정] ${formatDateTimeClean(pendingCalendarAction)} 예약이 완료되었습니다.`);
+            setIsCalendarDecisionDone(true);
             setPendingCalendarAction(null); // 모달 닫기
         } catch {
             alert("일정 확정에 실패했습니다.");
@@ -303,6 +319,7 @@ const ChatList = () => {
                 date: pendingCalendarRejectDate,
                 reason: calendarRejectReason
             });
+            setIsCalendarDecisionDone(true);
             setPendingCalendarRejectDate(null);
             setCalendarRejectReason('');
         } catch {
@@ -331,7 +348,7 @@ const ChatList = () => {
     const toggleRecording = () => {
         if (isRecording) { recognitionRef.current?.stop(); setIsRecording(false); return; }
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) { alert("크롬 브라우저를 이용해주세요."); return; }
+        if (!SpeechRecognition) { alert("마이크 기능이 작동하지 않습니다."); return; }
         initialMessageRef.current = message;
         const recognition = new SpeechRecognition();
         recognition.lang = 'ko-KR';
@@ -343,12 +360,17 @@ const ChatList = () => {
         };
         recognition.onerror = (e) => {
             if (e.error === 'no-speech') return;
-            if (e.error === 'audio-capture') alert("마이크를 찾을 수 없습니다.");
-            else if (e.error === 'not-allowed') alert("마이크 권한이 차단되었습니다. 주소창 자물쇠 아이콘 > 사이트 설정 > 마이크 허용 후 새로고침해주세요.");
+            alert("마이크 기능이 작동하지 않습니다.");
             setIsRecording(false);
         };
         recognition.onend = () => setIsRecording(false);
-        recognition.start();
+        try {
+            recognition.start();
+        } catch {
+            alert("마이크 기능이 작동하지 않습니다.");
+            setIsRecording(false);
+            return;
+        }
         setIsRecording(true);
         recognitionRef.current = recognition;
     };
@@ -536,7 +558,7 @@ const ChatList = () => {
                                                                 </div>
                                                                 <p className="text-[11px] font-bold opacity-90 mb-0.5">상담 일정 제안</p>
                                                                 <p className="font-bold text-sm">{formatDateTimeClean(msg.message)}</p>
-                                                                {!isLawyer && !isMyMessage && currentRoomStatus === 'ST02' && (
+                                                                {!isLawyer && !isMyMessage && currentRoomStatus === 'ST02' && !isCalendarDecisionDone && (
                                                                     <div className="mt-2 w-full flex gap-1.5">
                                                                         <button onClick={() => openCalendarConfirmModal(msg.message)} className="flex-1 bg-blue-600 text-white py-1.5 rounded-lg text-[11px] font-bold hover:bg-blue-700 transition">
                                                                             수락

@@ -559,13 +559,12 @@ public class ChatService {
                         throw new RuntimeException("이 채팅방의 일정을 거절할 권한이 없습니다.");
                 }
 
-                String safeReason = (reason == null || reason.isBlank()) ? "거절했습니다." : reason.trim();
-                String rejectText = "[일정 취소] " + safeReason;
+                String rejectText = "거절했습니다.";
 
                 ChatMessageDTO rejectMsg = ChatMessageDTO.builder()
                                 .roomId(roomId)
                                 .senderNo(requesterUserNo)
-                                .msgType("CALENDAR_REJECT")
+                                .msgType("TEXT")
                                 .message(rejectText)
                                 .build();
                 saveMessage(rejectMsg);
