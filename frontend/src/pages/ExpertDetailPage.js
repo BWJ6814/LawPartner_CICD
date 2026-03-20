@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import api from "../common/api/axiosConfig";
+import { API_BASE_URL } from "../common/api/axiosConfig";
 import { useNavigate, useParams } from "react-router-dom";
 
 function safeImage(url) {
     const u = (url || "").trim();
-    if (u) return u;
+    if (u) {
+        if (u.startsWith("/")) return `${API_BASE_URL}${u}`;
+        return u;
+    }
     return "https://via.placeholder.com/320?text=LAWYER";
 }
 
