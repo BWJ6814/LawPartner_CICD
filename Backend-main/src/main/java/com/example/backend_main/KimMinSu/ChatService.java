@@ -341,7 +341,7 @@ public class ChatService {
                                                         .orElse("대화를 시작하세요...");
                                         java.time.LocalDateTime lastMessageAt = lastMsgOpt
                                                         .map(com.example.backend_main.common.entity.ChatMessage::getSendDt)
-                                                        .orElse(null);
+                                                        .orElse(room.getRegDt());
 
                                         return ChatRoomDTO.builder()
                                                         .roomId(room.getRoomId())
@@ -560,8 +560,8 @@ public class ChatService {
                 }
 
                 String safeDate = (dateStr == null || dateStr.isBlank()) ? "제안 일정" : dateStr;
-                String safeReason = (reason == null || reason.isBlank()) ? "사유 없음" : reason.trim();
-                String rejectText = "[일정 거절] " + safeDate + " / 사유: " + safeReason;
+                String safeReason = (reason == null || reason.isBlank()) ? "사유 미입력" : reason.trim();
+                String rejectText = "[일정 취소] " + safeDate + " / 사유: " + safeReason;
 
                 ChatMessageDTO rejectMsg = ChatMessageDTO.builder()
                                 .roomId(roomId)

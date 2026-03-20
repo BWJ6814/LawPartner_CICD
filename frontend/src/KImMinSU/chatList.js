@@ -55,7 +55,7 @@ const ChatList = () => {
     const [hasMoreOlder, setHasMoreOlder] = useState(true);
     const [loadingOlder, setLoadingOlder] = useState(false);
     const [initialHistoryDone, setInitialHistoryDone] = useState(false);
-    const HISTORY_PAGE_SIZE = 40;
+    const HISTORY_PAGE_SIZE = 20;
 
     /**
      * 채팅/캘린더용 날짜+시간 표시 포맷 (날짜·시간만 깔끔하게)
@@ -306,14 +306,14 @@ const ChatList = () => {
             setPendingCalendarRejectDate(null);
             setCalendarRejectReason('');
         } catch {
-            alert("일정 거절 처리에 실패했습니다.");
+            alert("일정 취소 처리에 실패했습니다.");
         }
     };
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-        if (file.size > 10 * 1024 * 1024) { alert("10MB 이하 파일만 가능합니다."); return; }
+        if (file.size > 100 * 1024 * 1024) { alert("100MB 이하 파일만 가능합니다."); return; }
         setIsUploading(true);
         const formData = new FormData();
         formData.append("file", file);
@@ -546,7 +546,7 @@ const ChatList = () => {
                                                                             수락
                                                                         </button>
                                                                         <button onClick={() => openCalendarRejectModal(msg.message)} className="flex-1 bg-slate-200 text-slate-700 py-1.5 rounded-lg text-[11px] font-bold hover:bg-slate-300 transition">
-                                                                            거절
+                                                                            취소
                                                                         </button>
                                                                     </div>
                                                                 )}
@@ -649,18 +649,18 @@ const ChatList = () => {
                 {pendingCalendarRejectDate && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm">
                         <div className="bg-white p-6 rounded-2xl w-[340px] shadow-2xl">
-                            <h3 className="font-black text-lg mb-2 text-slate-800">일정 거절</h3>
+                            <h3 className="font-black text-lg mb-2 text-slate-800">일정 취소</h3>
                             <p className="text-slate-600 text-sm mb-1">제안 일정</p>
                             <p className="text-blue-700 font-bold text-sm mb-3">{formatDateTimeClean(pendingCalendarRejectDate)}</p>
                             <textarea
                                 value={calendarRejectReason}
                                 onChange={(e) => setCalendarRejectReason(e.target.value)}
-                                placeholder="거절 사유를 입력하세요 (선택)"
+                                placeholder="취소 사유를 입력하세요 (선택)"
                                 className="w-full p-3 border border-slate-200 rounded-xl text-sm resize-none h-20 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-600"
                             />
                             <div className="flex gap-2">
                                 <button onClick={() => setPendingCalendarRejectDate(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold">취소</button>
-                                <button onClick={executeCalendarReject} className="flex-1 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold">거절 전송</button>
+                                <button onClick={executeCalendarReject} className="flex-1 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold">취소 전송</button>
                             </div>
                         </div>
                     </div>
