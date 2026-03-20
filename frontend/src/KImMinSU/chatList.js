@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import DashboardSidebar from '../common/components/DashboardSidebar';
-import api, { API_BASE_URL } from '../common/api/axiosConfig';
+import api, { API_BASE_URL, getAccessToken } from '../common/api/axiosConfig';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
 import './chatList.css';
@@ -165,7 +165,7 @@ const ChatList = () => {
         const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
         const client = Stomp.over(socket);
         client.debug = () => {};
-        const token = localStorage.getItem('accessToken');
+        const token = getAccessToken();
 
         client.connect({ Authorization: `Bearer ${token}` }, () => {
             if (!isMounted) { client.disconnect(); return; }
@@ -247,7 +247,7 @@ const ChatList = () => {
         }
 
         const chatDTO = { roomId, senderNo: userNo, message: msgContent, msgType };
-        const token = localStorage.getItem('accessToken');
+        const token = getAccessToken();
 
         // ★ [핵심 3] STOMP 전송 시에도 헤더에 신분증 꽂아줌!
         stompClient.current.send("/pub/chat/message", { Authorization: `Bearer ${token}` }, JSON.stringify(chatDTO));

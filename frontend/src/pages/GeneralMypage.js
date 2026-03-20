@@ -4,7 +4,7 @@ import FullCalendar from '@fullcalendar/react';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import DashboardSidebar from '../common/components/DashboardSidebar';
-import api from "../common/api/axiosConfig";
+import api, { getAccessToken } from "../common/api/axiosConfig";
 import { logout } from '../common/utils/logout';
 
 /**
@@ -58,7 +58,7 @@ const GeneralMyPage = () => {
     // 2. 데이터 가져오기 (API 호출)
     useEffect(() => {
         const fetchDashboardData = async () => {
-            const token = localStorage.getItem('accessToken');
+            const token = getAccessToken();
             const role = localStorage.getItem('userRole');
 
             if (!token || role !== 'ROLE_USER') {
@@ -146,7 +146,7 @@ const GeneralMyPage = () => {
           return;
       }
 
-      const token = localStorage.getItem('accessToken');
+      const token = getAccessToken();
 
       try {
           if (modalMode === 'create'){
@@ -209,7 +209,7 @@ const GeneralMyPage = () => {
     const handleDeleteEvent = async () => {
        if (!window.confirm('일정을 삭제하시겠습니까?')) return;
 
-       const token = localStorage.getItem('accessToken');
+       const token = getAccessToken();
 
        try {
            // HTTP 'DELETE' 메서드는 데이터를 삭제할 때 씁니다.

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // useNavigate: 다른 페이지로 이동시켜주는(링크 역할) 리액트 훅입니다.
 import { useParams, useNavigate } from 'react-router-dom';
 // axios: 스프링 서버랑 통신(데이터 주고받기)하기 위한 라이브러리입니다.
-import api from '../common/api/axiosConfig';
+import api, { getAccessToken } from '../common/api/axiosConfig';
 import {
     CaretLeft, ChatCircleDots, Star, PencilSimple, Trash,
     CheckCircle, User, PaperPlaneRight, Siren, X, FileText, DownloadSimple
@@ -33,7 +33,7 @@ const ConsultationDetail = () => {
     const [reviewContent, setReviewContent] = useState('');
 
     // 토큰입니다.
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
 
     // [로그인 정보] 로컬스토리지(브라우저 저장소)에서 로그인한 유저 정보를 가져옵니다.
     const currentUser = {

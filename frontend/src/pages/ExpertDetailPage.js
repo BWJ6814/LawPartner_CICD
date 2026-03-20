@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../common/api/axiosConfig";
-import { API_BASE_URL } from "../common/api/axiosConfig";
+import api, { API_BASE_URL, getAccessToken } from "../common/api/axiosConfig";
 import { useNavigate, useParams } from "react-router-dom";
 
 function safeImage(url) {
@@ -28,7 +27,7 @@ export default function ExpertDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [loadMsg, setLoadMsg] = useState("");
 
-    const isLoggedIn = () => !!localStorage.getItem("accessToken");
+    const isLoggedIn = () => !!getAccessToken();
 
     useEffect(() => {
         const fetchDetail = async () => {

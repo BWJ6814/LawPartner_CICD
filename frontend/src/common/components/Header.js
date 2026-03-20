@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Settings } from 'lucide-react';
-import api, { API_BASE_URL } from '../../common/api/axiosConfig';
+import api, { API_BASE_URL, getAccessToken } from '../../common/api/axiosConfig';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
 import { logout } from '../utils/logout';
@@ -205,7 +205,7 @@ const Header = ({auth, onLoginUpdate}) => {
 
     const fetchNotificationCount = async () => {
         // 토큰이 아예 없는 비로그인 상태면 API 호출 자체를 안 함
-        if (!localStorage.getItem('accessToken')) return;
+        if (!getAccessToken()) return;
 
         try {
             // ★ api 객체가 알아서 토큰 실어 보냄
@@ -218,7 +218,7 @@ const Header = ({auth, onLoginUpdate}) => {
     };
 
     const fetchNotificationList = async () => {
-        const token = localStorage.getItem('accessToken');
+        const token = getAccessToken();
         if (!token) return;
 
         try {
@@ -242,7 +242,7 @@ const Header = ({auth, onLoginUpdate}) => {
         if (notificationCount === 0) return;
 
         try {
-            const token = localStorage.getItem('accessToken');
+            const token = getAccessToken();
             // 서버에 "나 다 읽었음" 찌르기
             await api.put('/api/mypage/notifications/read');
 

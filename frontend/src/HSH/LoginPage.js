@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../common/api/axiosConfig';
-import { setAccessToken } from '../common/api/axiosConfig';
+import api, { getAccessToken, setAccessToken } from '../common/api/axiosConfig';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -27,7 +26,7 @@ const LoginPage = () => {
 
     useEffect(() => {
         // 1-1. 이미 로그인된 사용자는 메인으로 돌려보냄
-        if (localStorage.getItem('accessToken')) {
+        if (getAccessToken()) {
             navigate('/');
             return;
         }

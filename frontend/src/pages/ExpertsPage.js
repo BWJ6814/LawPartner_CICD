@@ -1,7 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import api from "../common/api/axiosConfig";
-import { API_BASE_URL } from "../common/api/axiosConfig";
+import api, { API_BASE_URL, getAccessToken } from "../common/api/axiosConfig";
 import {
     Sparkles,
     Gavel,
@@ -208,7 +207,7 @@ export default function ExpertsPage() {
     const [loadMsg, setLoadMsg] = useState("");
     const [isLoading, setIsLoading] = useState(true);
 
-    const isLoggedIn = () => !!localStorage.getItem("accessToken");
+    const isLoggedIn = () => !!getAccessToken();
 
     const syncParams = (next) => {
         const params = new URLSearchParams(searchParams);
