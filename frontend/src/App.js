@@ -60,30 +60,10 @@ const LayoutManager = ({ auth, onLoginUpdate, children }) => {
     );
 };
 
-// JWT 만료 여부 확인 (base64url → base64 변환 후 디코딩)
-function isTokenExpired(token) {
-    try {
-        const base64url = token.split('.')[1];
-        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-        const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
-        return payload.exp * 1000 < Date.now();
-    } catch {
-        return true;
-    }
-}
-
-// 앱 시작 시 만료된 토큰이면 즉시 정리
-(function clearExpiredToken() {
-    const token = localStorage.getItem('accessToken');
-    if (token && isTokenExpired(token)) {
-        localStorage.clear();
-    }
-})();
-
 function App() {
     const [auth, setAuth] = useState({
-        isLoggedIn: !!localStorage.getItem('accessToken'),
-        role: localStorage.getItem('userRole')
+        isLoggedIn: false,
+        role: null
     });
 
     const [authReady, setAuthReady] = useState(false);
@@ -105,7 +85,7 @@ function App() {
 
     const updateAuth = () => {
         setAuth({
-            isLoggedIn: !!localStorage.getItem('accessToken'),
+            isLoggedIn: !!getAccessToken(),
             role: localStorage.getItem('userRole')
         });
     };
