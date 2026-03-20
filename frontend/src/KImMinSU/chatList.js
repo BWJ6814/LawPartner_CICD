@@ -345,10 +345,28 @@ const ChatList = () => {
         }
     };
 
-    const toggleRecording = () => {
+    const toggleRecording = async () => {
         if (isRecording) { recognitionRef.current?.stop(); setIsRecording(false); return; }
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) { alert("마이크 기능이 작동하지 않습니다."); return; }
+
+        // 이 환경에서는 mediaDevices 자체가 undefined일 수 있음 (보안 컨텍스트/정책 위반 등)
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+            alert("마이크 기능이 이 환경에서는 제공되지 않습니다. HTTPS(또는 localhost)로 접속해보세요.");
+            return;
+        }
+
+        // SpeechRecognition은 권한 상태가 꼬이면 not-allowed로 바로 떨어질 수 있어서,
+        // 먼저 getUserMedia로 마이크 접근 권한 프롬프트를 한번 확실히 띄운다.
+        // (권한이 이미 허용이면 즉시 통과)
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(t => t.stop());
+        } catch (e) {
+            alert("마이크 권한이 아직 허용되지 않았습니다. 브라우저 사이트 설정 + Windows 마이크 권한을 확인 후 새로고침하세요.");
+            setIsRecording(false);
+            return;
+        }
         initialMessageRef.current = message;
         const recognition = new SpeechRecognition();
         recognition.lang = 'ko-KR';
