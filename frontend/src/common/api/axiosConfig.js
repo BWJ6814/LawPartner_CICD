@@ -21,7 +21,7 @@ const api = axios.create({
 // 1. 요청 인터셉터 (AccessToken 부착)
 api.interceptors.request.use(
     (config) => {
-        const token = getAccessToken() || localStorage.getItem('accessToken');
+        const token = getAccessToken();
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
