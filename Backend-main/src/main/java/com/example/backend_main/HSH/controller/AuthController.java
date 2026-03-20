@@ -2,6 +2,10 @@ package com.example.backend_main.HSH.controller;
 
 import com.example.backend_main.HSH.dto.ChangePasswordRequestDto;
 import com.example.backend_main.HSH.service.AuthService;
+import com.example.backend_main.common.exception.CustomException;
+import com.example.backend_main.common.exception.ErrorCode;
+import com.example.backend_main.common.security.AccountRecoveryRateLimiter;
+import com.example.backend_main.common.util.IpUtil;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.HSH_DTO.LoginRequestDto;
 import com.example.backend_main.dto.HSH_DTO.TokenDTO;
@@ -15,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseCookie;
 // 헤더 이름을 상수로 쓰기 위한 스프링 유틸리티 (중타 방지)
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.example.backend_main.common.security.CustomUserDetails;
 
@@ -33,6 +38,7 @@ import com.example.backend_main.common.security.CustomUserDetails;
 public class AuthController {
 
     private final AuthService authService;
+    private final AccountRecoveryRateLimiter rateLimiter;
 
     /*
         [회원 가입 API] - USR-01
@@ -61,10 +67,16 @@ public class AuthController {
     // ✅ AuthController.java의 login 메서드 수정 예시
     @PostMapping("/login")
     public ResultVO<TokenDTO> login(
-            @Valid @RequestBody LoginRequestDto dto,
+            @Valid @RequestBody LoginRequestDto loginRequestDto,
+            HttpServletRequest request,
             HttpServletResponse response) { // 응답 객체 추가
 
-        TokenDTO tokenDTO = authService.login(dto.getUserId(), dto.getUserPw());
+        String clientIp = IpUtil.getRateLimitIp(request);
+        if (!rateLimiter.isAllowedLogin(clientIp, loginRequestDto.getUserId())) {
+            throw new CustomException(ErrorCode.RATE_LIMIT_EXCEEDED, "잠시 후 다시 시도해주세요.");
+        }
+
+        TokenDTO tokenDTO = authService.login(loginRequestDto.getUserId(), loginRequestDto.getUserPw());
 
         // 🍪 Refresh Token을 위한 보안 쿠키 생성
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", tokenDTO.getRefreshToken())
@@ -150,6 +162,14 @@ public class AuthController {
         }
         authService.changePassword(userDetails.getUserNo(), dto.getNewPassword());
         return ResultVO.ok("비밀번호가 성공적으로 변경되었습니다.", null);
+    }
+
+    @DeleteMapping("/logout")
+    public ResponseEntity<?> logout(
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
+        authService.logout(refreshToken, response);
+        return ResponseEntity.ok(ResultVO.ok("로그아웃 되었습니다.", null));
     }
 
 }

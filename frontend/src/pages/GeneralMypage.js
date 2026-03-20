@@ -5,6 +5,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import DashboardSidebar from '../common/components/DashboardSidebar';
 import api from "../common/api/axiosConfig";
+import { logout } from '../common/utils/logout';
 
 /**
  * 백엔드에서 오는 start 값("YYYY-MM-DD" 또는 "YYYY-MM-DD HH:mm")을
@@ -83,19 +84,7 @@ const GeneralMyPage = () => {
         fetchDashboardData();
     }, [navigate]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userNo');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('userNm');
-        localStorage.removeItem('nickNm');
-        localStorage.removeItem('userEmail');
-        alert("로그아웃 되었습니다.");
-        navigate('/');
-    };
+    // handleLogout 제거 (요청사항): 버튼 교체는 없음
 
     /** 내가 적은 리뷰 삭제 */
     const handleDeleteReview = async (reviewNo, e) => {

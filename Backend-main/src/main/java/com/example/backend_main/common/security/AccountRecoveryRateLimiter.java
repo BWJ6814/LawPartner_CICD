@@ -1,72 +1,132 @@
 package com.example.backend_main.common.security;
 
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * 아이디/비밀번호 찾기 요청에 대한 이중 Rate Limiter.
- *
- * [잠금 1 - IP 기반] 1분 10회 제한
- * - NAT 환경에서는 네트워크 단위로 동작 (공유기 IP 기준)
- * - X-Forwarded-For 위조 방어를 위해 반드시 getRateLimitIp() 값을 전달받아야 함
- *
- * [잠금 2 - 이메일 기반] 1분 3회 제한
- * - NAT 뒤의 여러 컴퓨터가 같은 계정을 공격하는 경우 차단
- * - IP 관계없이 특정 계정을 보호하는 핵심 레이어
- */
-@Slf4j
-@Service
+@Component
 @RequiredArgsConstructor
+@Slf4j
 public class AccountRecoveryRateLimiter {
 
-    private static final int MAX_IP_REQUESTS_PER_MINUTE    = 10;
-    private static final int MAX_EMAIL_REQUESTS_PER_MINUTE = 3;
-
-    private final Map<String, AtomicInteger> ipCountMap    = new ConcurrentHashMap<>();
-    private final Map<String, AtomicInteger> emailCountMap = new ConcurrentHashMap<>();
     private final SecurityMonitorService securityMonitorService;
 
-    /**
-     * IP와 이메일 두 잠금을 모두 통과해야 true를 반환한다.
-     *
-     * @param clientIp    IpUtil.getRateLimitIp()로 추출한 TCP 연결 IP (위조 불가)
-     * @param targetEmail 요청 대상 이메일 (계정 단위 잠금 키)
-     */
+    private static final int MAX_IP_REQUESTS_PER_MINUTE = 10;
+    private static final int MAX_EMAIL_REQUESTS_PER_MINUTE = 3;
+    private static final int MAX_IDENTIFIER_REQUESTS_PER_MINUTE = 5;
+
+    // IP별 버킷 저장소
+    private final Map<String, Bucket> ipBuckets = new ConcurrentHashMap<>();
+    // EMAIL별 버킷 저장소
+    private final Map<String, Bucket> emailBuckets = new ConcurrentHashMap<>();
+    // USER_ID별 버킷 저장소
+    private final Map<String, Bucket> identifierBuckets = new ConcurrentHashMap<>();
+    private final Map<String, Instant> bucketCreatedAt = new ConcurrentHashMap<>();
+
+    private Bucket createIpBucket() {
+        return Bucket.builder()
+                .addLimit(Bandwidth.builder()
+                        .capacity(MAX_IP_REQUESTS_PER_MINUTE)
+                        .refillGreedy(MAX_IP_REQUESTS_PER_MINUTE,
+                                Duration.ofMinutes(1))
+                        .build())
+                .build();
+    }
+
+    private Bucket createEmailBucket() {
+        return Bucket.builder()
+                .addLimit(Bandwidth.builder()
+                        .capacity(MAX_EMAIL_REQUESTS_PER_MINUTE)
+                        .refillGreedy(MAX_EMAIL_REQUESTS_PER_MINUTE,
+                                Duration.ofMinutes(1))
+                        .build())
+                .build();
+    }
+
+    private Bucket createIdentifierBucket() {
+        return Bucket.builder()
+                .addLimit(Bandwidth.builder()
+                        .capacity(MAX_IDENTIFIER_REQUESTS_PER_MINUTE)
+                        .refillGreedy(MAX_IDENTIFIER_REQUESTS_PER_MINUTE,
+                                Duration.ofMinutes(1))
+                        .build())
+                .build();
+    }
+
     public boolean isAllowed(String clientIp, String targetEmail) {
-        boolean ipAllowed    = checkLimit(ipCountMap,    clientIp,    MAX_IP_REQUESTS_PER_MINUTE,    "IP");
-        boolean emailAllowed = checkLimit(emailCountMap, targetEmail, MAX_EMAIL_REQUESTS_PER_MINUTE, "EMAIL");
+        Bucket ipBucket = ipBuckets.computeIfAbsent(clientIp, k -> {
+            bucketCreatedAt.put(k, Instant.now());
+            return createIpBucket();
+        });
+        Bucket emailBucket = emailBuckets.computeIfAbsent(targetEmail, k -> {
+            bucketCreatedAt.put(k, Instant.now());
+            return createEmailBucket();
+        });
+
+        boolean ipAllowed = ipBucket.tryConsume(1);
+        boolean emailAllowed = emailBucket.tryConsume(1);
+
+        if (!ipAllowed) {
+            log.warn("[RateLimit] IP 차단: {}", clientIp);
+            securityMonitorService.trackAndAlert(
+                    clientIp, "IP_RATE_LIMIT_EXCEEDED");
+        }
+        if (!emailAllowed) {
+            log.warn("[RateLimit] EMAIL 차단: {}", targetEmail);
+            securityMonitorService.trackAndAlert(
+                    clientIp, "EMAIL_RATE_LIMIT_EXCEEDED");
+        }
+
         return ipAllowed && emailAllowed;
     }
 
-    private boolean checkLimit(Map<String, AtomicInteger> countMap, String key, int maxCount, String keyType) {
-        if (key == null || key.isEmpty()) return true;
+    public boolean isAllowedLogin(String clientIp, String userId) {
+        Bucket ipBucket = ipBuckets.computeIfAbsent(clientIp, k -> {
+            bucketCreatedAt.put(k, Instant.now());
+            return createIpBucket();
+        });
+        Bucket identifierBucket = identifierBuckets.computeIfAbsent(userId, k -> {
+            bucketCreatedAt.put(k, Instant.now());
+            return createIdentifierBucket();
+        });
 
-        countMap.putIfAbsent(key, new AtomicInteger(0));
-        int current = countMap.get(key).incrementAndGet();
+        boolean ipAllowed = ipBucket.tryConsume(1);
+        boolean identifierAllowed = identifierBucket.tryConsume(1);
 
-        if (current > maxCount) {
-            log.warn("⚠️ [AccountRecoveryRateLimiter] {} '{}' 가 1분 내 {}회 초과 요청을 시도했습니다.", keyType, key, maxCount);
-            if ("IP".equals(keyType)) {
-                securityMonitorService.trackAndAlert(key, "ACCOUNT_RECOVERY_RATE_LIMIT");
-            }
-            return false;
+        if (!ipAllowed) {
+            log.warn("[RateLimit] 로그인 IP 차단: {}", clientIp);
+            securityMonitorService.trackAndAlert(clientIp, "LOGIN_IP_RATE_LIMIT_EXCEEDED");
         }
-        return true;
+        if (!identifierAllowed) {
+            log.warn("[RateLimit] 로그인 UserId 차단: {}", userId);
+            securityMonitorService.trackAndAlert(clientIp, "LOGIN_ID_RATE_LIMIT_EXCEEDED");
+        }
+
+        return ipAllowed && identifierAllowed;
     }
 
-    /**
-     * 1분마다 IP/이메일 카운터 모두 초기화.
-     */
-    @Scheduled(fixedRate = 60_000)
-    public void resetCounters() {
-        ipCountMap.clear();
-        emailCountMap.clear();
+    @Scheduled(fixedRate = 300_000)
+    public void cleanUpExpiredBuckets() {
+        Instant threshold = Instant.now().minusSeconds(300);
+
+        ipBuckets.entrySet().removeIf(e ->
+                bucketCreatedAt.getOrDefault(e.getKey(), Instant.EPOCH).isBefore(threshold));
+        emailBuckets.entrySet().removeIf(e ->
+                bucketCreatedAt.getOrDefault(e.getKey(), Instant.EPOCH).isBefore(threshold));
+        identifierBuckets.entrySet().removeIf(e ->
+                bucketCreatedAt.getOrDefault(e.getKey(), Instant.EPOCH).isBefore(threshold));
+        bucketCreatedAt.entrySet().removeIf(e ->
+                e.getValue().isBefore(threshold));
+
+        log.info("[RateLimit] 만료 버킷 정리 완료");
     }
 }
 

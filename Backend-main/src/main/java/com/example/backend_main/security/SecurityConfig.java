@@ -80,21 +80,19 @@ public class SecurityConfig {
                 )
 
                 // 4. 페이지별 출입 권한 설정
-                // .requestMatchers("/api/auth/**").permitAll() : 로그인이나 회원가입 주소로 오는 사람들은
-                // 신분증이 없어도 무조건 들어오도록  처리..!
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/images/profiles/**").permitAll() // 로그인/회원가입은 프리패스!
-                        // 2. [개발 기간용] 그 외의 모든 요청도 일단은 다 통과!
-                        .anyRequest().permitAll()
-                        // 그 외 모든 요청은 신분증(JWT) 검사! - 개발 중간 중간 확인할 예정..
-                        // .anyRequest().authenticated()
-                        /*
-                        추후 상태 수정할 코드
-                        .requestMatchers("/api/auth/**").permitAll() // 로그인/회원가입은 자유롭게
-                        .requestMatchers("/api/lawyer/advice/**", "/api/counsel/manage/**").hasRole("LAWYER")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 전용 구역 잠금
-                        .anyRequest().authenticated() // 그 외 모든 곳은 신분증(JWT) 필수!
-                        */
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/lawyers/**",
+                                "/api/boards/**",
+                                "/api/ai/**",
+                                "/images/profiles/**",
+                                "/ws-stomp/**",
+                                "/sub/**",
+                                "/pub/**"
+                        ).permitAll()
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "OPERATOR")
+                        .anyRequest().authenticated()
                 )
 
                 // 5. JWT 문지기 배치 (기본 문지기 앞에 우리 문지기를 세웁니다)

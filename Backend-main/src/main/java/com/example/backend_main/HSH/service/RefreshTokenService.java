@@ -2,6 +2,7 @@ package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.entity.RefreshToken;
 import com.example.backend_main.common.repository.RefreshTokenRepository;
+import com.example.backend_main.common.util.HashUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private final HashUtil hashUtil;
 
     /*
      [토큰 저장 및 갱신]
@@ -22,16 +24,17 @@ public class RefreshTokenService {
     public void saveRefreshToken(Long userNo, String tokenValue) {
         // 유통기한은 현재로부터 7일로 설정 (설계 규격 반영)
         LocalDateTime expireDt = LocalDateTime.now().plusDays(7);
+        String hashedToken = hashUtil.generateHash(tokenValue);
 
         refreshTokenRepository.findByUserNo(userNo)
                 .ifPresentOrElse(
                         // 1. 기존 토큰이 있으면: 새 값으로 업데이트 (기존 기기 로그아웃 효과)
-                        token -> token.updateToken(tokenValue, expireDt),
+                        token -> token.updateToken(hashedToken, expireDt),
                         // 2. 기존 토큰이 없으면: 새로 생성
                         () -> refreshTokenRepository.save(
                                 RefreshToken.builder()
                                         .userNo(userNo)
-                                        .tokenValue(tokenValue)
+                                        .tokenValue(hashedToken)
                                         .expireDt(expireDt)
                                         .build()
                         )
@@ -43,8 +46,7 @@ public class RefreshTokenService {
      */
     @Transactional
     public void deleteByUserNo(Long userNo) {
-        refreshTokenRepository.findByUserNo(userNo)
-                .ifPresent(refreshTokenRepository::delete);
+        refreshTokenRepository.deleteByUserNo(userNo);
     }
 
     // RefreshTokenService에 추가

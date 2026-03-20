@@ -4,6 +4,7 @@ import { Settings } from 'lucide-react';
 import api, { API_BASE_URL } from '../../common/api/axiosConfig';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
+import { logout } from '../utils/logout';
 
 const Header = ({auth, onLoginUpdate}) => {
   const navigate = useNavigate();
@@ -234,18 +235,7 @@ const Header = ({auth, onLoginUpdate}) => {
 
   const noUnderlineStyle = { textDecoration: 'none', outline: 'none' };
 
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken'); // 저장소 비우기
-    localStorage.removeItem('refreshToken'); // 리프레시 토큰도 같이 삭제
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userNm');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userNo');
-    localStorage.removeItem('nickNm');
-    onLoginUpdate();
-    alert("로그아웃 되었습니다.");
-    navigate('/');
-  };
+  // handleLogout 제거: 공통 logout 사용
 
     const handleMarkAllAsRead = async () => {
         // 이미 숫자가 0이면 굳이 서버 찌를 필요 없음 (최적화)
@@ -430,7 +420,7 @@ const Header = ({auth, onLoginUpdate}) => {
                   </Link>
                 )}
 
-                <button onClick={handleLogout} className="text-sm font-medium text-gray-500 hover:text-red-500 transition ml-2 whitespace-nowrap">로그아웃</button>
+                <button onClick={logout} className="text-sm font-medium text-gray-500 hover:text-red-500 transition ml-2 whitespace-nowrap">로그아웃</button>
               </>
             ) : (
               <>
@@ -471,7 +461,7 @@ const Header = ({auth, onLoginUpdate}) => {
                     마이페이지
                   </Link>
                 )}
-                <button onClick={handleLogout} className="block w-full px-3 py-2 text-center text-sm font-bold text-gray-500 hover:text-red-500">로그아웃</button>
+                <button onClick={logout} className="block w-full px-3 py-2 text-center text-sm font-bold text-gray-500 hover:text-red-500">로그아웃</button>
               </>
             ) : (
               <>

@@ -195,4 +195,23 @@ public class ChatController {
             return ResultVO.fail("FORBIDDEN", e.getMessage());
         }
     }
+
+    @PostMapping("/calendar/reject")
+    public ResultVO<Void> rejectSchedule(
+            @RequestHeader("Authorization") String token,
+            @RequestBody java.util.Map<String, String> payload
+    ) {
+        Long userNo = jwtTokenProvider.getUserNoFromAuthorizationHeader(token);
+        if (userNo == null) return ResultVO.fail("AUTH-401", "인증이 필요합니다.");
+        String roomId = payload.get("roomId");
+        String dateStr = payload.get("date");
+        String reason = payload.get("reason");
+        try {
+            chatService.rejectSchedule(roomId, dateStr, reason, userNo);
+            return ResultVO.ok("일정이 거절되었습니다.", null);
+        } catch (RuntimeException e) {
+            return ResultVO.fail("BAD_REQUEST", e.getMessage());
+        }
+    }
+
 }

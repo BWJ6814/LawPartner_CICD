@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'; // ★ useLocation 추가
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
 import { AttachedFilesFromAiProvider } from './common/context/AttachedFilesFromAiContext';
+import { initAuth, getAccessToken } from './common/api/axiosConfig';
 import Header from './common/components/Header';
 import Footer from './common/components/Footer';
 import MainPage from './pages/mainpage';
@@ -85,6 +86,23 @@ function App() {
         role: localStorage.getItem('userRole')
     });
 
+    const [authReady, setAuthReady] = useState(false);
+
+    useEffect(() => {
+        initAuth()
+            .then(() => {
+                if (getAccessToken()) {
+                    setAuth({
+                        isLoggedIn: true,
+                        role: localStorage.getItem('userRole')
+                    });
+                }
+            })
+            .finally(() => {
+                setAuthReady(true);
+            });
+    }, []);
+
     const updateAuth = () => {
         setAuth({
             isLoggedIn: !!localStorage.getItem('accessToken'),
@@ -98,6 +116,8 @@ function App() {
         const currentToken = localStorage.getItem('accessToken');
         return !!currentToken && ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_OPERATOR'].includes(currentRole);
     }
+
+    if (!authReady) return null;
 
     return (
         <BrowserRouter>

@@ -4,6 +4,7 @@ import com.example.backend_main.common.entity.RefreshToken;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;
+import com.example.backend_main.common.repository.RefreshTokenRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.util.Aes256Util;
@@ -12,8 +13,11 @@ import com.example.backend_main.dto.HSH_DTO.TokenDTO;
 import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDto;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -42,6 +46,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;      // 비밀번호 전용 보초
     private final LawyerService lawyerService;
     private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final HashUtil hashUtil;                    // 단방향 해시 처리 (검색용)
 
 
@@ -229,15 +234,16 @@ public class AuthService {
 
         // 4. 저장소 토큰 대조 (탈취 방지)
         RefreshToken savedToken = refreshTokenService.findByUserNo(user.getUserNo());
+        String hashedOldRefreshToken = hashUtil.generateHash(oldRefreshToken);
 
-        if (!savedToken.getTokenValue().equals(oldRefreshToken)) {
+        if (!savedToken.getTokenValue().equals(hashedOldRefreshToken)) {
             refreshTokenService.deleteToken(savedToken);
             throw new CustomException(ErrorCode.INVALID_TOKEN, "비정상적인 접근이 감지되었습니다. 다시 로그인해주세요.");
         }
 
         // 5. ★★★ 토큰 검증 성공 후, 즉시 기존 토큰을 무효화(삭제)합니다.
         // 이렇게 하면 동일한 토큰으로 동시에 재발급을 요청하는 경쟁 상태(Race Condition)를 막을 수 있습니다.
-        refreshTokenService.deleteToken(savedToken);
+        refreshTokenService.deleteByUserNo(user.getUserNo());
 
         // 6. 권한 객체 생성
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
@@ -251,6 +257,7 @@ public class AuthService {
                 auth, user.getUserNo(), user.getUserNm(), user.getNickNm()
         );
         newTokenDTO.setPasswordChangeRequired("Y".equalsIgnoreCase(user.getPwChangeRequired()));
+        newTokenDTO.setRole(user.getRoleCode());
 
         // 8. RTR (Refresh Token Rotation) - 새로 발급된 리프레시 토큰을 DB에 저장합니다.
         refreshTokenService.saveRefreshToken(user.getUserNo(), newTokenDTO.getRefreshToken());
@@ -271,5 +278,21 @@ public class AuthService {
         user.setUserPw(encodedPw);
         user.setPwChangeRequired("N");
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void logout(String refreshToken, HttpServletResponse response) {
+        if (refreshToken != null) {
+            refreshTokenRepository.findByTokenValue(hashUtil.generateHash(refreshToken))
+                    .ifPresent(refreshTokenRepository::delete);
+        }
+        ResponseCookie expiredCookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, expiredCookie.toString());
     }
 }

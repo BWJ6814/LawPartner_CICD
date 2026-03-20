@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SettingsModal from '../modal/SettingsModal';
 import api, { API_BASE_URL } from '../../common/api/axiosConfig';
+import { logout } from '../../common/utils/logout';
 
 const ProfileCard = () => {
     const navigate = useNavigate();
@@ -34,15 +35,7 @@ const ProfileCard = () => {
             .catch(() => {});
     }, [userRole]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userNm');
-        localStorage.removeItem('userId');
-
-        navigate('/login');
-    };
+    // handleLogout 제거: 공통 logout 사용
 
     const [settingsInitialTab, setSettingsInitialTab] = useState('profile');
 
@@ -99,7 +92,7 @@ const ProfileCard = () => {
                             <div className="border-t border-gray-100 my-1" />
 
                             <button
-                                onClick={() => { setIsDropdownOpen(false); handleLogout(); }}
+                                onClick={() => { setIsDropdownOpen(false); logout(); }}
                                 className="w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors flex items-center gap-3"
                             >
                                 <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
