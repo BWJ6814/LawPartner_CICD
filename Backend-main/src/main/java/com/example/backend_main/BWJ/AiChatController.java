@@ -6,7 +6,9 @@ import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AiChatRoomRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -30,9 +32,24 @@ public class AiChatController {
     @Autowired
     private UserRepository userRepository;
 
-    // 파이썬 서버 주소
-    private final String PYTHON_SERVER_URL = "http://192.168.0.43:8000/chat";
-    private final String PYTHON_SUMMARIZE_URL = "http://192.168.0.43:8000/summarize-consult";
+    // 파이썬 서버 주소 (환경변수 우선, 없으면 기본값 사용)
+    private final String PYTHON_SERVER_URL = System.getenv().getOrDefault("PYTHON_CHAT_URL", "http://127.0.0.1:8000/chat");
+    private final String PYTHON_SUMMARIZE_URL = System.getenv().getOrDefault("PYTHON_SUMMARIZE_URL", "http://127.0.0.1:8000/summarize-consult");
+
+    private RestTemplate buildRestTemplate() {
+        // AI 서버 장애/방화벽 이슈 시 무한 대기 방지
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(5000);   // 연결 타임아웃 5초
+        requestFactory.setReadTimeout(60000);     // 응답 대기 타임아웃 60초
+        return new RestTemplate(requestFactory);
+    }
+
+    private ResponseEntity<Map<String, Object>> aiErrorResponse(String message, HttpStatus status) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("message", message);
+        body.put("status", status.value());
+        return ResponseEntity.status(status).body(body);
+    }
 
     @PostMapping("/rooms")
     public ResponseEntity<?> createRoom(@RequestBody Map<String, Object> payload) {
@@ -101,7 +118,7 @@ public class AiChatController {
         Boolean disableRag = disableRagObj == null ? null : Boolean.valueOf(String.valueOf(disableRagObj));
 
         // 1. 파이썬 서버에 질문 전송
-        RestTemplate restTemplate = new RestTemplate();
+        RestTemplate restTemplate = buildRestTemplate();
         Map<String, Object> pythonRequest = new HashMap<>();
         pythonRequest.put("question", question);
         // 프론트에서 disableRag 플래그가 온 경우 파이썬 서버로 그대로 전달
@@ -112,9 +129,15 @@ public class AiChatController {
         try {
             // 파이썬으로부터 응답 받기 (JSON -> Map 변환)
             Map<String, Object> pythonResponse = restTemplate.postForObject(PYTHON_SERVER_URL, pythonRequest, Map.class);
+            if (pythonResponse == null) {
+                return aiErrorResponse("AI 서버가 빈 응답을 반환했습니다.", HttpStatus.BAD_GATEWAY);
+            }
 
             String answer = (String) pythonResponse.get("answer");
             List<String> relatedCases = (List<String>) pythonResponse.get("related_cases");
+            if (answer == null || answer.isBlank()) {
+                return aiErrorResponse("AI 서버 응답 형식이 올바르지 않습니다.", HttpStatus.BAD_GATEWAY);
+            }
 
             User user = null;
             if (userNo != null) {
@@ -174,7 +197,7 @@ public class AiChatController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("AI 서버 연결 실패: " + e.getMessage());
+            return aiErrorResponse("AI 서버 연결 실패: " + e.getMessage(), HttpStatus.GATEWAY_TIMEOUT);
         }
     }
 
@@ -182,7 +205,7 @@ public class AiChatController {
     @PostMapping("/summarize-consult")
     public ResponseEntity<?> summarizeConsult(@RequestBody Map<String, Object> payload) {
         try {
-            RestTemplate restTemplate = new RestTemplate();
+            RestTemplate restTemplate = buildRestTemplate();
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> messages = (List<Map<String, Object>>) payload.get("messages");
             if (messages == null) {
@@ -195,7 +218,7 @@ public class AiChatController {
             return ResponseEntity.ok(pythonResponse != null ? pythonResponse : new HashMap<>());
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("상담 정리 요청 실패: " + e.getMessage());
+            return aiErrorResponse("상담 정리 요청 실패: " + e.getMessage(), HttpStatus.GATEWAY_TIMEOUT);
         }
     }
 }
