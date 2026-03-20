@@ -42,6 +42,8 @@ const ChatList = () => {
     const [toastMsg, setToastMsg] = useState(null);
 
     const [pendingCalendarAction, setPendingCalendarAction] = useState(null);
+    const [pendingCalendarRejectDate, setPendingCalendarRejectDate] = useState(null);
+    const [calendarRejectReason, setCalendarRejectReason] = useState('');
     /** 상담 종료 후 의뢰인 리뷰 작성 모달 */
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewRating, setReviewRating] = useState(5);
@@ -288,6 +290,26 @@ const ChatList = () => {
         }
     };
 
+    const openCalendarRejectModal = (dateStr) => {
+        setPendingCalendarRejectDate(dateStr);
+        setCalendarRejectReason('');
+    };
+
+    const executeCalendarReject = async () => {
+        if (!pendingCalendarRejectDate) return;
+        try {
+            await api.post('/api/chat/calendar/reject', {
+                roomId,
+                date: pendingCalendarRejectDate,
+                reason: calendarRejectReason
+            });
+            setPendingCalendarRejectDate(null);
+            setCalendarRejectReason('');
+        } catch {
+            alert("일정 거절 처리에 실패했습니다.");
+        }
+    };
+
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -310,6 +332,10 @@ const ChatList = () => {
         if (isRecording) { recognitionRef.current?.stop(); setIsRecording(false); return; }
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) { alert("크롬 브라우저를 이용해주세요."); return; }
+        if (!window.isSecureContext) {
+            alert("마이크 인식은 HTTPS(또는 localhost) 환경에서만 동작합니다.");
+            return;
+        }
         initialMessageRef.current = message;
         const recognition = new SpeechRecognition();
         recognition.lang = 'ko-KR';
@@ -322,7 +348,7 @@ const ChatList = () => {
         recognition.onerror = (e) => {
             if (e.error === 'no-speech') return;
             if (e.error === 'audio-capture') alert("마이크를 찾을 수 없습니다.");
-            else if (e.error === 'not-allowed') alert("마이크 권한을 허용해주세요.");
+            else if (e.error === 'not-allowed') alert("마이크 권한이 차단되었습니다. 주소창 자물쇠 아이콘 > 사이트 설정 > 마이크 허용 후 새로고침해주세요.");
             setIsRecording(false);
         };
         recognition.onend = () => setIsRecording(false);
@@ -420,7 +446,7 @@ const ChatList = () => {
                                        className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium" />
                             </div>
                             <div className="flex p-1 bg-slate-100 rounded-lg">
-                                {[['ALL','전체'],['ST02','진행중'],['ST01','대기'],['ST03','완료']].map(([code, label]) => (
+                                {[['ALL','전체'],['ST02','진행중'],['ST01','대기'],['ST05','완료']].map(([code, label]) => (
                                     <button key={code} onClick={() => setFilterStatus(code)}
                                             className={`flex-1 py-1.5 text-[14px] font-bold rounded-md transition ${filterStatus === code ? 'bg-white shadow-sm text-blue-900' : 'text-slate-400'}`}>
                                         {label}
@@ -515,14 +541,19 @@ const ChatList = () => {
                                                                 <p className="text-[11px] font-bold opacity-90 mb-0.5">상담 일정 제안</p>
                                                                 <p className="font-bold text-sm">{formatDateTimeClean(msg.message)}</p>
                                                                 {!isLawyer && !isMyMessage && currentRoomStatus === 'ST02' && (
-                                                                    <button onClick={() => openCalendarConfirmModal(msg.message)} className="mt-2 w-full bg-blue-600 text-white py-1.5 rounded-lg text-[11px] font-bold hover:bg-blue-700 transition">
-                                                                        수락하기
-                                                                    </button>
+                                                                    <div className="mt-2 w-full flex gap-1.5">
+                                                                        <button onClick={() => openCalendarConfirmModal(msg.message)} className="flex-1 bg-blue-600 text-white py-1.5 rounded-lg text-[11px] font-bold hover:bg-blue-700 transition">
+                                                                            수락
+                                                                        </button>
+                                                                        <button onClick={() => openCalendarRejectModal(msg.message)} className="flex-1 bg-slate-200 text-slate-700 py-1.5 rounded-lg text-[11px] font-bold hover:bg-slate-300 transition">
+                                                                            거절
+                                                                        </button>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         ) : msg.msgType === 'FILE' ? (
                                                             <div className="flex flex-col space-y-1.5">
-                                                                {msg.message && /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.message)
+                                                                {msg.message && /\.(jpg|jpeg|png|gif|bmp|webp|svg|ico)$/i.test(msg.message)
                                                                     ? <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer"><img src={msg.fileUrl} alt={msg.message} className="max-w-[220px] rounded-lg border border-slate-200/50 cursor-pointer hover:opacity-90 transition" /></a>
                                                                     : <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline font-bold opacity-90"><i className="fas fa-file-alt"></i><span className="truncate max-w-[180px]">{msg.message}</span></a>
                                                                 }
@@ -611,6 +642,25 @@ const ChatList = () => {
                             <div className="flex justify-center gap-2">
                                 <button onClick={() => setPendingCalendarAction(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-sm font-black hover:bg-slate-200 transition">아니오</button>
                                 <button onClick={executeCalendarAccept} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-black shadow-md hover:bg-blue-700 transition">예, 이 날짜로 할게요</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {pendingCalendarRejectDate && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm">
+                        <div className="bg-white p-6 rounded-2xl w-[340px] shadow-2xl">
+                            <h3 className="font-black text-lg mb-2 text-slate-800">일정 거절</h3>
+                            <p className="text-slate-600 text-sm mb-1">제안 일정</p>
+                            <p className="text-blue-700 font-bold text-sm mb-3">{formatDateTimeClean(pendingCalendarRejectDate)}</p>
+                            <textarea
+                                value={calendarRejectReason}
+                                onChange={(e) => setCalendarRejectReason(e.target.value)}
+                                placeholder="거절 사유를 입력하세요 (선택)"
+                                className="w-full p-3 border border-slate-200 rounded-xl text-sm resize-none h-20 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                            />
+                            <div className="flex gap-2">
+                                <button onClick={() => setPendingCalendarRejectDate(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold">취소</button>
+                                <button onClick={executeCalendarReject} className="flex-1 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold">거절 전송</button>
                             </div>
                         </div>
                     </div>
