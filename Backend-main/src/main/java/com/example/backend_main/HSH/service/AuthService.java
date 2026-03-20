@@ -234,15 +234,16 @@ public class AuthService {
 
         // 4. 저장소 토큰 대조 (탈취 방지)
         RefreshToken savedToken = refreshTokenService.findByUserNo(user.getUserNo());
+        String hashedOldRefreshToken = hashUtil.generateHash(oldRefreshToken);
 
-        if (!savedToken.getTokenValue().equals(oldRefreshToken)) {
+        if (!savedToken.getTokenValue().equals(hashedOldRefreshToken)) {
             refreshTokenService.deleteToken(savedToken);
             throw new CustomException(ErrorCode.INVALID_TOKEN, "비정상적인 접근이 감지되었습니다. 다시 로그인해주세요.");
         }
 
         // 5. ★★★ 토큰 검증 성공 후, 즉시 기존 토큰을 무효화(삭제)합니다.
         // 이렇게 하면 동일한 토큰으로 동시에 재발급을 요청하는 경쟁 상태(Race Condition)를 막을 수 있습니다.
-        refreshTokenService.deleteToken(savedToken);
+        refreshTokenService.deleteByUserNo(user.getUserNo());
 
         // 6. 권한 객체 생성
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
@@ -279,9 +280,10 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    @Transactional
     public void logout(String refreshToken, HttpServletResponse response) {
         if (refreshToken != null) {
-            refreshTokenRepository.findByTokenValue(refreshToken)
+            refreshTokenRepository.findByTokenValue(hashUtil.generateHash(refreshToken))
                     .ifPresent(refreshTokenRepository::delete);
         }
         ResponseCookie expiredCookie = ResponseCookie.from("refreshToken", "")

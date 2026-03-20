@@ -35,7 +35,9 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap; // ★ 추가됨
 import java.util.List;
+import java.util.Locale;
 import java.util.Map; // ★ 추가됨
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -44,6 +46,24 @@ import org.springframework.data.domain.PageRequest;
 @Service
 @RequiredArgsConstructor
 public class ChatService {
+        private static final Set<String> ALLOWED_CHAT_FILE_EXTENSIONS = Set.of(
+                        "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico",
+                        "pdf", "doc", "docx", "xls", "xlsx"
+        );
+
+        private static final Set<String> ALLOWED_CHAT_FILE_MIME_TYPES = Set.of(
+                        "image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp", "image/svg+xml", "image/x-icon",
+                        "application/pdf",
+                        "application/msword",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "application/vnd.ms-excel",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        private static final Set<String> IMAGE_EXTENSIONS = Set.of(
+                        "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico"
+        );
+
         private final ChatRoomRepository chatRoomRepository;
         private final ChatMessageRepository chatMessageRepository;
 
@@ -346,11 +366,15 @@ public class ChatService {
                         if (file.isEmpty())
                                 throw new RuntimeException("파일이 비어있습니다.");
 
+                        String originName = file.getOriginalFilename();
+                        if (originName == null || originName.isBlank())
+                                throw new RuntimeException("파일 이름이 없습니다.");
+                        validateChatUploadFile(file, originName);
+
                         File dir = new File(uploadDir);
                         if (!dir.exists())
                                 dir.mkdirs();
 
-                        String originName = file.getOriginalFilename();
                         String savedName = UUID.randomUUID().toString() + "_" + originName;
 
                         File dest = new File(uploadDir, savedName);
@@ -373,6 +397,42 @@ public class ChatService {
 
                 } catch (IOException e) {
                         throw new RuntimeException("Z드라이브 파일 저장 실패: " + e.getMessage());
+                }
+        }
+
+        private void validateChatUploadFile(MultipartFile file, String originName) throws IOException {
+                if (originName.contains("..")) {
+                        throw new RuntimeException("잘못된 파일명입니다.");
+                }
+
+                int dotIdx = originName.lastIndexOf(".");
+                if (dotIdx < 0 || dotIdx == originName.length() - 1) {
+                        throw new RuntimeException("확장자가 없는 파일은 업로드할 수 없습니다.");
+                }
+
+                String extension = originName.substring(dotIdx + 1).toLowerCase(Locale.ROOT);
+                if (!ALLOWED_CHAT_FILE_EXTENSIONS.contains(extension)) {
+                        throw new RuntimeException("허용되지 않는 확장자입니다. (jpg, jpeg, png, gif, bmp, webp, svg, ico, pdf, doc, docx, xls, xlsx)");
+                }
+
+                String declaredMime = file.getContentType() != null ? file.getContentType().toLowerCase(Locale.ROOT) : "";
+                String detectedMime = tika.detect(file.getInputStream()).toLowerCase(Locale.ROOT);
+
+                boolean isImageFile = IMAGE_EXTENSIONS.contains(extension);
+                if (isImageFile) {
+                        boolean imageMimeOk = declaredMime.startsWith("image/")
+                                        || detectedMime.startsWith("image/")
+                                        || "application/octet-stream".equals(declaredMime);
+                        if (!imageMimeOk) {
+                                throw new RuntimeException("이미지 파일 형식이 올바르지 않습니다.");
+                        }
+                        return;
+                }
+
+                boolean mimeAllowed = ALLOWED_CHAT_FILE_MIME_TYPES.contains(declaredMime)
+                                || ALLOWED_CHAT_FILE_MIME_TYPES.contains(detectedMime);
+                if (!mimeAllowed) {
+                        throw new RuntimeException("허용되지 않는 파일 형식입니다.");
                 }
         }
 
@@ -489,6 +549,28 @@ public class ChatService {
                 if ("ST01".equals(room.getProgressCode())) {
                         room.setProgressCode("ST02");
                 }
+        }
+
+        @Transactional
+        public void rejectSchedule(String roomId, String dateStr, String reason, Long requesterUserNo) {
+                ChatRoom room = chatRoomRepository.findById(roomId)
+                                .orElseThrow(() -> new RuntimeException("방이 없습니다."));
+                if (!room.getUserNo().equals(requesterUserNo) && !room.getLawyerNo().equals(requesterUserNo)) {
+                        throw new RuntimeException("이 채팅방의 일정을 거절할 권한이 없습니다.");
+                }
+
+                String safeDate = (dateStr == null || dateStr.isBlank()) ? "제안 일정" : dateStr;
+                String safeReason = (reason == null || reason.isBlank()) ? "사유 없음" : reason.trim();
+                String rejectText = "[일정 거절] " + safeDate + " / 사유: " + safeReason;
+
+                ChatMessageDTO rejectMsg = ChatMessageDTO.builder()
+                                .roomId(roomId)
+                                .senderNo(requesterUserNo)
+                                .msgType("CALENDAR_REJECT")
+                                .message(rejectText)
+                                .build();
+                saveMessage(rejectMsg);
+                messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, rejectMsg);
         }
 
 }

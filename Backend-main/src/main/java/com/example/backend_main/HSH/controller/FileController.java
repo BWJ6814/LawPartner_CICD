@@ -26,7 +26,7 @@ public class FileController {
     private final FileService fileService;
 
     @PostMapping("/upload/lawyer-document")
-    @PreAuthorize("hasRole('ROLE_LAWYER') or hasRole('ROLE_ASSOCIATE')")
+    @PreAuthorize("hasRole('LAWYER') or hasRole('ASSOCIATE')")
     public ResponseEntity<ResultVO<LawyerDocument>> uploadLawyerDocument(@RequestParam("file") MultipartFile file,
                                                                          @RequestParam("docType") String docType,
                                                                          @AuthenticationPrincipal CustomUserDetails userDetails) {
@@ -36,7 +36,7 @@ public class FileController {
     }
 
     @GetMapping("/download/admin/document/{docNo}")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Resource> downloadDocument(@PathVariable Long docNo) throws IOException {
 
         LawyerDocument docInfo = fileService.getDocumentInfo(docNo);

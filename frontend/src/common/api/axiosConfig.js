@@ -12,6 +12,8 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    // 요청이 장시간 멈출 때 프론트가 무한 로딩 상태에 빠지지 않도록 제한
+    timeout: 65000,
     // 🔑 핵심 1: 쿠키(RefreshToken)를 주고받기 위해 반드시 true 설정
     withCredentials: true,
 });

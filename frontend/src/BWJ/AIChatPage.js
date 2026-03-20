@@ -158,7 +158,13 @@ const AIChatPage = () => {
             await loadRooms();
         } catch (error) {
             console.error(error);
-            setMessages(prev => [...prev, { text: "서버 연결 오류가 발생했습니다.", isUser: false }]);
+            const serverMsg =
+                error?.response?.data?.message ||
+                (typeof error?.response?.data === 'string' ? error.response.data : null);
+            const fallbackMsg = error?.code === 'ECONNABORTED'
+                ? "AI 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요."
+                : "서버 연결 오류가 발생했습니다.";
+            setMessages(prev => [...prev, { text: serverMsg || fallbackMsg, isUser: false }]);
         } finally {
             setIsLoading(false);
         }
