@@ -559,7 +559,20 @@ public class ChatService {
                         throw new RuntimeException("이 채팅방의 일정을 거절할 권한이 없습니다.");
                 }
 
-                String rejectText = "거절했습니다.";
+                String rejectText;
+                if (reason == null || reason.isBlank()) {
+                        rejectText = "상대방이 일정 제안을 거절하였습니다.";
+                } else {
+                        String trimmed = reason.trim();
+
+                        // 사용자가 "사유로"처럼 조사까지 입력했을 수도 있으니, 끝글자가 이미 '로/으로'면 중복 처리 방지.
+                        if (trimmed.endsWith("으로") || trimmed.endsWith("로")) {
+                                rejectText = trimmed + " 거절하였습니다.";
+                        } else {
+                                String particle = chooseParticleForEuRo(trimmed); // 로/으로 자동 선택
+                                rejectText = trimmed + particle + " 거절하였습니다.";
+                        }
+                }
 
                 ChatMessageDTO rejectMsg = ChatMessageDTO.builder()
                                 .roomId(roomId)
@@ -569,6 +582,24 @@ public class ChatService {
                                 .build();
                 saveMessage(rejectMsg);
                 messagingTemplate.convertAndSend("/sub/chat/room/" + roomId, rejectMsg);
+        }
+
+        /**
+         * 입력 사유 끝이 받침이 있으면 "으로", 없으면 "로"를 붙여 자연스럽게 만든다.
+         * (예: "시간" -> 시간으로, "가능" -> 가능으로, "괜찮"같이 한글 음절 기준이 애매한 경우는 기본적으로 "로")
+         */
+        private String chooseParticleForEuRo(String text) {
+                if (text == null || text.isBlank()) return "로";
+                char last = text.charAt(text.length() - 1);
+
+                // 한글 음절(가~힣)인지 판별해서 받침 유무로 로/으로 결정
+                if (last >= '가' && last <= '힣') {
+                        int syllableIndex = last - '가';
+                        int jongseongIndex = syllableIndex % 28;
+                        return jongseongIndex == 0 ? "로" : "으로";
+                }
+                // 한글이 아니면 기본 "로"
+                return "로";
         }
 
 }
