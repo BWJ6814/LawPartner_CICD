@@ -332,10 +332,6 @@ const ChatList = () => {
         if (isRecording) { recognitionRef.current?.stop(); setIsRecording(false); return; }
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) { alert("크롬 브라우저를 이용해주세요."); return; }
-        if (!window.isSecureContext) {
-            alert("마이크 인식은 HTTPS(또는 localhost) 환경에서만 동작합니다.");
-            return;
-        }
         initialMessageRef.current = message;
         const recognition = new SpeechRecognition();
         recognition.lang = 'ko-KR';

@@ -559,9 +559,8 @@ public class ChatService {
                         throw new RuntimeException("이 채팅방의 일정을 거절할 권한이 없습니다.");
                 }
 
-                String safeDate = (dateStr == null || dateStr.isBlank()) ? "제안 일정" : dateStr;
-                String safeReason = (reason == null || reason.isBlank()) ? "사유 미입력" : reason.trim();
-                String rejectText = "[일정 취소] " + safeDate + " / 사유: " + safeReason;
+                String safeReason = (reason == null || reason.isBlank()) ? "거절했습니다." : reason.trim();
+                String rejectText = "[일정 취소] " + safeReason;
 
                 ChatMessageDTO rejectMsg = ChatMessageDTO.builder()
                                 .roomId(roomId)
