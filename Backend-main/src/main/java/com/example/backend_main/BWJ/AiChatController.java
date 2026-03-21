@@ -37,10 +37,10 @@ public class AiChatController {
     private final String PYTHON_SUMMARIZE_URL = System.getenv().getOrDefault("PYTHON_SUMMARIZE_URL", "http://127.0.0.1:8000/summarize-consult");
 
     private RestTemplate buildRestTemplate() {
-        // AI 서버 장애/방화벽 이슈 시 무한 대기 방지
+        // AI 서버 장애/방화벽 이슈 시 무한 대기 방지. RAG+LLM은 1분을 넘길 수 있어 읽기 타임아웃을 넉넉히 둠.
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(5000);   // 연결 타임아웃 5초
-        requestFactory.setReadTimeout(60000);     // 응답 대기 타임아웃 60초
+        requestFactory.setConnectTimeout(10_000);   // 연결 10초
+        requestFactory.setReadTimeout(600_000);     // 응답 대기 최대 10분
         return new RestTemplate(requestFactory);
     }
 
