@@ -101,7 +101,8 @@ class SummarizeConsultRequest(BaseModel):
 # 6. 실제 API 엔드포인트
 # 리액트에서 axios.post('http://localhost:8000/chat', { question: "..." }) 로 요청하면 여기가 실행됩니다.
 @app.post("/chat")
-async def chat(request: QueryRequest):
+def chat(request: QueryRequest):
+    """동기 def: langchain invoke()가 블로킹이므로 스레드 풀에서 실행되어 이벤트 루프를 막지 않음."""
     try:
         # 1) disable_rag 플래그가 true 이면 RAG를 타지 않고 순수 LLM으로만 답변
         if request.disable_rag:
@@ -178,7 +179,7 @@ SUMMARIZE_CONSULT_PROMPT = """당신은 법률 상담 게시글을 정리하는 
 
 
 @app.post("/summarize-consult")
-async def summarize_consult(request: SummarizeConsultRequest):
+def summarize_consult(request: SummarizeConsultRequest):
     """대화 내역을 변호사 상담 게시글용 제목·본문(사건 개요, 현재 상황, 변호사님께 드리는 질문)으로 정리 후 참고 판례를 붙여 반환"""
     try:
         # 인사 메시지 제외한 대화만 사용
