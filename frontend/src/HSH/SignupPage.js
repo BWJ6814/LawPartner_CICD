@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../common/api/axiosConfig'; 
 import { Eye, EyeOff } from 'lucide-react';
@@ -6,6 +6,7 @@ import './SignupPage.css'; // CSS 임포트
 
 const SignupPage = () => {
     const navigate = useNavigate();
+    const phoneRef = useRef(null);
     
     // 1. 상태 관리 (Role, Form Data, UI Status)
     const [role, setRole] = useState('client'); // 'client' or 'lawyer'
@@ -125,9 +126,18 @@ const SignupPage = () => {
     
     // 휴대폰 번호 포맷팅
     const handlePhoneFormat = (e) => {
+        const input = e.target;
+        const cursorPos = input.selectionStart;
+        const oldVal = input.value;
+        const oldHyphens = (oldVal.slice(0, cursorPos).match(/-/g) || []).length;
+
         let val = e.target.value.replace(/[^0-9]/g, "");
         if (val.length > 3 && val.length <= 7) val = val.slice(0, 3) + "-" + val.slice(3);
         else if (val.length > 7) val = val.slice(0, 3) + "-" + val.slice(3, 7) + "-" + val.slice(7);
+
+        const newHyphens = (val.slice(0, cursorPos).match(/-/g) || []).length;
+        const newPos = cursorPos + (newHyphens - oldHyphens);
+
         setFormData({ ...formData, phone: val });
         // ★ 최적화: 13자(포맷 완료)가 되면 자동으로 중복 체크 실행
         if (val.length === 13) {
@@ -135,6 +145,12 @@ const SignupPage = () => {
         } else {
             setPhoneMsg({ text: '', color: '' }); // 번호 지우면 메시지도 삭제
         }
+
+        requestAnimationFrame(() => {
+            if (phoneRef.current) {
+                phoneRef.current.setSelectionRange(newPos, newPos);
+            }
+        });
     };
     // 자격증 번호 5자리 숫자 고정 핸들러
     const handleLicenseChange = (e) => {
@@ -376,6 +392,7 @@ const SignupPage = () => {
                                     className={inputStyle} 
                                     onChange={handlePhoneFormat} // ★ 입력 중 포맷팅 + 자동 체크
                                     maxLength="13"
+                                    ref={phoneRef}
                                 />
                                 {phoneMsg.text && <p className={`text-[10px] font-bold ml-1 ${phoneMsg.color}`}>{phoneMsg.text}</p>}
                             </div>
