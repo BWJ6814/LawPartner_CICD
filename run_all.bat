@@ -68,6 +68,21 @@ start "React Frontend" cmd /k ""%ROOT_DIR%frontend\run.bat""
 echo [2/3] FastAPI AI 서버 시작 중...
 start "FastAPI-Server" cmd /k ""%ROOT_DIR%backend-ai\run.bat""
 
+REM pip 설치(최초) + Chroma 로딩 후에야 8000 LISTEN → Spring이 먼저 뜨면 Connection refused
+echo [대기] FastAPI가 8000 포트에 바인딩될 때까지 최대 약 45초 ...
+set _wait=0
+:wait8000
+netstat -ano | findstr ":8000" | findstr "LISTENING" >nul 2>&1
+if not errorlevel 1 goto ai_ready
+set /a _wait+=1
+if %_wait% GEQ 45 (
+  echo [경고] 45초 내 8000 LISTEN을 못 찾았습니다. FastAPI 창 로그를 확인하세요.
+  goto ai_ready
+)
+timeout /t 1 /nobreak >nul
+goto wait8000
+:ai_ready
+
 :: 5) Spring Boot 실행 (현재 창)
 echo [3/3] Spring Boot 백엔드 시작 중...
 cd /d "%ROOT_DIR%Backend-main"
