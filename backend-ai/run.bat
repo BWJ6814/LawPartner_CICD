@@ -3,6 +3,11 @@ chcp 65001 > nul
 cd /d "%~dp0"
 set PYTHONUTF8=1
 set PYTHONIOENCODING=utf-8
+:: Chroma/ONNX 등 네이티브 라이브러리가 Windows에서 불안정할 때 완화
+set OMP_NUM_THREADS=1
+set TOKENIZERS_PARALLELISM=false
+:: Chroma similarity_search 직후 Uvicorn이 죽는다면 아래 주석 제거(판례 검색 없이 LLM만 사용):
+:: set RAG_DISABLE=1
 if not exist venv python -m venv venv
 call venv\Scripts\activate
 python -m pip install -r requirements.txt

@@ -11,11 +11,15 @@ from fastapi import FastAPI, HTTPException
 
 # 1. 환경 변수(.env)에서 구글 API 키를 안전하게 불러옵니다.
 load_dotenv()
-api_key = os.getenv("GOOGLE_API_KEY")
-print("API key prefix:", api_key[:10] if api_key else "none")
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+api_key = os.getenv("GOOGLE_API_KEY")
+RAG_DISABLE = os.getenv("RAG_DISABLE", "").strip().lower() in ("1", "true", "yes")
+if api_key:
+    logger.info("GOOGLE_API_KEY가 로드되었습니다. (값은 출력하지 않습니다)")
+else:
+    logger.warning("GOOGLE_API_KEY가 비어 있습니다.")
 
 # FastAPI 애플리케이션 객체를 생성합니다. (스프링 부트의 Application 역할)
 app = FastAPI()
@@ -37,11 +41,8 @@ def get_vector_db():
     if not os.path.exists(db_path):
         raise Exception("DB 폴더가 없습니다! 먼저 update_db.py를 실행해서 데이터를 넣어주세요.")
 
-    print("Chroma DB loaded successfully.")
+    logger.info("Chroma DB loaded successfully.")
     return Chroma(persist_directory=db_path, embedding_function=embeddings)
-
-# 서버가 구동될 때 최초 1회만 DB 연결을 수행하여 메모리에 올려둡니다.
-vectordb = get_vector_db()
 
 # 3. 답변을 생성할 AI 언어 모델(LLM) 설정
 llm = ChatGoogleGenerativeAI(
@@ -49,6 +50,14 @@ llm = ChatGoogleGenerativeAI(
     temperature=0, # 0에 가까울수록 창의성보다는 문서 기반의 딱딱하고 정확한 답변을 냅니다. (법률 AI에 적합)
     api_key=api_key
 )
+
+# RAG_DISABLE 이면 Chroma/qa_chain 을 만들지 않음 (크로마 네이티브 크래시 회피·메모리 절약)
+vectordb = None
+qa_chain = None
+if not RAG_DISABLE:
+    vectordb = get_vector_db()
+else:
+    logger.warning("RAG_DISABLE=1: 판례 DB 검색을 건너뜁니다. LLM만 사용합니다.")
 
 # 4. RAG 체인 설정 (질문 -> DB 검색 -> AI 답변 생성의 흐름을 하나로 묶어주는 랭체인 도구)
 # 기본 프롬프트 대신, 판례 + 일반 법률 지식을 함께 활용해 실무적인 조언을 하도록 커스터마이징
@@ -83,13 +92,14 @@ rag_prompt = PromptTemplate(
     input_variables=["context", "question"],
 )
 
-qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    chain_type="stuff",  # 검색된 문서들을 질문과 함께 그대로 AI에게 우겨넣는(stuff) 방식
-    retriever=vectordb.as_retriever(search_kwargs={"k": 2}),  # 가장 관련성 높은 판례 2개를 찾습니다.
-    return_source_documents=True,  # AI가 답변할 때 참고한 원본 판례 데이터도 같이 반환하도록 설정
-    chain_type_kwargs={"prompt": rag_prompt},
-)
+if not RAG_DISABLE and vectordb is not None:
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=llm,
+        chain_type="stuff",  # 검색된 문서들을 질문과 함께 그대로 AI에게 우겨넣는(stuff) 방식
+        retriever=vectordb.as_retriever(search_kwargs={"k": 2}),  # 가장 관련성 높은 판례 2개를 찾습니다.
+        return_source_documents=True,  # AI가 답변할 때 참고한 원본 판례 데이터도 같이 반환하도록 설정
+        chain_type_kwargs={"prompt": rag_prompt},
+    )
 
 # 5. 프론트엔드(React)에서 보내올 데이터의 형식을 Pydantic으로 정의합니다. (DTO 역할)
 class QueryRequest(BaseModel):
@@ -108,35 +118,39 @@ class SummarizeConsultRequest(BaseModel):
     """상담내용으로 글쓰기 시 대화 내역 + 참고 판례를 변호사 상담용 양식으로 정리 요청"""
     messages: list[SummarizeMessage]
 
+
+def _llm_only_answer(question: str) -> dict:
+    prompt = (
+        "당신은 한국 법률 전문가입니다.\n"
+        "질문에 대해 일반적인 법률 지식과 실무 관행을 바탕으로, "
+        "특정 판례를 전제로 하지 않고도 이해하기 쉽게 가이드 형태로 자세히 설명하세요.\n\n"
+        f"질문: {question}"
+    )
+    llm_resp = llm.invoke(prompt)
+    answer_text = getattr(llm_resp, "content", llm_resp)
+    return {"answer": answer_text, "related_cases": []}
+
+
 # 6. 실제 API 엔드포인트
 # 리액트에서 axios.post('http://localhost:8000/chat', { question: "..." }) 로 요청하면 여기가 실행됩니다.
 @app.post("/chat")
 def chat(request: QueryRequest):
     """동기 def: langchain invoke()가 블로킹이므로 스레드 풀에서 실행되어 이벤트 루프를 막지 않음."""
-    logger.info("POST /chat received (question len=%s, disable_rag=%s)", len(request.question or ""), request.disable_rag)
+    logger.info("POST /chat received (question len=%s, disable_rag=%s, RAG_DISABLE=%s)", len(request.question or ""), request.disable_rag, RAG_DISABLE)
     try:
-        # 1) disable_rag 플래그가 true 이면 RAG를 타지 않고 순수 LLM으로만 답변
-        if request.disable_rag:
-            prompt = (
-                "당신은 한국 법률 전문가입니다.\n"
-                "질문에 대해 일반적인 법률 지식과 실무 관행을 바탕으로, "
-                "특정 판례를 전제로 하지 않고도 이해하기 쉽게 가이드 형태로 자세히 설명하세요.\n\n"
-                f"질문: {request.question}"
-            )
-            llm_resp = llm.invoke(prompt)
-            answer_text = getattr(llm_resp, "content", llm_resp)
-            return {
-                "answer": answer_text,
-                "related_cases": []
-            }
+        # 1) 서버 환경에서 RAG 끔 / 프론트에서 disable_rag
+        if request.disable_rag or RAG_DISABLE or qa_chain is None:
+            return _llm_only_answer(request.question)
 
-        # 2) 기본 모드: RAG 체인 사용
-        response = qa_chain.invoke({"query": request.question})
+        # 2) RAG 체인 (Chroma similarity_search 포함) — 예외 시 LLM만으로 폴백
+        try:
+            response = qa_chain.invoke({"query": request.question})
+        except Exception as rag_err:
+            logger.exception("RAG 체인 실패, LLM만으로 폴백: %s", rag_err)
+            return _llm_only_answer(request.question)
 
-        # 참고한 판례 원문 전체를 전송 (프론트엔드에서 더보기로 펼쳐서 표시)
         sources = [doc.page_content for doc in response.get("source_documents", [])]
 
-        # 3) 검색된 판례가 전혀 없으면, RAG 대신 순수 LLM으로 fallback
         if not sources:
             prompt = (
                 "당신은 한국 법률 전문가입니다.\n"
@@ -146,19 +160,14 @@ def chat(request: QueryRequest):
             )
             llm_resp = llm.invoke(prompt)
             answer_text = getattr(llm_resp, "content", llm_resp)
-            return {
-                "answer": answer_text,
-                "related_cases": []
-            }
+            return {"answer": answer_text, "related_cases": []}
 
-        # 4) RAG 검색 + 판례 기반 답변
         return {
             "answer": response["result"],
             "related_cases": sources
         }
     except Exception as e:
-        print(f"Error detail: {e}")
-        # 서버 내부에서 에러가 나면 500 상태 코드와 함께 에러 내용을 리액트로 보냅니다.
+        logger.exception("chat 처리 오류: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 
