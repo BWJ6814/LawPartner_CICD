@@ -96,7 +96,7 @@ export default function AdminPage() {
 
   const handleUnblock = async (ip) => {
     const reason = prompt(`[${ip}] 차단 해제 사유를 입력하세요:`);
-    if (!reason) return;
+    if (!reason?.trim()) return;
     try {
       const res = await api.delete(`/api/admin/blacklist`, { params: { ip, reason } });
       if (res.data.success) {
@@ -158,7 +158,7 @@ export default function AdminPage() {
 
   const handleExcelDownload = async () => {
     const reason = prompt("다운로드 사유를 입력해주세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
     try {
       const response = await api.get(`/api/admin/logs/download?reason=${encodeURIComponent(reason)}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -172,7 +172,7 @@ export default function AdminPage() {
 
   const handleUserStatusChange = async (userId, statusCode) => {
     const reason = prompt("상태 변경 사유를 입력해주세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
     try {
       const res = await api.put('/api/admin/user/status', { userId, statusCode, reason });
       if (res.data.success) {
@@ -184,7 +184,7 @@ export default function AdminPage() {
 
   const handleRoleChange = async (userId, roleCode) => {
     const reason = prompt("권한 변경 사유를 입력해주세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
     try {
       const res = await api.put('/api/admin/user/role', { userId, roleCode, reason });
       if (res.data.success) {
@@ -217,7 +217,7 @@ export default function AdminPage() {
     if (!newWord.trim()) return;
 
     const reason = prompt("금지어 등록 사유를 입력해주세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
 
     try {
       const res = await api.post('/api/admin/banned-words', { word: newWord, reason });
@@ -232,7 +232,7 @@ export default function AdminPage() {
     if (!window.confirm("삭제하시겠습니까?")) return;
 
     const reason = prompt("금지어 삭제 사유를 입력해주세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
 
     try {
       const res = await api.delete(`/api/admin/banned-words/${wordNo}?reason=${encodeURIComponent(reason)}`);
@@ -246,7 +246,7 @@ export default function AdminPage() {
   const handleToggleBlind = async (boardNo, currentBlindYn) => {
     const nextStatus = currentBlindYn === 'Y' ? 'N' : 'Y';
     const reason = prompt("블라인드 처리 사유를 입력하세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
     try {
       const res = await api.put(`/api/admin/board/blind`, { boardNo, blindYn: nextStatus, reason });
       if (res.data.success) {
