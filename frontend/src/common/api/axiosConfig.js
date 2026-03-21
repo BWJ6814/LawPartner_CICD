@@ -86,8 +86,7 @@ export default api;
 
 export const initAuth = async () => {
   try {
-    const response = await api.post('/api/auth/refresh',
-      {}, { withCredentials: true });
+    const response = await axios.post(API_BASE_URL + '/api/auth/refresh', {}, { withCredentials: true });
     const token = response.data?.data?.accessToken;
     if (token) {
       setAccessToken(token);
