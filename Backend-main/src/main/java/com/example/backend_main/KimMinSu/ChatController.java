@@ -6,6 +6,7 @@ import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.ChatMessageDTO;
 import com.example.backend_main.dto.ChatRequestDTO;
 import com.example.backend_main.dto.ChatRoomDTO;
+import com.example.backend_main.dto.ChatRoomRequestResultDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -28,16 +29,16 @@ public class ChatController {
 
     // 1. 의뢰인이 상담 요청 (POST)
     @PostMapping("/request")
-    public ResponseEntity<String> requestChat(
+    public ResponseEntity<ChatRoomRequestResultDTO> requestChat(
             @RequestHeader("Authorization") String token,
             @RequestBody ChatRequestDTO dto) { // DTO 안에 userNo, lawyerNo 있음
 
         // 1. 토큰 까서 유저 번호 확인 (생략)
 
-        // 2. ChatService의 방 생성 로직 호출 (여기에 알림 쏘는 로직이 들어있음!)
-        String roomId = chatService.requestChat(dto.getUserNo(), dto.getLawyerNo());
+        // 2. 대기/진행 방이 있으면 재사용, 없을 때만 생성·알림
+        ChatRoomRequestResultDTO result = chatService.requestOrReuseActiveConsultationRoom(dto.getUserNo(), dto.getLawyerNo());
 
-        return ResponseEntity.ok(roomId);
+        return ResponseEntity.ok(result);
     }
 
     /** 기존 채팅방에 대한 1:1 채팅 요청 알림 전송 (전문가찾기/상담게시판에서 방 생성 후 호출) */

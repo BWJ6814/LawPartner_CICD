@@ -4,7 +4,9 @@ import com.example.backend_main.common.entity.ChatRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 // ★ JpaRepository<ChatRoom, Long> 에서 JpaRepository<ChatRoom, String> 으로 변경
@@ -29,4 +31,8 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, String> {
 
     // [KY] 대시보드용: 변호사의 전체 상담 건수
     long countByLawyerNo(Long lawyerNo);
+
+    /** 동일 의뢰인·변호사 간 대기/진행(ST01·ST02) 방 1건 (최신순) */
+    Optional<ChatRoom> findFirstByUserNoAndLawyerNoAndProgressCodeInOrderByRegDtDesc(
+            Long userNo, Long lawyerNo, Collection<String> progressCodes);
 }

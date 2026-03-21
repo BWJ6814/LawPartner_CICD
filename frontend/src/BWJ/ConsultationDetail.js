@@ -209,14 +209,16 @@ const ConsultationDetail = () => {
 
             const room = response.data;
             const roomId = room?.roomId ?? room?.id ?? response.data;
+            const newlyCreated = room?.newlyCreated === true;
 
             if (response.status === 200 && roomId) {
-                // 변호사·의뢰인에게 1:1 채팅 요청 알림 전송 (클릭 시 해당 채팅방 이동)
-                api.post("/api/chat/room/notify", {
-                    roomId,
-                    userNo: Number(currentUser.userNo),
-                    lawyerNo
-                }).catch(() => {});
+                if (newlyCreated) {
+                    api.post("/api/chat/room/notify", {
+                        roomId,
+                        userNo: Number(currentUser.userNo),
+                        lawyerNo
+                    }).catch(() => {});
+                }
                 alert("1:1 대화 요청이 완료되었습니다!");
                 navigate(`/chatList/${roomId}`);
             }

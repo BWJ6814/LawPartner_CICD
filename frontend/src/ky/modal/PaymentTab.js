@@ -66,7 +66,7 @@ const PaymentTab = ({ isSubscribed, setIsSubscribed, email, phone }) => {
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="font-semibold text-gray-900">현재 플랜</span>
-                                    <span className="text-blue-600 font-bold">LawParts 구독중</span>
+                                    <span className="text-blue-600 font-bold">LawPartner 구독중</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm text-gray-600">
                                     <span>다음 결제일</span>
@@ -94,7 +94,7 @@ const PaymentTab = ({ isSubscribed, setIsSubscribed, email, phone }) => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                             </svg>
                             <p className="text-gray-600 font-semibold mb-2">구독 중인 플랜이 없습니다</p>
-                            <p className="text-sm text-gray-500">LawParts를 구독하고 더 많은 혜택을 누려보세요!</p>
+                            <p className="text-sm text-gray-500">LawPartner를 구독하고 더 많은 혜택을 누려보세요!</p>
                         </div>
                     )}
                 </div>
@@ -107,7 +107,7 @@ const PaymentTab = ({ isSubscribed, setIsSubscribed, email, phone }) => {
                             : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                 >
-                    {isSubscribed ? '구독 취소하기' : 'LawParts 구독하기'}
+                    {isSubscribed ? '구독 취소하기' : 'LawPartner 구독하기'}
                 </button>
 
                 <p className="text-xs text-gray-500 text-center">
