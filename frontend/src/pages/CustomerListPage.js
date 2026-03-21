@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { API_BASE_URL } from "../common/api/axiosConfig";
-
-const TOKEN_KEY = "accessToken";
+import { API_BASE_URL, getAccessToken } from "../common/api/axiosConfig";
 
 function isLoggedIn() {
-    return !!localStorage.getItem(TOKEN_KEY);
+    return !!getAccessToken();
 }
 
 function formatDate(iso) {
@@ -31,7 +29,7 @@ export default function CustomerListPage() {
         }
 
         const fetchInquiries = async () => {
-            const token = localStorage.getItem(TOKEN_KEY);
+            const token = getAccessToken();
             if (!token) {
                 setList([]);
                 setIsLoading(false);
