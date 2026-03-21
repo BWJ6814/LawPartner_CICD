@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../common/api/axiosConfig'; 
+import { Eye, EyeOff } from 'lucide-react';
 import './SignupPage.css'; // CSS 임포트
 
 const SignupPage = () => {
@@ -55,6 +56,8 @@ const SignupPage = () => {
     // 이메일, 휴대폰 입력
     const [emailMsg, setEmailMsg] = useState({ text: '', color: '' });
     const [phoneMsg, setPhoneMsg] = useState({ text: '', color: '' });
+    const [showPw, setShowPw] = useState(false);
+    const [showConfirmPw, setShowConfirmPw] = useState(false);
     
     // 2. 핸들러 함수들
     const handleChange = (e) => {
@@ -319,11 +322,39 @@ const SignupPage = () => {
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                                 <label className={labelStyle}>Password</label>
-                                <input type="password" name="userPw" required placeholder="8자 이상" className={inputStyle} onChange={handleChange} />
+                                <div className="relative">
+                                    <input
+                                        type={showPw ? 'text' : 'password'}
+                                        name="userPw"
+                                        required
+                                        placeholder="8자 이상"
+                                        className={inputStyle}
+                                        style={{ WebkitAppearance: 'none' }}
+                                        onChange={handleChange}
+                                    />
+                                    <button type="button" onClick={() => setShowPw(!showPw)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                        {showPw ? <EyeOff size={16}/> : <Eye size={16}/>}
+                                    </button>
+                                </div>
                             </div>
                             <div className="space-y-1">
                                 <label className={labelStyle}>Confirm</label>
-                                <input type="password" name="confirmPassword" required placeholder="재입력" className={inputStyle} onChange={handleChange} />
+                                <div className="relative">
+                                    <input
+                                        type={showConfirmPw ? 'text' : 'password'}
+                                        name="confirmPassword"
+                                        required
+                                        placeholder="재입력"
+                                        className={inputStyle}
+                                        style={{ WebkitAppearance: 'none' }}
+                                        onChange={handleChange}
+                                    />
+                                    <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                        {showConfirmPw ? <EyeOff size={16}/> : <Eye size={16}/>}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         {pwMsg && <p className={`text-[10px] font-bold ml-1 ${pwMsg.includes('일치합니다') ? 'text-green-600' : 'text-red-500'}`}>{pwMsg}</p>}
