@@ -113,7 +113,7 @@ const ChatList = () => {
     const handleHideRoomFromList = useCallback(async (e, targetRoomId) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!window.confirm('이 채팅방을 목록에서 숨기시겠습니까?')) return;
+        if (!window.confirm('채팅방을 나가겠습니까?')) return;
         try {
             await api.delete(`/api/mypage/chat/room/${targetRoomId}`);
             loadRooms();
@@ -540,7 +540,7 @@ const ChatList = () => {
                                         {(Number(room.userNo) === Number(userNo) || Number(room.lawyerNo) === Number(userNo)) && (
                                             <button
                                                 type="button"
-                                                title="목록에서 숨기기"
+                                                title="채팅방 나가기"
                                                 onClick={(e) => handleHideRoomFromList(e, room.roomId)}
                                                 className="shrink-0 px-2 text-slate-400 hover:text-red-500 transition"
                                             >
