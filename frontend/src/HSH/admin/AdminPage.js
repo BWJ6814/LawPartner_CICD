@@ -10,7 +10,7 @@ import api from '../../common/api/axiosConfig';
 
 // [1] 공통 컴포넌트 및 분리된 뷰 임포트
 import {
-  Badge, getRoleDisplayName, MenuSection, MenuItem
+  getRoleDisplayName, MenuSection, MenuItem
 } from './AdminComponents';
 import DashboardView from './DashboardView';
 import UserManagementView from './UserManagementView';
@@ -38,7 +38,6 @@ export default function AdminPage() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [showOnlyErrors, setShowOnlyErrors] = useState(false);
 
   const chartRef = useRef(null);
 

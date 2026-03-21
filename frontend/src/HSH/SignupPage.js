@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../common/api/axiosConfig'; 
 import './SignupPage.css'; // CSS 임포트
@@ -162,7 +162,6 @@ const SignupPage = () => {
     // 전문분야 체크박스 처리 
     const handleSpecialtyChange = (e) => {
         const { value, checked } = e.target;
-        console.log("클릭됨:", value, checked); // 동작 확인용 (필요시 주석 해제)
         if (checked) {
             setSpecialties([...specialties, value]);
         } else {
