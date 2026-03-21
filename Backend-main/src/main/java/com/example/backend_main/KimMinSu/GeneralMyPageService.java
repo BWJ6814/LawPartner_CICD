@@ -59,7 +59,9 @@ public class GeneralMyPageService {
         // 3. [DB 연동] 내 상담 요청 내역 진짜로 가져오기
         List<ChatRoom> myChatRooms = chatRoomRepository.findByUserNoOrderByRegDtDesc(userNo); // 리포지토리에 이 메서드 만들어야 됨
 
-        List<GeneralMyPageDTO.ConsultationItemDTO> consultList = myChatRooms.stream().map(room -> {
+        List<GeneralMyPageDTO.ConsultationItemDTO> consultList = myChatRooms.stream()
+                .filter(room -> !"ST99".equals(room.getProgressCode()))
+                .map(room -> {
             GeneralMyPageDTO.ConsultationItemDTO item = new GeneralMyPageDTO.ConsultationItemDTO();
 
             item.setRoomId(room.getRoomId());
@@ -247,25 +249,27 @@ public class GeneralMyPageService {
             user.setNickNm(newName);
         }
 
-        // 2. 이메일 변경 (중복 검사 + 암호화 + 해시 교체)
+        // 2. 이메일 변경 (중복 검사 + 해시 교체) — 평문만 set: @Convert(Aes256Converter)가 DB 저장 시 한 번만 암호화
         if (newEmail != null && !newEmail.trim().isEmpty()) {
-            String newEmailHash = hashUtil.generateHash(newEmail);
+            String trimmed = newEmail.trim();
+            String newEmailHash = hashUtil.generateHash(trimmed);
             // 내 기존 해시값이랑 다른데, DB에 이미 존재하면 남이 쓰고 있는 거임
             if (!newEmailHash.equals(user.getEmailHash()) && userRepository.existsByEmailHash(newEmailHash)) {
                 throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
             }
 
-            user.setEmail(aes256Util.encrypt(newEmail));
+            user.setEmail(trimmed);
             user.setEmailHash(newEmailHash);
         }
 
-        // 3. 전화번호 변경 (중복 검사 + 암호화 + 해시 교체)
+        // 3. 전화번호 변경 (중복 검사 + 해시 교체)
         if (newPhone != null && !newPhone.trim().isEmpty()) {
-            String newPhoneHash = hashUtil.generateHash(newPhone);
+            String trimmedPhone = newPhone.trim();
+            String newPhoneHash = hashUtil.generateHash(trimmedPhone);
             if (!newPhoneHash.equals(user.getPhoneHash()) && userRepository.existsByPhoneHash(newPhoneHash)) {
                 throw new IllegalArgumentException("이미 사용 중인 전화번호입니다.");
             }
-            user.setPhone(aes256Util.encrypt(newPhone));
+            user.setPhone(trimmedPhone);
             user.setPhoneHash(newPhoneHash);
         }
 
@@ -340,13 +344,13 @@ public class GeneralMyPageService {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("해당 상담 내역을 찾을 수 없습니다."));
 
-        // 2. 권한 검증: 로그인한 유저가 이 채팅방의 주인인지 확인 (보안의 핵심)
-        if (!room.getUserNo().equals(userNo)) {
-            throw new RuntimeException("삭제 권한이 없습니다. 본인의 상담만 취소할 수 있습니다.");
+        // 2. 권한 검증: 의뢰인 또는 담당 변호사만 목록에서 숨김(ST99) 가능
+        if (!room.getUserNo().equals(userNo) && !room.getLawyerNo().equals(userNo)) {
+            throw new RuntimeException("삭제 권한이 없습니다. 해당 상담의 의뢰인 또는 담당 변호사만 숨길 수 있습니다.");
         }
 
-        // 3. 실제 DB에서 삭제 (또는 상태값을 'CANCEL'로 바꾸는 Soft Delete 권장하지만 일단 삭제로 간다)
-        chatRoomRepository.delete(room);
+        // 3. 목록에서만 숨김 (소프트 삭제: progressCode ST99)
+        room.setProgressCode("ST99");
     }
 
     public User getUserById(Long userNo) {

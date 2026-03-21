@@ -302,7 +302,9 @@ const GeneralMyPage = () => {
                                             <td className="px-6 py-4 font-bold text-slate-900">{item.lawyerName}</td>
                                             <td className="px-6 py-4 text-blue-600 font-bold">{item.category}</td>
                                             <td className="px-6 py-4">
-                                                <span className="text-orange-500 font-bold">{item.status}</span>
+                                                <span className={`font-bold ${item.status === '대기' ? 'text-orange-500' : item.status === '상담중' ? 'text-blue-500' : 'text-slate-500'}`}>
+                                                    {item.status}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 text-slate-500">{item.regDate}</td>
                                             <td className="px-6 py-4">

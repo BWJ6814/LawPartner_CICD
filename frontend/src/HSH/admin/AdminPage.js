@@ -425,14 +425,14 @@ export default function AdminPage() {
               <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
                 <p className="text-sm font-bold text-amber-900 flex items-center gap-2"><Lock size={16} /> 보안 로그 기록 중</p>
               </div>
-              <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 [&>div]:min-w-0">
                 <div>
                     <div className="text-xs font-bold text-slate-400 mb-1">이메일</div>
-                    <div className="text-sm font-bold text-slate-700">{selectedItem.email || '-'}</div>
+                    <div className="text-sm font-bold text-slate-700 break-all min-w-0">{selectedItem.email || '-'}</div>
                 </div>
                 <div>
                     <div className="text-xs font-bold text-slate-400 mb-1">전화번호</div>
-                    <div className="text-sm font-bold text-slate-700 font-mono">{selectedItem.phone || '-'}</div>
+                    <div className="text-sm font-bold text-slate-700 font-mono break-all min-w-0">{selectedItem.phone || '-'}</div>
                 </div>
                 <div>
                     <div className="text-xs font-bold text-slate-400 mb-1">가입일</div>

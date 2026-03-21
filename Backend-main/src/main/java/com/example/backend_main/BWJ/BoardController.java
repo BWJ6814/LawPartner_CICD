@@ -1,10 +1,10 @@
 package com.example.backend_main.BWJ;
 
-import com.example.backend_main.common.repository.ChatRoomRepository;
+import com.example.backend_main.KimMinSu.ChatService;
+import com.example.backend_main.dto.ChatRoomRequestResultDTO;
 import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.BoardReply;
 import com.example.backend_main.dto.BoardFile;
-import com.example.backend_main.common.entity.ChatRoom;
 import com.example.backend_main.common.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class BoardController {
     private final BoardReplyRepository boardReplyRepository;
     private final UserRepository userRepository;
     private final BoardFileRepository boardFileRepository;
-    private final ChatRoomRepository chatRoomRepository;
+    private final ChatService chatService;
 
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public String createBoard(
@@ -273,12 +273,7 @@ public class BoardController {
         Long userNo = Long.valueOf(data.get("userNo").toString());
         Long lawyerNo = Long.valueOf(data.get("lawyerNo").toString());
 
-        ChatRoom chatRoom = ChatRoom.builder()
-                .userNo(userNo)
-                .lawyerNo(lawyerNo)
-                .build();
-
-        ChatRoom savedRoom = chatRoomRepository.save(chatRoom);
-        return ResponseEntity.ok(savedRoom);
+        ChatRoomRequestResultDTO result = chatService.requestOrReuseActiveConsultationRoom(userNo, lawyerNo);
+        return ResponseEntity.ok(result);
     }
 }

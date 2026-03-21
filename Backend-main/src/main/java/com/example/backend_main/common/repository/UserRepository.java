@@ -38,6 +38,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 6. 닉네임 중복 확인
     boolean existsByNickNm(String nickNm);
 
+    int countByNickNmStartingWith(String nickNm);
+
     // 7. S99 상태가 아닌 유저들만 조회하기
     List<User> findAllByStatusCodeNot(String statusCode);
 
