@@ -399,9 +399,12 @@ export default function ExpertsPage() {
 
             const room = res.data;
             const roomId = room?.roomId ?? room?.id;
+            const newlyCreated = room?.newlyCreated === true;
 
             if (roomId) {
-                api.post("/api/chat/room/notify", { roomId, userNo, lawyerNo }).catch(() => {});
+                if (newlyCreated) {
+                    api.post("/api/chat/room/notify", { roomId, userNo, lawyerNo }).catch(() => {});
+                }
                 navigate(`/chatList/${roomId}`);
             } else {
                 navigate("/chatList");

@@ -109,6 +109,23 @@ const ChatList = () => {
         loadRooms();
     }, [loadRooms]);
 
+    /** 의뢰인·담당 변호사: ST99로 숨김 → 목록에서 제외(서버 권한과 동일) */
+    const handleHideRoomFromList = useCallback(async (e, targetRoomId) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!window.confirm('이 채팅방을 목록에서 숨기시겠습니까?')) return;
+        try {
+            await api.delete(`/api/mypage/chat/room/${targetRoomId}`);
+            loadRooms();
+            if (String(roomId) === String(targetRoomId)) {
+                navigate('/chatList');
+            }
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.message || '채팅방을 숨기지 못했습니다.');
+        }
+    }, [loadRooms, navigate, roomId]);
+
     // 2. 방 선택 시 상태/이름 갱신
     useEffect(() => {
         if (!roomId || rooms.length === 0) return;
@@ -504,21 +521,33 @@ const ChatList = () => {
                             {filteredRooms.length > 0 ? filteredRooms.map((room) => {
                                 const opponentName = Number(room.userNo) === Number(userNo) ? room.lawyerName : room.userNm;
                                 return (
-                                    <Link to={`/chatList/${room.roomId}`} key={room.roomId}
-                                          className={`p-3 border-b border-slate-100 cursor-pointer transition flex items-center gap-3 ${String(roomId) === String(room.roomId) ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-                                        <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-black shrink-0 shadow-sm text-sm">
-                                            {opponentName ? opponentName.substring(0, 1) : '상'}
-                                        </div>
-                                        <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                            <div className="flex justify-between items-center mb-0.5">
-                                                <span className="font-bold text-slate-800 text-[13px] truncate pr-2">{opponentName || `상담방`}</span>
-                                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-black shrink-0 ${room.progressCode === 'ST01' ? 'bg-orange-100 text-orange-600' : room.progressCode === 'ST02' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
-                                                    {room.progressCode === 'ST01' ? '대기' : room.progressCode === 'ST02' ? '진행' : '완료'}
-                                                </span>
+                                    <div key={room.roomId} className={`flex items-stretch border-b border-slate-100 ${String(roomId) === String(room.roomId) ? 'bg-blue-50' : ''}`}>
+                                        <Link to={`/chatList/${room.roomId}`}
+                                              className={`flex-1 min-w-0 p-3 cursor-pointer transition flex items-center gap-3 ${String(roomId) === String(room.roomId) ? '' : 'hover:bg-slate-50'}`}>
+                                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-black shrink-0 shadow-sm text-sm">
+                                                {opponentName ? opponentName.substring(0, 1) : '상'}
                                             </div>
-                                            <p className="text-[11px] text-slate-400 truncate font-medium mt-0.5">{room.lastMessage || '대화를 시작하세요...'}</p>
-                                        </div>
-                                    </Link>
+                                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                <div className="flex justify-between items-center mb-0.5">
+                                                    <span className="font-bold text-slate-800 text-[13px] truncate pr-2">{opponentName || `상담방`}</span>
+                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-black shrink-0 ${room.progressCode === 'ST01' ? 'bg-orange-100 text-orange-600' : room.progressCode === 'ST02' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                                                        {room.progressCode === 'ST01' ? '대기' : room.progressCode === 'ST02' ? '진행' : '완료'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-400 truncate font-medium mt-0.5">{room.lastMessage || '대화를 시작하세요...'}</p>
+                                            </div>
+                                        </Link>
+                                        {(Number(room.userNo) === Number(userNo) || Number(room.lawyerNo) === Number(userNo)) && (
+                                            <button
+                                                type="button"
+                                                title="목록에서 숨기기"
+                                                onClick={(e) => handleHideRoomFromList(e, room.roomId)}
+                                                className="shrink-0 px-2 text-slate-400 hover:text-red-500 transition"
+                                            >
+                                                <i className="fas fa-trash-alt text-sm" />
+                                            </button>
+                                        )}
+                                    </div>
                                 );
                             }) : <div className="p-10 text-center text-xs text-slate-400 font-bold">조건에 맞는 방이 없습니다.</div>}
                         </div>

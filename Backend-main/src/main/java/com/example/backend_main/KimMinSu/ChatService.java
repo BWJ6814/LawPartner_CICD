@@ -9,6 +9,7 @@ import com.example.backend_main.common.repository.ChatRoomRepository;
 import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.dto.ChatMessageDTO;
+import com.example.backend_main.dto.ChatRoomRequestResultDTO;
 import com.example.backend_main.ky.entity.Review;
 import com.example.backend_main.ky.repository.ReviewRepository;
 import com.example.backend_main.dto.ChatRoomDTO;
@@ -37,6 +38,7 @@ import java.util.HashMap; // ★ 추가됨
 import java.util.List;
 import java.util.Locale;
 import java.util.Map; // ★ 추가됨
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -84,6 +86,37 @@ public class ChatService {
 
         @Value("${chat.file.server-url}")
         private String serverUrl;
+
+        /**
+         * 동일 (의뢰인, 변호사) 쌍에 대해 대기(ST01)·진행(ST02) 방이 이미 있으면 그 roomId만 반환하고,
+         * 없을 때만 새 방을 만들고 알림을 보낸다. (완료·종료·숨김 ST99 후에는 새로 신청 가능)
+         */
+        @Transactional
+        public ChatRoomRequestResultDTO requestOrReuseActiveConsultationRoom(Long userNo, Long lawyerNo) {
+                Optional<ChatRoom> existing = chatRoomRepository
+                                .findFirstByUserNoAndLawyerNoAndProgressCodeInOrderByRegDtDesc(
+                                                userNo, lawyerNo, List.of("ST01", "ST02"));
+                if (existing.isPresent()) {
+                        ChatRoom r = existing.get();
+                        return ChatRoomRequestResultDTO.builder()
+                                        .roomId(r.getRoomId())
+                                        .userNo(r.getUserNo())
+                                        .lawyerNo(r.getLawyerNo())
+                                        .progressCode(r.getProgressCode())
+                                        .newlyCreated(false)
+                                        .build();
+                }
+                String roomId = requestChat(userNo, lawyerNo);
+                ChatRoom saved = chatRoomRepository.findById(roomId)
+                                .orElseThrow(() -> new RuntimeException("채팅방을 찾을 수 없습니다."));
+                return ChatRoomRequestResultDTO.builder()
+                                .roomId(roomId)
+                                .userNo(saved.getUserNo())
+                                .lawyerNo(saved.getLawyerNo())
+                                .progressCode(saved.getProgressCode())
+                                .newlyCreated(true)
+                                .build();
+        }
 
         // ------------------------------------------------------------------
         // 1. 의뢰인이 상담 요청 (방은 생기지만 대기 상태) + [양측에 알림]
@@ -328,6 +361,7 @@ public class ChatService {
         // ------------------------------------------------------------------
         public List<ChatRoomDTO> getMyChatRooms(Long myUserNo) {
                 List<ChatRoomDTO> list = chatRoomRepository.findByUserNoOrLawyerNoOrderByRegDtDesc(myUserNo, myUserNo).stream()
+                                .filter(room -> !"ST99".equals(room.getProgressCode()))
                                 .map(room -> {
                                         String clientName = userRepository.findById(room.getUserNo())
                                                         .map(u -> u.getUserNm()).orElse("알 수 없는 유저");
