@@ -306,6 +306,14 @@ export default function AdminPage() {
     fetchInitialData();
   }, []);
 
+  useEffect(() => {
+    fetchDashboardData();
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   // ✅ 2. 삭제되었던 코드 복구! (7일, 30일 버튼 누를 때마다 차트 새로고침)
   useEffect(() => {
     fetchDailyStats(period);
