@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+httptools>=0.6.0
 pydantic
 python-dotenv
 langchain>=0.3.0,<1.0.0
@@ -11,5 +12,6 @@ langchain-openai
 datasets
 tiktoken
 faiss-cpu
-chromadb
+# Windows 네이티브 크래시 완화: 최신 chromadb + hnsw 의존성 정합 유지 (문제 시 pip install -U chromadb)
+chromadb>=0.5.23
 google-generativeai
