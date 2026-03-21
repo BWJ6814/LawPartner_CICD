@@ -2,9 +2,39 @@
 import React from 'react';
 import { Card, Badge } from './AdminComponents';
 
-export default function UserManagementView({ users, setSelectedItem, setShowModal }) {
+export default function UserManagementView({ users, setSelectedItem, setShowModal, filterRole, setFilterRole }) {
   return (
     <Card title="일반 회원 관리 (전체 명부)">
+      <div className="flex flex-wrap gap-2 mt-4">
+        <button
+          type="button"
+          onClick={() => setFilterRole('ALL')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filterRole === 'ALL' ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
+        >
+          전체
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterRole('USER')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filterRole === 'USER' ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
+        >
+          일반회원
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterRole('LAWYER')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filterRole === 'LAWYER' ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
+        >
+          변호사
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterRole('ADMIN')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filterRole === 'ADMIN' ? 'bg-slate-800 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
+        >
+          관리자
+        </button>
+      </div>
       <div className="overflow-x-auto mt-4 w-full">
         <table className="w-full text-left table-auto whitespace-nowrap">
           <thead>
