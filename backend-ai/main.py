@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Optional
 from pydantic import BaseModel
@@ -13,8 +14,17 @@ load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
 print("API key prefix:", api_key[:10] if api_key else "none")
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # FastAPI 애플리케이션 객체를 생성합니다. (스프링 부트의 Application 역할)
 app = FastAPI()
+
+
+@app.get("/health")
+def health():
+    """Spring·로드밸런서·수동 점검용. 무거운 초기화와 무관하게 빠르게 응답."""
+    return {"status": "ok"}
 
 # 2. 크로마 DB를 불러오는 전용 함수
 # 이제 서버가 켜질 때마다 무겁게 데이터를 다운받지 않고, 저장된 폴더만 쏙 읽어옵니다.
@@ -103,6 +113,7 @@ class SummarizeConsultRequest(BaseModel):
 @app.post("/chat")
 def chat(request: QueryRequest):
     """동기 def: langchain invoke()가 블로킹이므로 스레드 풀에서 실행되어 이벤트 루프를 막지 않음."""
+    logger.info("POST /chat received (question len=%s, disable_rag=%s)", len(request.question or ""), request.disable_rag)
     try:
         # 1) disable_rag 플래그가 true 이면 RAG를 타지 않고 순수 LLM으로만 답변
         if request.disable_rag:
