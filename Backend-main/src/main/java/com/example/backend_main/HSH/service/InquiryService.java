@@ -1,16 +1,21 @@
 package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.entity.CustomerInquiry;
+import com.example.backend_main.common.entity.Notification;
 import com.example.backend_main.common.repository.CustomerInquiryRepository;
+import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.dto.HSH_DTO.InquiryDto;
 import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -19,6 +24,8 @@ import java.util.stream.Collectors;
 public class InquiryService {
 
     private final CustomerInquiryRepository customerInquiryRepository;
+    private final NotificationRepository notificationRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     // ==================================================================================
     // 💬 문의 관리 (관리자용)
@@ -74,6 +81,24 @@ public class InquiryService {
 
         // ✅ 엔티티의 비즈니스 메서드 호출 (상태변경 + 답변일시 기록)
         inquiry.answer(dto.getAnswerContent(), adminNm);
+
+        // 답변 완료 알람 발송
+        if (inquiry.getWriter() != null) {
+            Long writerNo = inquiry.getWriter().getUserNo();
+
+            Notification notification = Notification.builder()
+                    .userNo(writerNo)
+                    .msgTitle("고객센터 문의 답변 완료")
+                    .msgContent("고객센터에 문의하신 「" + inquiry.getTitle() + "」에 답변이 등록되었습니다.")
+                    .build();
+            notificationRepository.save(notification);
+
+            Map<String, String> payload = new HashMap<>();
+            payload.put("title", "고객센터 문의 답변 완료");
+            payload.put("content", "「" + inquiry.getTitle() + "」에 답변이 등록되었습니다.");
+            payload.put("roomId", "");
+            messagingTemplate.convertAndSend("/sub/user/" + writerNo + "/notification", payload);
+        }
 
         log.info("✅ [문의 답변 완료] ID: {}, 담당자: {}, 일시: {}", id, adminNm, inquiry.getAnsweredAt());
     }

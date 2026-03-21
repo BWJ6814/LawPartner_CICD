@@ -42,6 +42,7 @@ export default function AdminPage() {
   const chartRef = useRef(null);
 
   const [users, setUsers] = useState([]);
+  const [filterRole, setFilterRole] = useState('ALL');
   const [summary, setSummary] = useState({});
   const [threatLogs, setThreatLogs] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -305,6 +306,14 @@ export default function AdminPage() {
     fetchInitialData();
   }, []);
 
+  useEffect(() => {
+    fetchDashboardData();
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   // ✅ 2. 삭제되었던 코드 복구! (7일, 30일 버튼 누를 때마다 차트 새로고침)
   useEffect(() => {
     fetchDailyStats(period);
@@ -321,7 +330,16 @@ export default function AdminPage() {
 
     switch (activeMenu) {
       case 'dashboard': return <DashboardView {...commonProps} />;
-      case 'user-manage': return <UserManagementView users={users} setSelectedItem={setSelectedItem} setShowModal={setShowModal} />;
+      case 'user-manage': {
+        const filteredUsers = filterRole === 'ALL'
+          ? users
+          : filterRole === 'LAWYER'
+            ? users.filter(u => u.roleCode === 'ROLE_LAWYER' || u.roleCode === 'ROLE_ASSOCIATE')
+            : filterRole === 'ADMIN'
+              ? users.filter(u => ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR'].includes(u.roleCode))
+              : users.filter(u => u.roleCode === 'ROLE_USER');
+        return <UserManagementView users={filteredUsers} filterRole={filterRole} setFilterRole={setFilterRole} setSelectedItem={setSelectedItem} setShowModal={setShowModal} />;
+      }
       case 'lawyer-approve': return <LawyerApprovalView users={users} handleUserStatusChange={handleUserStatusChange} handleViewLicense={handleViewLicense} />;
       case 'create-operator': return <CreateOperatorView handleCreateOperator={handleCreateOperator} />;
       case 'audit-log': return <AuditLogView logs={logs} searchParams={searchParams} setSearchParams={setSearchParams} handleSearch={handleSearch} handleReset={handleReset} handleKeyDown={handleKeyDown} handleExcelDownload={handleExcelDownload} hasPermission={hasPermission} />;

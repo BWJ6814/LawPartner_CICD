@@ -245,7 +245,7 @@ export default function AdminInquiryPro() {
                                         <div className="flex items-center gap-3">
                                             <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><UserCircle size={28} /></div>
                                             <div>
-                                                <div className="text-xs font-bold text-slate-500 mb-0.5">고객 문의 ID: {detail.id}</div>
+                                                <div className="text-xs font-bold text-slate-500 mb-0.5">작성자: {detail.nickNm || detail.writerNm || '-'}</div>
                                                 <div className="text-sm font-black text-slate-800">{detail.type} 분야</div>
                                             </div>
                                         </div>
