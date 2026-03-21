@@ -242,7 +242,6 @@ const Header = ({auth, onLoginUpdate}) => {
         if (notificationCount === 0) return;
 
         try {
-            const token = getAccessToken();
             // 서버에 "나 다 읽었음" 찌르기
             await api.put('/api/mypage/notifications/read');
 

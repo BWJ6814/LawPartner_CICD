@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import { API_BASE_URL } from "../common/api/axiosConfig";
-
-const TOKEN_KEY = "accessToken";
+import { API_BASE_URL, getAccessToken } from "../common/api/axiosConfig";
 
 function formatDateTime(iso) {
     if (!iso) return "-";
@@ -57,7 +55,7 @@ export default function CustomerDetailPage() {
 
     useEffect(() => {
         async function fetchInquiry() {
-            const token = localStorage.getItem(TOKEN_KEY);
+            const token = getAccessToken();
 
             if (!token) {
                 setError("로그인이 필요합니다.");
@@ -98,7 +96,7 @@ export default function CustomerDetailPage() {
     async function handleDelete() {
         if (!item) return;
 
-        const token = localStorage.getItem(TOKEN_KEY);
+        const token = getAccessToken();
         if (!token) {
             alert("로그인이 필요합니다.");
             navigate("/login");

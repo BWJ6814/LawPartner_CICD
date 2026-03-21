@@ -1,12 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import { API_BASE_URL } from "../common/api/axiosConfig";
-
-const TOKEN_KEY = "accessToken";
+import { API_BASE_URL, getAccessToken } from "../common/api/axiosConfig";
 
 function isLoggedIn() {
-    return !!localStorage.getItem(TOKEN_KEY);
+    return !!getAccessToken();
 }
 
 export default function CustomerWritePage() {
@@ -28,7 +26,7 @@ export default function CustomerWritePage() {
         if (!title.trim()) return alert("문의 제목을 입력하세요.");
         if (!content.trim()) return alert("문의 내용을 입력하세요.");
 
-        const token = localStorage.getItem(TOKEN_KEY);
+        const token = getAccessToken();
         if (!token) {
             alert("로그인이 필요합니다.");
             navigate("/login");
