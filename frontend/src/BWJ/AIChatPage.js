@@ -404,17 +404,6 @@ const AIChatPage = () => {
                                     {attachedFiles.length > 0 ? `📎 파일 추가 (${attachedFiles.length})` : '📎 파일 추가'}
                                 </button>
                             </div>
-                            <button
-                                onClick={() => {
-                                    const url = prompt('URL을 입력하세요');
-                                    if (url) {
-                                        alert('URL 첨부 기능 연동 예정');
-                                    }
-                                }}
-                                className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition"
-                            >
-                                🔗 URL
-                            </button>
                         </div>
                     </div>
 
