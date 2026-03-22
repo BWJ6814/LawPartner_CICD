@@ -18,15 +18,6 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Windows ChromaDB(+hnsw/sqlite)는 동시 접근 시 네이티브 크래시·연결 끊김이 보고됨. RAG 경로는 직렬화.
-_rag_lock = threading.Lock()
-
-api_key = os.getenv("GOOGLE_API_KEY")
-if not api_key:
-    logger.warning("GOOGLE_API_KEY가 설정되지 않았습니다. .env를 확인하세요.")
-else:
-    logger.info("GOOGLE_API_KEY가 로드되었습니다. (값은 출력하지 않습니다)")
-
 # FastAPI 애플리케이션 객체를 생성합니다. (스프링 부트의 Application 역할)
 app = FastAPI()
 
@@ -50,15 +41,20 @@ def get_vector_db():
     logger.info("Chroma DB loaded successfully.")
     return Chroma(persist_directory=db_path, embedding_function=embeddings)
 
-# 서버가 구동될 때 최초 1회만 DB 연결을 수행하여 메모리에 올려둡니다.
-vectordb = get_vector_db()
-
 # 3. 답변을 생성할 AI 언어 모델(LLM) 설정
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
     temperature=0, # 0에 가까울수록 창의성보다는 문서 기반의 딱딱하고 정확한 답변을 냅니다. (법률 AI에 적합)
     api_key=api_key
 )
+
+# RAG_DISABLE 이면 Chroma/qa_chain 을 만들지 않음 (크로마 네이티브 크래시 회피·메모리 절약)
+vectordb = None
+qa_chain = None
+if not RAG_DISABLE:
+    vectordb = get_vector_db()
+else:
+    logger.warning("RAG_DISABLE=1: 판례 DB 검색을 건너뜁니다. LLM만 사용합니다.")
 
 # 4. RAG 체인 설정 (질문 -> DB 검색 -> AI 답변 생성의 흐름을 하나로 묶어주는 랭체인 도구)
 # 기본 프롬프트 대신, 판례 + 일반 법률 지식을 함께 활용해 실무적인 조언을 하도록 커스터마이징
@@ -93,8 +89,13 @@ rag_prompt = PromptTemplate(
     input_variables=["context", "question"],
 )
 
-# RetrievalQA 대신 수동 RAG: LangChain 체인 + 스레드에서의 Chroma 조합이 Windows에서 불안정한 사례가 있어
-# similarity_search(k=2) 후 LLM 호출만 수행합니다.
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",  # 검색된 문서들을 질문과 함께 그대로 AI에게 우겨넣는(stuff) 방식
+    retriever=vectordb.as_retriever(search_kwargs={"k": 2}),  # 가장 관련성 높은 판례 2개를 찾습니다.
+    return_source_documents=True,  # AI가 답변할 때 참고한 원본 판례 데이터도 같이 반환하도록 설정
+    chain_type_kwargs={"prompt": rag_prompt},
+)
 
 # 5. 프론트엔드(React)에서 보내올 데이터의 형식을 Pydantic으로 정의합니다. (DTO 역할)
 class QueryRequest(BaseModel):
@@ -113,78 +114,50 @@ class SummarizeConsultRequest(BaseModel):
     """상담내용으로 글쓰기 시 대화 내역 + 참고 판례를 변호사 상담용 양식으로 정리 요청"""
     messages: list[SummarizeMessage]
 
-def _chat_sync(request: QueryRequest) -> Dict[str, Any]:
-    """LangChain 블로킹 호출은 이 함수에서만 수행 (스레드 풀에서 실행)."""
-    # 1) disable_rag 플래그가 true 이면 RAG를 타지 않고 순수 LLM으로만 답변
-    if request.disable_rag:
-        prompt = (
-            "당신은 한국 법률 전문가입니다.\n"
-            "질문에 대해 일반적인 법률 지식과 실무 관행을 바탕으로, "
-            "특정 판례를 전제로 하지 않고도 이해하기 쉽게 가이드 형태로 자세히 설명하세요.\n\n"
-            f"질문: {request.question}"
-        )
-        llm_resp = llm.invoke(prompt)
-        answer_text = getattr(llm_resp, "content", llm_resp)
-        return {
-            "answer": answer_text,
-            "related_cases": []
-        }
-
-    # 2) 기본 모드: Chroma 검색 + LLM (락으로 직렬화, 실패 시 LLM-only 폴백)
+# 6. 실제 API 엔드포인트
+# 리액트에서 axios.post('http://localhost:8000/chat', { question: "..." }) 로 요청하면 여기가 실행됩니다.
+@app.post("/chat")
+def chat(request: QueryRequest):
+    """동기 def: langchain invoke()가 블로킹이므로 스레드 풀에서 실행되어 이벤트 루프를 막지 않음."""
+    logger.info("POST /chat received (question len=%s, disable_rag=%s)", len(request.question or ""), request.disable_rag)
     try:
-        with _rag_lock:
-            logger.info("_chat_sync: similarity_search start (k=2)")
-            docs = vectordb.similarity_search(request.question, k=2)
-            logger.info("_chat_sync: similarity_search done, docs=%s", len(docs))
-    except Exception as rag_e:
-        logger.exception("Chroma similarity_search failed, fallback to LLM-only: %s", rag_e)
-        prompt = (
-            "당신은 한국 법률 전문가입니다.\n"
-            "판례 검색(RAG) 처리 중 오류가 발생하여 판례를 참조하지 못했습니다. "
-            "일반적인 법률 지식을 바탕으로 질문에 답하세요.\n\n"
-            f"질문: {request.question}"
-        )
-        llm_resp = llm.invoke(prompt)
-        answer_text = getattr(llm_resp, "content", llm_resp)
-        return {
-            "answer": answer_text,
-            "related_cases": []
-        }
+        # 1) disable_rag 플래그가 true 이면 RAG를 타지 않고 순수 LLM으로만 답변
+        if request.disable_rag:
+            prompt = (
+                "당신은 한국 법률 전문가입니다.\n"
+                "질문에 대해 일반적인 법률 지식과 실무 관행을 바탕으로, "
+                "특정 판례를 전제로 하지 않고도 이해하기 쉽게 가이드 형태로 자세히 설명하세요.\n\n"
+                f"질문: {request.question}"
+            )
+            llm_resp = llm.invoke(prompt)
+            answer_text = getattr(llm_resp, "content", llm_resp)
+            return {
+                "answer": answer_text,
+                "related_cases": []
+            }
 
-    sources = [doc.page_content for doc in docs]
+        # 2) 기본 모드: RAG 체인 사용
+        response = qa_chain.invoke({"query": request.question})
 
-    # 3) 검색된 판례가 전혀 없으면, RAG 대신 순수 LLM으로 fallback
-    if not sources:
-        prompt = (
-            "당신은 한국 법률 전문가입니다.\n"
-            "연결된 판례나 자료가 없더라도, 일반적인 법률 지식을 바탕으로 "
-            "질문에 대해 가능한 범위 내에서 구체적이고 실무적인 가이드를 제시하세요.\n\n"
-            f"질문: {request.question}"
-        )
-        llm_resp = llm.invoke(prompt)
-        answer_text = getattr(llm_resp, "content", llm_resp)
-        return {
-            "answer": answer_text,
-            "related_cases": []
-        }
+        # 참고한 판례 원문 전체를 전송 (프론트엔드에서 더보기로 펼쳐서 표시)
+        sources = [doc.page_content for doc in response.get("source_documents", [])]
 
-    # 4) RAG 검색 + 판례 기반 답변
-    context = "\n\n".join(sources)
-    try:
-        prompt_text = rag_prompt.format(context=context, question=request.question)
-        logger.info("_chat_sync: llm.invoke (RAG) start")
-        llm_resp = llm.invoke(prompt_text)
-        logger.info("_chat_sync: llm.invoke (RAG) done")
-    except Exception as llm_e:
-        logger.exception("LLM invoke after RAG failed, fallback to LLM-only: %s", llm_e)
-        prompt = (
-            "당신은 한국 법률 전문가입니다.\n"
-            "판례 검색(RAG) 처리 중 오류가 발생하여 판례를 참조하지 못했습니다. "
-            "일반적인 법률 지식을 바탕으로 질문에 답하세요.\n\n"
-            f"질문: {request.question}"
-        )
-        llm_resp = llm.invoke(prompt)
-        answer_text = getattr(llm_resp, "content", llm_resp)
+        # 3) 검색된 판례가 전혀 없으면, RAG 대신 순수 LLM으로 fallback
+        if not sources:
+            prompt = (
+                "당신은 한국 법률 전문가입니다.\n"
+                "연결된 판례나 자료가 없더라도, 일반적인 법률 지식을 바탕으로 "
+                "질문에 대해 가능한 범위 내에서 구체적이고 실무적인 가이드를 제시하세요.\n\n"
+                f"질문: {request.question}"
+            )
+            llm_resp = llm.invoke(prompt)
+            answer_text = getattr(llm_resp, "content", llm_resp)
+            return {
+                "answer": answer_text,
+                "related_cases": []
+            }
+
+        # 4) RAG 검색 + 판례 기반 답변
         return {
             "answer": answer_text,
             "related_cases": []
@@ -209,8 +182,9 @@ async def chat(request: QueryRequest):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         return Response(content=body, media_type="application/json; charset=utf-8")
     except Exception as e:
-        logger.exception("POST /chat 처리 중 오류: %s", e)
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        print(f"Error detail: {e}")
+        # 서버 내부에서 에러가 나면 500 상태 코드와 함께 에러 내용을 리액트로 보냅니다.
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # 상담내용으로 글쓰기: 대화를 변호사 상담 게시글용 제목·본문으로 정리
