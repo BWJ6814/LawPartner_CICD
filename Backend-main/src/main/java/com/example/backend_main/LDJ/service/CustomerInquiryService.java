@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -89,7 +90,11 @@ public class CustomerInquiryService {
         throw new RuntimeException("현재 사용자 번호를 찾을 수 없습니다. principal=" + principal);
     }
 
-    public CustomerInquiry updateInquiry(Long id, String type, String title, String content) {
+    /**
+     * 수정 후 DTO로 반환 — JSON 직렬화 시 LAZY writer 접근 문제를 피하고 프론트와 형식을 통일합니다.
+     */
+    @Transactional
+    public InquiryDto.DetailResponse updateInquiry(Long id, String type, String title, String content) {
         CustomerInquiry inquiry = customerInquiryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("해당 문의를 찾을 수 없습니다. id=" + id));
 
@@ -99,6 +104,7 @@ public class CustomerInquiryService {
         }
 
         inquiry.update(type, title, content);
-        return customerInquiryRepository.save(inquiry);
+        CustomerInquiry saved = customerInquiryRepository.save(inquiry);
+        return InquiryDto.DetailResponse.from(saved);
     }
 }

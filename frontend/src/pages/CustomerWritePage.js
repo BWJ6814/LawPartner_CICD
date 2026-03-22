@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
-import { API_BASE_URL, getAccessToken } from "../common/api/axiosConfig";
+import api, { getAccessToken } from "../common/api/axiosConfig";
 
 function isLoggedIn() {
     return !!getAccessToken();
@@ -34,19 +33,11 @@ export default function CustomerWritePage() {
         }
 
         try {
-            const res = await axios.post(
-                `${API_BASE_URL}/api/customer/inquiries`,
-                {
-                    type,
-                    title: title.trim(),
-                    content: content.trim(),
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            const res = await api.post("/api/customer/inquiries", {
+                type,
+                title: title.trim(),
+                content: content.trim(),
+            });
 
             if (res.data?.success !== true) {
                 throw new Error(res.data?.message || "문의 등록 실패");

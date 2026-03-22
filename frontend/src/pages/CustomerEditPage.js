@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
-import { API_BASE_URL, getAccessToken } from "../common/api/axiosConfig";
+import api, { getAccessToken } from "../common/api/axiosConfig";
 
 function isLoggedIn() {
     return !!getAccessToken();
@@ -34,14 +33,7 @@ export default function CustomerEditPage() {
                 setLoading(true);
                 setLoadError("");
 
-                const res = await axios.get(
-                    `${API_BASE_URL}/api/customer/inquiries/${id}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
+                const res = await api.get(`/api/customer/inquiries/${id}`);
 
                 const data = res.data?.data || res.data;
 
@@ -87,25 +79,13 @@ export default function CustomerEditPage() {
         }
 
         try {
-            const res = await axios.put(
-                `${API_BASE_URL}/api/customer/inquiries/${id}`,
-                {
-                    type,
-                    title: title.trim(),
-                    content: content.trim(),
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            const res = await api.put(`/api/customer/inquiries/${id}`, {
+                type,
+                title: title.trim(),
+                content: content.trim(),
+            });
 
-            const ok =
-                res.data?.success === true ||
-                (res.status >= 200 && res.status < 300);
-
-            if (!ok) {
+            if (res.data?.success !== true) {
                 throw new Error(res.data?.message || "수정 실패");
             }
 

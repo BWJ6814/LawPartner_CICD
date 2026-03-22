@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { API_BASE_URL, getAccessToken } from "../common/api/axiosConfig";
+import api, { getAccessToken } from "../common/api/axiosConfig";
 
 function isLoggedIn() {
     return !!getAccessToken();
@@ -39,11 +38,7 @@ export default function CustomerListPage() {
             try {
                 setIsLoading(true);
 
-                const res = await axios.get(`${API_BASE_URL}/api/customer/inquiries`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                const res = await api.get("/api/customer/inquiries");
 
                 console.log("문의 목록 응답:", res.data);
 

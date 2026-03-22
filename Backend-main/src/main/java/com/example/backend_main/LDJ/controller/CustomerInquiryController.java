@@ -45,11 +45,11 @@ public class CustomerInquiryController {
     }
 
     @PutMapping("/{id}")
-    public ResultVO<CustomerInquiry> updateInquiry(
+    public ResultVO<InquiryDto.DetailResponse> updateInquiry(
             @PathVariable Long id,
             @Valid @RequestBody CustomerInquiryDTO.CreateRequest request
     ) {
-        CustomerInquiry updated = customerInquiryService.updateInquiry(
+        InquiryDto.DetailResponse updated = customerInquiryService.updateInquiry(
                 id,
                 request.getType(),
                 request.getTitle(),

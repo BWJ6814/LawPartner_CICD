@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
-import { API_BASE_URL, getAccessToken } from "../common/api/axiosConfig";
+import api, { getAccessToken } from "../common/api/axiosConfig";
 
 function formatDateTime(iso) {
     if (!iso) return "-";
@@ -68,14 +67,7 @@ export default function CustomerDetailPage() {
                 setLoading(true);
                 setError("");
 
-                const res = await axios.get(
-                    `${API_BASE_URL}/api/customer/inquiries/${id}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
+                const res = await api.get(`/api/customer/inquiries/${id}`);
 
                 const data = res.data?.data || null;
                 setItem(data);
@@ -107,14 +99,7 @@ export default function CustomerDetailPage() {
         if (!ok) return;
 
         try {
-            const res = await axios.delete(
-                `${API_BASE_URL}/api/customer/inquiries/${id}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            const res = await api.delete(`/api/customer/inquiries/${id}`);
 
             if (res.data?.success !== true) {
                 throw new Error(res.data?.message || "삭제 실패");
