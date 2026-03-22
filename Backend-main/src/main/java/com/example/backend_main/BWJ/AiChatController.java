@@ -8,8 +8,10 @@ import com.example.backend_main.common.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -37,11 +39,51 @@ public class AiChatController {
     private final String PYTHON_SUMMARIZE_URL = System.getenv().getOrDefault("PYTHON_SUMMARIZE_URL", "http://127.0.0.1:8000/summarize-consult");
 
     private RestTemplate buildRestTemplate() {
-        // AI 서버 장애/방화벽 이슈 시 무한 대기 방지
+        // BufferingClientHttpRequestFactory: 응답 본문을 버퍼링해 Connection reset(읽기 중 RST) 완화
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(5000);   // 연결 타임아웃 5초
-        requestFactory.setReadTimeout(60000);     // 응답 대기 타임아웃 60초
-        return new RestTemplate(requestFactory);
+        requestFactory.setConnectTimeout(10_000);   // 연결 10초
+        requestFactory.setReadTimeout(600_000);     // 응답 대기 최대 10분
+        BufferingClientHttpRequestFactory buffering = new BufferingClientHttpRequestFactory(requestFactory);
+        return new RestTemplate(buffering);
+    }
+
+    /**
+     * Connection refused / reset / 일시 장애 대비: 최대 6회, 2초 간격 재시도.
+     * (run_all 시 pip·Chroma 때문에 8000이 늦게 뜨는 경우와 Uvicorn 재시작 직후 흡수)
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> postWithRetry(RestTemplate restTemplate, String url, Map<String, Object> body) {
+        // Uvicorn 재시작(run.bat 5초 대기) + Chroma 로딩 지연 흡수: 총 대기 여유 확대
+        final int maxAttempts = 15;
+        final long sleepMs = 3000;
+        ResourceAccessException last = null;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                return restTemplate.postForObject(url, body, Map.class);
+            } catch (ResourceAccessException e) {
+                last = e;
+                if (attempt < maxAttempts) {
+                    try {
+                        Thread.sleep(sleepMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw e;
+                    }
+                }
+            }
+        }
+        if (last == null) {
+            throw new ResourceAccessException("AI 서버 연결 실패");
+        }
+        throw last;
+    }
+
+    private Map<String, Object> postPythonChat(RestTemplate restTemplate, Map<String, Object> body) {
+        return postWithRetry(restTemplate, PYTHON_SERVER_URL, body);
+    }
+
+    private Map<String, Object> postPythonSummarize(RestTemplate restTemplate, Map<String, Object> body) {
+        return postWithRetry(restTemplate, PYTHON_SUMMARIZE_URL, body);
     }
 
     private ResponseEntity<Map<String, Object>> aiErrorResponse(String message, HttpStatus status) {
@@ -128,7 +170,7 @@ public class AiChatController {
 
         try {
             // 파이썬으로부터 응답 받기 (JSON -> Map 변환)
-            Map<String, Object> pythonResponse = restTemplate.postForObject(PYTHON_SERVER_URL, pythonRequest, Map.class);
+            Map<String, Object> pythonResponse = postPythonChat(restTemplate, pythonRequest);
             if (pythonResponse == null) {
                 return aiErrorResponse("AI 서버가 빈 응답을 반환했습니다.", HttpStatus.BAD_GATEWAY);
             }
@@ -213,8 +255,7 @@ public class AiChatController {
             }
             Map<String, Object> pythonRequest = new HashMap<>();
             pythonRequest.put("messages", messages);
-            Map<String, Object> pythonResponse = restTemplate.postForObject(
-                    PYTHON_SUMMARIZE_URL, pythonRequest, Map.class);
+            Map<String, Object> pythonResponse = postPythonSummarize(restTemplate, pythonRequest);
             return ResponseEntity.ok(pythonResponse != null ? pythonResponse : new HashMap<>());
         } catch (Exception e) {
             e.printStackTrace();

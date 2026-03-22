@@ -42,6 +42,7 @@ export default function AdminPage() {
   const chartRef = useRef(null);
 
   const [users, setUsers] = useState([]);
+  const [filterRole, setFilterRole] = useState('ALL');
   const [summary, setSummary] = useState({});
   const [threatLogs, setThreatLogs] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -96,7 +97,7 @@ export default function AdminPage() {
 
   const handleUnblock = async (ip) => {
     const reason = prompt(`[${ip}] 차단 해제 사유를 입력하세요:`);
-    if (!reason) return;
+    if (!reason?.trim()) return;
     try {
       const res = await api.delete(`/api/admin/blacklist`, { params: { ip, reason } });
       if (res.data.success) {
@@ -158,7 +159,7 @@ export default function AdminPage() {
 
   const handleExcelDownload = async () => {
     const reason = prompt("다운로드 사유를 입력해주세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
     try {
       const response = await api.get(`/api/admin/logs/download?reason=${encodeURIComponent(reason)}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -172,7 +173,7 @@ export default function AdminPage() {
 
   const handleUserStatusChange = async (userId, statusCode) => {
     const reason = prompt("상태 변경 사유를 입력해주세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
     try {
       const res = await api.put('/api/admin/user/status', { userId, statusCode, reason });
       if (res.data.success) {
@@ -184,7 +185,7 @@ export default function AdminPage() {
 
   const handleRoleChange = async (userId, roleCode) => {
     const reason = prompt("권한 변경 사유를 입력해주세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
     try {
       const res = await api.put('/api/admin/user/role', { userId, roleCode, reason });
       if (res.data.success) {
@@ -217,7 +218,7 @@ export default function AdminPage() {
     if (!newWord.trim()) return;
 
     const reason = prompt("금지어 등록 사유를 입력해주세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
 
     try {
       const res = await api.post('/api/admin/banned-words', { word: newWord, reason });
@@ -232,7 +233,7 @@ export default function AdminPage() {
     if (!window.confirm("삭제하시겠습니까?")) return;
 
     const reason = prompt("금지어 삭제 사유를 입력해주세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
 
     try {
       const res = await api.delete(`/api/admin/banned-words/${wordNo}?reason=${encodeURIComponent(reason)}`);
@@ -246,7 +247,7 @@ export default function AdminPage() {
   const handleToggleBlind = async (boardNo, currentBlindYn) => {
     const nextStatus = currentBlindYn === 'Y' ? 'N' : 'Y';
     const reason = prompt("블라인드 처리 사유를 입력하세요:");
-    if (!reason) return;
+    if (!reason?.trim()) return;
     try {
       const res = await api.put(`/api/admin/board/blind`, { boardNo, blindYn: nextStatus, reason });
       if (res.data.success) {
@@ -305,6 +306,14 @@ export default function AdminPage() {
     fetchInitialData();
   }, []);
 
+  useEffect(() => {
+    fetchDashboardData();
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   // ✅ 2. 삭제되었던 코드 복구! (7일, 30일 버튼 누를 때마다 차트 새로고침)
   useEffect(() => {
     fetchDailyStats(period);
@@ -321,7 +330,16 @@ export default function AdminPage() {
 
     switch (activeMenu) {
       case 'dashboard': return <DashboardView {...commonProps} />;
-      case 'user-manage': return <UserManagementView users={users} setSelectedItem={setSelectedItem} setShowModal={setShowModal} />;
+      case 'user-manage': {
+        const filteredUsers = filterRole === 'ALL'
+          ? users
+          : filterRole === 'LAWYER'
+            ? users.filter(u => u.roleCode === 'ROLE_LAWYER' || u.roleCode === 'ROLE_ASSOCIATE')
+            : filterRole === 'ADMIN'
+              ? users.filter(u => ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_OPERATOR'].includes(u.roleCode))
+              : users.filter(u => u.roleCode === 'ROLE_USER');
+        return <UserManagementView users={filteredUsers} filterRole={filterRole} setFilterRole={setFilterRole} setSelectedItem={setSelectedItem} setShowModal={setShowModal} />;
+      }
       case 'lawyer-approve': return <LawyerApprovalView users={users} handleUserStatusChange={handleUserStatusChange} handleViewLicense={handleViewLicense} />;
       case 'create-operator': return <CreateOperatorView handleCreateOperator={handleCreateOperator} />;
       case 'audit-log': return <AuditLogView logs={logs} searchParams={searchParams} setSearchParams={setSearchParams} handleSearch={handleSearch} handleReset={handleReset} handleKeyDown={handleKeyDown} handleExcelDownload={handleExcelDownload} hasPermission={hasPermission} />;
@@ -425,14 +443,14 @@ export default function AdminPage() {
               <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
                 <p className="text-sm font-bold text-amber-900 flex items-center gap-2"><Lock size={16} /> 보안 로그 기록 중</p>
               </div>
-              <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 [&>div]:min-w-0">
                 <div>
                     <div className="text-xs font-bold text-slate-400 mb-1">이메일</div>
-                    <div className="text-sm font-bold text-slate-700">{selectedItem.email || '-'}</div>
+                    <div className="text-sm font-bold text-slate-700 break-all min-w-0">{selectedItem.email || '-'}</div>
                 </div>
                 <div>
                     <div className="text-xs font-bold text-slate-400 mb-1">전화번호</div>
-                    <div className="text-sm font-bold text-slate-700 font-mono">{selectedItem.phone || '-'}</div>
+                    <div className="text-sm font-bold text-slate-700 font-mono break-all min-w-0">{selectedItem.phone || '-'}</div>
                 </div>
                 <div>
                     <div className="text-xs font-bold text-slate-400 mb-1">가입일</div>

@@ -61,6 +61,7 @@ public class InquiryDto {
         private String title;
         private String status;
         private String writerNm; // ★ 추가: 작성자 이름 (목록에서도 누구 건지 알면 좋음)
+        private String nickNm;
         private String answeredBy;
         private boolean hasAnswer;
         private LocalDateTime createdAt;
@@ -74,6 +75,7 @@ public class InquiryDto {
                     .status(entity.getStatus())
                     // 만약 entity에 User 연관관계가 맺어져 있다면 entity.getWriter().getUserNm() 등으로 변경
                     .writerNm(entity.getWriterNm()) // ★ 추가: 엔티티에 해당 필드가 있다면 매핑
+                    .nickNm(entity.getWriter() != null ? entity.getWriter().getNickNm() : null)
                     .answeredBy(entity.getAnsweredBy())
                     .hasAnswer(entity.getAnswerContent() != null)
                     .createdAt(entity.getCreatedAt())
@@ -89,6 +91,7 @@ public class InquiryDto {
         private Long writerNo;
         private String userId;   // ★ 추가: 작성자 아이디 (화면 표시용 @userId)
         private String writerNm; // ★ 추가: 작성자 실명
+        private String nickNm;
         private String type;
         private String title;
         private String content;
@@ -106,6 +109,7 @@ public class InquiryDto {
                     .writerNo(entity.getWriter() != null ? entity.getWriter().getUserNo() : null)
                     .userId(entity.getUserId())               // 엔티티에 만든 편의 메서드 사용
                     .writerNm(entity.getWriterNm())           // 엔티티에 만든 편의 메서드 사용
+                    .nickNm(entity.getWriter() != null ? entity.getWriter().getNickNm() : null)
                     .type(entity.getType())
                     .title(entity.getTitle())
                     .content(entity.getContent())

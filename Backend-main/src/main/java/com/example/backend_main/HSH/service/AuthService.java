@@ -170,8 +170,12 @@ public class AuthService {
         // dto.isLawyer() : join - 새로 만들기 때문에, 만들 dto에서 처리하는 것이 분기에 적합.
         // user.isLawyer() : login - 이미 존재하는 계정이기 때문에 user의 엔티티 사용
         if (dto.isLawyer()) {
-            // [변호사] 닉네임 = 실명 (강제 설정)
-            return dto.getUserNm();
+            String baseName = dto.getUserNm();
+            if (!userRepository.existsByNickNm(baseName)) {
+                return baseName;
+            }
+            int count = userRepository.countByNickNmStartingWith(baseName);
+            return baseName + "_" + (count + 1);
         } else {
             // [일반 유저] 닉네임 = 입력값 (유효성 검사 필수)
             if (dto.getNickNm() == null || dto.getNickNm().trim().isEmpty()) {
