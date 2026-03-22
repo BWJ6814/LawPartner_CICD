@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../common/api/axiosConfig';
 
+const RELOGIN_MSG = '이메일이 변경되었습니다. 보안을 위해 다시 로그인해주세요.';
+
 // [초심자 핵심] 부모 컴포넌트에서 onSaveName 이라는 함수를 props로 넘겨줘야 사이드바 렌더링이 됨
 const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -16,6 +18,8 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
     const [pwInput, setPwInput] = useState({ oldPw: '', newPw: '', confirmPw: '' });
     const [isLoading, setIsLoading] = useState(false);
     const [agreeDelete, setAgreeDelete] = useState(false);
+    /** 모달을 열었을 때의 이메일(변경 여부 판별용 — 부모 profileData는 입력 중에는 그대로) */
+    const emailBaselineRef = useRef('');
 
     // [초심자 핵심] 이름 기반 랜덤 배경색 생성기
     const getRandomColor = (name) => {
@@ -32,6 +36,7 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
             setNameInput(profileData.name || '');
             setEmailInput(profileData.email || '');
             setPhoneInput(profileData.phone || '');
+            emailBaselineRef.current = (profileData.email || '').trim();
             setImagePreview(profileData.profileImage || '');
             setImageFile(null);
 
@@ -96,6 +101,14 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
                 'Content-Type': 'multipart/form-data',
             }
         });
+
+        const emailChanged = emailInput.trim() !== emailBaselineRef.current;
+        if (emailChanged) {
+            alert(RELOGIN_MSG);
+            localStorage.clear();
+            window.location.href = '/login';
+            return;
+        }
 
         localStorage.setItem('nickNm', nameInput);
         alert("프로필이 성공적으로 변경되었습니다.");

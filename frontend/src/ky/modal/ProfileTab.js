@@ -3,7 +3,9 @@ import api from '../../common/api/axiosConfig';
 
 const SPECIALTIES = ['형사범죄', '교통사고', '부동산', '임대차', '손해배상', '대여금', '미수금', '채권추심', '이혼', '상속/가사', '노동', '기업', '지식재산권', '회생/파산', '계약서 검토', '기타'];
 
-const ProfileTab = ({ profileData, setProfileData, profileImage, setProfileImage, userRole }) => {
+const RELOGIN_EMAIL_MSG = '이메일이 변경되었습니다. 보안을 위해 다시 로그인해주세요.';
+
+const ProfileTab = ({ profileData, setProfileData, profileImage, setProfileImage, userRole, loadedEmail = '' }) => {
     const fileInputRef = useRef(null);
 
     const handleImageUpload = async (e) => {
@@ -35,12 +37,23 @@ const ProfileTab = ({ profileData, setProfileData, profileImage, setProfileImage
     };
 
     const handleSave = async () => {
+        const emailBefore = (loadedEmail || '').trim();
+        const emailAfter = (profileData.email || '').trim();
+        const emailChanged = emailBefore !== emailAfter;
+
         try {
             const formData = new FormData();
-            formData.append('email', profileData.email);
-            await api.put('/api/mypage/profile', formData);
+            formData.append('name', profileData.name || '');
+            formData.append('email', profileData.email || '');
+            formData.append('phone', profileData.phone || '');
+            await api.post('/api/mypage/profile/update', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
         } catch (err) {
+            const msg = err.response?.data?.message || '기본 정보 저장에 실패했습니다.';
+            alert(msg);
             console.error('기본 정보 저장 실패:', err);
+            return;
         }
 
         if (userRole?.includes('ROLE_LAWYER')) {
@@ -54,6 +67,13 @@ const ProfileTab = ({ profileData, setProfileData, profileImage, setProfileImage
                 console.error(err);
                 return;
             }
+        }
+
+        if (emailChanged) {
+            alert(RELOGIN_EMAIL_MSG);
+            localStorage.clear();
+            window.location.href = '/login';
+            return;
         }
 
         alert('프로필이 저장되었습니다.');

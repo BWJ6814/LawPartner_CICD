@@ -21,6 +21,8 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
         bio: '',
         imgUrl: ''
     });
+    /** 서버에서 불러온 직후 이메일 — 변경 시 재로그인 안내용 */
+    const [loadedEmail, setLoadedEmail] = useState('');
 
     useEffect(() => {
         if (!isOpen) return;
@@ -28,10 +30,12 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
             try {
                 const res = await api.get('/api/mypage/general');
                 const d = res.data.data;
+                const em = d.email || '';
+                setLoadedEmail(em);
                 setProfileData(prev => ({
                     ...prev,
                     name:  d.userName || '',
-                    email: d.email    || '',
+                    email: em,
                     phone: d.phone    || ''
                 }));
             } catch (err) {
@@ -138,6 +142,7 @@ const SettingsModal = ({ isOpen, onClose, profileImage, setProfileImage, isSubsc
                                 profileImage={profileImage}
                                 setProfileImage={setProfileImage}
                                 userRole={userRole}
+                                loadedEmail={loadedEmail}
                             />
                         )}
                         {activeTab === 'password' && <PasswordTab />}

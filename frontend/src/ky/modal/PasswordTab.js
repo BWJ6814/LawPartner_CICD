@@ -20,8 +20,9 @@ const PasswordTab = () => {
             newPassword: passwordData.newPassword
         })
             .then(() => {
-                alert('비밀번호가 변경되었습니다.');
-                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                alert('비밀번호가 변경되었습니다. 보안을 위해 다시 로그인해주세요.');
+                localStorage.clear();
+                window.location.href = '/login';
             })
             .catch(err => {
                 const msg = err.response?.data?.message || '비밀번호 변경에 실패했습니다.';
