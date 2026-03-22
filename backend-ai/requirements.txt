@@ -1,17 +1,21 @@
+# After changing deps: delete .deps_ok in this folder, then run run.bat (or: pip install -r requirements.txt)
+# If you upgraded from langchain 0.3.x: pip uninstall -y langchain
 fastapi
 uvicorn
 httptools>=0.6.0
 pydantic
 python-dotenv
-langchain>=0.3.0,<1.0.0
-langchain-community>=0.3.0,<1.0.0
-langchain-core>=0.3.0,<1.0.0
-langchain-text-splitters>=0.3.0,<1.0.0
+# LangChain stack aligned with DB PC: core 1.x + community 0.4 (langchain-classic pulled by community)
+langchain-core==1.2.20
+langchain-community==0.4.1
+langchain-text-splitters>=1.0.0,<2.0.0
 langchain-google-genai>=2.0.10
 langchain-openai
 datasets
 tiktoken
 faiss-cpu
-# Windows 네이티브 크래시 완화: 최신 chromadb + hnsw 의존성 정합 유지 (문제 시 pip install -U chromadb)
-chromadb>=0.5.23
+# Chroma client must match persisted DB (mismatch -> KeyError _type etc.)
+chromadb==1.5.1
+onnxruntime>=1.14.1
+numpy>=1.24.0
 google-generativeai

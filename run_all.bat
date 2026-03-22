@@ -62,11 +62,12 @@ netsh advfirewall firewall show rule name="AI-Law Backend 8080" >nul 2>&1 || net
 
 :: 3) React 실행 (외부 접속 가능: 0.0.0.0)
 echo [1/3] React 프론트엔드 시작 중...
-start "React Frontend" cmd /k ""%ROOT_DIR%frontend\run.bat""
+REM start의 이중따옴표(""..."")는 cmd /k 인자가 깨져 %~dp0가 빈 값이 될 수 있음 → /D + call "전체경로" 사용
+start "React Frontend" /D "%ROOT_DIR%frontend" cmd /k call "%ROOT_DIR%frontend\run.bat"
 
 :: 4) FastAPI 실행 (외부 접속 가능: 0.0.0.0)
 echo [2/3] FastAPI AI 서버 시작 중...
-start "FastAPI-Server" cmd /k ""%ROOT_DIR%backend-ai\run.bat""
+start "FastAPI-Server" /D "%ROOT_DIR%backend-ai" cmd /k call "%ROOT_DIR%backend-ai\run.bat"
 
 REM pip 설치(최초) + Chroma 로딩 후에야 8000 LISTEN → Spring이 먼저 뜨면 Connection refused
 echo [대기] FastAPI가 8000 포트에 바인딩될 때까지 최대 약 45초 ...
