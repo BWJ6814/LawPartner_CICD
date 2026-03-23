@@ -80,12 +80,19 @@ export default function AdminPage() {
     try {
       const res = await api.get('/api/admin/blacklist');
       if (res.data.success) setBlacklist(res.data.data);
-    } catch (error) { console.error("블랙리스트 로드 실패:", error); }
+    } catch (error) {
+      console.error("블랙리스트 로드 실패:", error);
+      toast.error("블랙리스트 로드에 실패했습니다.");
+    }
   };
 
   const handleAddBlacklist = async (e) => {
     e.preventDefault();
     if (!newIp.trim() || !newReason.trim()) return toast.warn("차단할 IP와 사유를 입력해주세요.");
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipRegex.test(newIp.trim())) {
+      return toast.warn("올바른 IPv4 형식이 아닙니다. (예: 192.168.0.1)");
+    }
     try {
       const res = await api.post('/api/admin/blacklist', { ip: newIp, reason: newReason });
       if (res.data.success) {
@@ -111,14 +118,20 @@ export default function AdminPage() {
     try {
       const res = await api.get('/api/admin/boards');
       if (res.data.success) setContentBoards(res.data.data);
-    } catch (e) { console.error("게시글 로드 실패", e); }
+    } catch (e) {
+      console.error("게시글 로드 실패", e);
+      toast.error("게시글 로드에 실패했습니다.");
+    }
   };
 
   const fetchBannedWords = async () => {
     try {
       const res = await api.get('/api/admin/banned-words');
       if (res.data.success) setBannedWords(res.data.data);
-    } catch (e) { console.error("금지어 로드 실패", e); }
+    } catch (e) {
+      console.error("금지어 로드 실패", e);
+      toast.error("금지어 로드에 실패했습니다.");
+    }
   };
 
   const fetchDashboardData = async () => {
@@ -130,7 +143,10 @@ export default function AdminPage() {
       if (summaryRes.data.success) setSummary(summaryRes.data.data);
       const threatRes = await api.get('/api/admin/logs/threats');
       if (threatRes.data.success) setThreatLogs(threatRes.data.data);
-    } catch (error) { console.error("데이터 로드 실패", error); }
+    } catch (error) {
+      console.error("데이터 로드 실패", error);
+      toast.error("대시보드 데이터 로드에 실패했습니다.");
+    }
     // ✅ Step 3: finally { setLoading(false); } 삭제
   };
 
@@ -138,7 +154,10 @@ export default function AdminPage() {
     try {
       const res = await api.get('/api/admin/logs', { params: { page: 0, size: 50, ...params } });
       if (res.data.success) setLogs(res.data.data.content || []);
-    } catch (error) { console.error("로그 로드 실패", error); }
+    } catch (error) {
+      console.error("로그 로드 실패", error);
+      toast.error("로그 로드에 실패했습니다.");
+    }
   };
 
   const handleSearch = () => { fetchAuditLogs(searchParams); setSearchParams(prev => ({ ...prev, keyword: '' })); };
@@ -208,8 +227,9 @@ export default function AdminPage() {
         toast.success(res.data.message || "관리자 계정이 생성되었습니다.");
         fetchDashboardData();
       }
-    } catch (e) {
-      toast.error(e.response?.data?.message || "관리자 계정 생성 중 오류가 발생했습니다.");
+    } catch (error) {
+      toast.error("운영자 생성 실패: " + (error.response?.data?.message || error.message));
+      throw error;
     }
   };
 

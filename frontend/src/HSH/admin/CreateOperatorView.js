@@ -8,6 +8,7 @@ import {
   ShieldAlert,
   ArrowRight
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export default function CreateOperatorView({ handleCreateOperator }) {
   const [form, setForm] = useState({
@@ -33,12 +34,21 @@ export default function CreateOperatorView({ handleCreateOperator }) {
       alert('모든 필드를 입력해주세요. (생성 사유 포함)');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      return alert("올바른 이메일 형식이 아닙니다.");
+    }
+    const phoneRegex = /^010-\d{4}-\d{4}$/;
+    if (!phoneRegex.test(form.phone)) {
+      return alert("전화번호 형식이 올바르지 않습니다. (예: 010-1234-5678)");
+    }
 
     setSubmitting(true);
     try {
       await handleCreateOperator(form);
     } catch (error) {
       console.error('Operator creation failed:', error);
+      toast.error("운영자 생성에 실패했습니다.");
     } finally {
       setSubmitting(false);
     }
