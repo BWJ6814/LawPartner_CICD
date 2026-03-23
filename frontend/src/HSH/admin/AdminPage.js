@@ -157,7 +157,7 @@ export default function AdminPage() {
       const res = await api.get('/api/admin/logs', { params: { page: currentPage, size: 50, ...params } });
       if (res.data.success) {
         setLogs(res.data.data.content || []);
-        setTotalPages(res.data.data.totalPages || 0);
+        setTotalPages(res.data.data.page?.totalPages || 0);
       }
     } catch (error) {
       console.error("로그 로드 실패", error);
