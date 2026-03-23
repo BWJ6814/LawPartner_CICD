@@ -4,17 +4,24 @@ import com.example.backend_main.dto.AiChatLog;
 import com.example.backend_main.common.entity.AiChatRoom;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.repository.AiChatRoomRepository;
+import com.example.backend_main.common.repository.GuestConsultDailyQuotaRepository;
 import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.common.entity.GuestConsultDailyQuota;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +32,10 @@ import java.util.Map;
 @CrossOrigin(origins = {"http://192.168.0.43:3000", "http://localhost:3000"}) // 리액트 허용
 public class AiChatController {
 
+    private static final int AI_CONSULT_DAILY_LIMIT = Integer.parseInt(
+            System.getenv().getOrDefault("AI_CONSULT_DAILY_LIMIT", "10"));
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
     @Autowired
     private AiChatLogRepository aiChatLogRepository;
 
@@ -33,6 +44,9 @@ public class AiChatController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private GuestConsultDailyQuotaRepository guestConsultDailyQuotaRepository;
 
     // 파이썬 서버 주소 (환경변수 우선, 없으면 기본값 사용)
     private final String PYTHON_SERVER_URL = System.getenv().getOrDefault("PYTHON_CHAT_URL", "http://127.0.0.1:8000/chat");
@@ -93,6 +107,22 @@ public class AiChatController {
         return ResponseEntity.status(status).body(body);
     }
 
+    private static String resolveClientIp(HttpServletRequest request) {
+        String xff = request.getHeader("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            return xff.split(",")[0].trim();
+        }
+        String ra = request.getRemoteAddr();
+        return ra != null ? ra : "";
+    }
+
+    private static String normalizeGuestIp(String ip) {
+        if (ip == null || ip.isEmpty()) {
+            return "unknown";
+        }
+        return ip.length() > 64 ? ip.substring(0, 64) : ip;
+    }
+
     @PostMapping("/rooms")
     public ResponseEntity<?> createRoom(@RequestBody Map<String, Object> payload) {
         Object userNoObj = payload.get("userNo");
@@ -150,7 +180,8 @@ public class AiChatController {
     }
 
     @PostMapping("/consult")
-    public ResponseEntity<?> consult(@RequestBody Map<String, Object> payload) {
+    @Transactional
+    public ResponseEntity<?> consult(@RequestBody Map<String, Object> payload, HttpServletRequest request) {
         String question = payload.get("question") == null ? null : String.valueOf(payload.get("question"));
         Object roomNoObj = payload.get("roomNo");
         Long roomNo = roomNoObj == null ? null : Long.valueOf(String.valueOf(roomNoObj));
@@ -158,6 +189,31 @@ public class AiChatController {
         Long userNo = userNoObj == null ? null : Long.valueOf(String.valueOf(userNoObj));
         Object disableRagObj = payload.get("disableRag");
         Boolean disableRag = disableRagObj == null ? null : Boolean.valueOf(String.valueOf(disableRagObj));
+
+        LocalDate todayKst = LocalDate.now(KST);
+        LocalDateTime dayStart = todayKst.atStartOfDay(KST).toLocalDateTime();
+        LocalDateTime dayEnd = todayKst.plusDays(1).atStartOfDay(KST).toLocalDateTime();
+
+        String guestIpKey = null;
+        if (userNo != null) {
+            long usedToday = aiChatLogRepository.countByUserNoAndRegDtRange(userNo, dayStart, dayEnd);
+            if (usedToday >= AI_CONSULT_DAILY_LIMIT) {
+                return aiErrorResponse(
+                        "오늘 AI 상담은 최대 " + AI_CONSULT_DAILY_LIMIT + "회까지 이용할 수 있습니다. 내일 다시 이용해 주세요.",
+                        HttpStatus.TOO_MANY_REQUESTS);
+            }
+        } else {
+            guestIpKey = normalizeGuestIp(resolveClientIp(request));
+            int usedGuest = guestConsultDailyQuotaRepository
+                    .findByClientIpAndQuotaDate(guestIpKey, todayKst)
+                    .map(GuestConsultDailyQuota::getCallCnt)
+                    .orElse(0);
+            if (usedGuest >= AI_CONSULT_DAILY_LIMIT) {
+                return aiErrorResponse(
+                        "오늘 AI 상담은 최대 " + AI_CONSULT_DAILY_LIMIT + "회까지 이용할 수 있습니다. 내일 다시 이용해 주세요.",
+                        HttpStatus.TOO_MANY_REQUESTS);
+            }
+        }
 
         // 1. 파이썬 서버에 질문 전송
         RestTemplate restTemplate = buildRestTemplate();
@@ -228,6 +284,19 @@ public class AiChatController {
                     .tokenUsage(0L)
                     .build();
             aiChatLogRepository.save(log);
+
+            if (userNo == null && guestIpKey != null) {
+                final String ipKey = guestIpKey;
+                GuestConsultDailyQuota row = guestConsultDailyQuotaRepository
+                        .findByClientIpAndQuotaDate(ipKey, todayKst)
+                        .orElseGet(() -> GuestConsultDailyQuota.builder()
+                                .clientIp(ipKey)
+                                .quotaDate(todayKst)
+                                .callCnt(0)
+                                .build());
+                row.setCallCnt(row.getCallCnt() + 1);
+                guestConsultDailyQuotaRepository.save(row);
+            }
 
             // 3. 리액트에 결과 반환 (답변 + 관련 판례 + roomNo)
             Map<String, Object> finalResponse = new HashMap<>();
