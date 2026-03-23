@@ -72,6 +72,11 @@ api.interceptors.response.use(
                     console.warn("🚨 세션이 만료되었습니다. 다시 로그인해 주세요.");
                     setAccessToken(null);
                     localStorage.removeItem('accessToken');
+                    localStorage.removeItem('userNo');
+                    localStorage.removeItem('userNm');
+                    localStorage.removeItem('userEmail');
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('nickNm');
                     window.location.href = '/login';
                 }
                 return Promise.reject(refreshError);

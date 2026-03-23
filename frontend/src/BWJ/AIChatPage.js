@@ -1,18 +1,22 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import api from '../common/api/axiosConfig';
+import api, { getAccessToken } from '../common/api/axiosConfig';
 import { AttachedFilesFromAiContext } from '../common/context/AttachedFilesFromAiContext';
+
+/** 액세스 토큰이 있을 때만 localStorage userNo 신뢰 (로그아웃 후 userNo 잔존 방지) */
+function getSessionUserNo() {
+    if (!getAccessToken()) return null;
+    const v = localStorage.getItem('userNo');
+    const n = v ? Number(v) : null;
+    return Number.isFinite(n) ? n : null;
+}
 
 const AIChatPage = () => {
     const navigate = useNavigate();
     const { setFilesFromAi } = useContext(AttachedFilesFromAiContext);
     const [searchParams] = useSearchParams();
-    const userNo = (() => {
-        const v = localStorage.getItem('userNo');
-        const n = v ? Number(v) : null;
-        return Number.isFinite(n) ? n : null;
-    })();
+    const userNo = getSessionUserNo();
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState([
         { text: "안녕하세요. LAW PARTNER 입니다.\n법률 문제에 대해 판례 분석과 법적 절차를 기반으로 답변해 드립니다.\n어떤 도움이 필요하신가요?", isUser: false }
@@ -53,8 +57,12 @@ const AIChatPage = () => {
     }, [searchParams]);
 
     const loadRooms = async () => {
-        if (!userNo) return;
-        const res = await api.get('/api/ai/rooms', { params: { userNo } });
+        const uid = getSessionUserNo();
+        if (!uid) {
+            setRooms([]);
+            return;
+        }
+        const res = await api.get('/api/ai/rooms', { params: { userNo: uid } });
         setRooms(Array.isArray(res.data) ? res.data : []);
     };
 
@@ -83,6 +91,11 @@ const AIChatPage = () => {
     };
 
     useEffect(() => {
+        if (!getAccessToken()) {
+            setRooms([]);
+            setCurrentRoomNo(null);
+            return;
+        }
         loadRooms().catch(console.error);
     }, []);
 
