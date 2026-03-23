@@ -76,6 +76,8 @@ function App() {
                         isLoggedIn: true,
                         role: localStorage.getItem('userRole')
                     });
+                } else {
+                    setAuth({ isLoggedIn: false, role: null });
                 }
             })
             .finally(() => {

@@ -1,13 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../common/api/axiosConfig'; 
+import api, { getAccessToken } from '../common/api/axiosConfig';
 import { Eye, EyeOff } from 'lucide-react';
 import './SignupPage.css'; // CSS 임포트
 
 const SignupPage = () => {
     const navigate = useNavigate();
     const phoneRef = useRef(null);
-    
+
+    useEffect(() => {
+        if (getAccessToken()) {
+            navigate('/');
+        }
+    }, []);
+
     // 1. 상태 관리 (Role, Form Data, UI Status)
     const [role, setRole] = useState('client'); // 'client' or 'lawyer'
     const [formData, setFormData] = useState({

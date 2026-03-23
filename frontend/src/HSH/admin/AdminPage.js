@@ -307,7 +307,6 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    fetchDashboardData();
     const interval = setInterval(() => {
       fetchDashboardData();
     }, 30000);
@@ -456,11 +455,19 @@ export default function AdminPage() {
               <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 [&>div]:min-w-0">
                 <div>
                     <div className="text-xs font-bold text-slate-400 mb-1">이메일</div>
-                    <div className="text-sm font-bold text-slate-700 break-all min-w-0">{selectedItem.email || '-'}</div>
+                    <div className="text-sm font-bold text-slate-700 break-all min-w-0">{hasPermission(['ROLE_SUPER_ADMIN'])
+                      ? (selectedItem.email || '-')
+                      : (selectedItem.email
+                          ? selectedItem.email.replace(/(?<=.{3}).(?=[^@]*@)/g, '*')
+                          : '-')}</div>
                 </div>
                 <div>
                     <div className="text-xs font-bold text-slate-400 mb-1">전화번호</div>
-                    <div className="text-sm font-bold text-slate-700 font-mono break-all min-w-0">{selectedItem.phone || '-'}</div>
+                    <div className="text-sm font-bold text-slate-700 font-mono break-all min-w-0">{hasPermission(['ROLE_SUPER_ADMIN'])
+                      ? (selectedItem.phone || '-')
+                      : (selectedItem.phone
+                          ? selectedItem.phone.replace(/(\d{3})-(\d{4})-(\d{4})/, '$1-****-$3')
+                          : '-')}</div>
                 </div>
                 <div>
                     <div className="text-xs font-bold text-slate-400 mb-1">가입일</div>

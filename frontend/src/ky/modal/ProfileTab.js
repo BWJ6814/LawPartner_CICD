@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import api from '../../common/api/axiosConfig';
+import { logout } from '../../common/utils/logout';
 
 const SPECIALTIES = ['형사범죄', '교통사고', '부동산', '임대차', '손해배상', '대여금', '미수금', '채권추심', '이혼', '상속/가사', '노동', '기업', '지식재산권', '회생/파산', '계약서 검토', '기타'];
 
@@ -71,8 +72,7 @@ const ProfileTab = ({ profileData, setProfileData, profileImage, setProfileImage
 
         if (emailChanged) {
             alert(RELOGIN_EMAIL_MSG);
-            localStorage.clear();
-            window.location.href = '/login';
+            await logout();
             return;
         }
 

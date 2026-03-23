@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../../common/api/axiosConfig';
+import { logout } from '../../common/utils/logout';
 
 const PasswordTab = () => {
     const [passwordData, setPasswordData] = useState({
@@ -10,25 +11,23 @@ const PasswordTab = () => {
     });
     //
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (passwordData.newPassword !== passwordData.confirmPassword) {
             alert('새 비밀번호가 일치하지 않습니다.');
             return;
         }
-        api.put('/api/mypage/password', {
-            oldPassword: passwordData.currentPassword,
-            newPassword: passwordData.newPassword
-        })
-            .then(() => {
-                alert('비밀번호가 변경되었습니다. 보안을 위해 다시 로그인해주세요.');
-                localStorage.clear();
-                window.location.href = '/login';
-            })
-            .catch(err => {
-                const msg = err.response?.data?.message || '비밀번호 변경에 실패했습니다.';
-                alert(msg);
-                console.error(err);
+        try {
+            await api.put('/api/mypage/password', {
+                oldPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
             });
+            alert('비밀번호가 변경되었습니다. 보안을 위해 다시 로그인해주세요.');
+            await logout();
+        } catch (err) {
+            const msg = err.response?.data?.message || '비밀번호 변경에 실패했습니다.';
+            alert(msg);
+            console.error(err);
+        }
     };
 
     return (

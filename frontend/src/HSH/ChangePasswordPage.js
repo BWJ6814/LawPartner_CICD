@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../common/api/axiosConfig';
+import { clearClientAuth } from '../common/utils/logout';
 import './LoginPage.css';
 
 const ChangePasswordPage = () => {
@@ -12,6 +13,7 @@ const ChangePasswordPage = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     // location.state에 userNo가 없는 경우 로그인 페이지로 이동
@@ -20,6 +22,12 @@ const ChangePasswordPage = () => {
       navigate('/login', { replace: true });
     }
   }, [location.state, navigate]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,8 +50,13 @@ const ChangePasswordPage = () => {
         newPassword,
       });
       setSuccessMsg('비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.');
-      localStorage.clear();
-      setTimeout(() => navigate('/login', { replace: true }), 2000);
+      try {
+        await api.delete('/api/auth/logout');
+      } catch {
+        /* 쿠키/세션 없어도 클라이언트 정리는 진행 */
+      }
+      clearClientAuth();
+      timerRef.current = setTimeout(() => navigate('/login', { replace: true }), 2000);
     } catch (error) {
       setErrorMsg(error.response?.data?.message || '비밀번호 변경 중 오류가 발생했습니다.');
     } finally {
