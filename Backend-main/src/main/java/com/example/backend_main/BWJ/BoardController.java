@@ -113,7 +113,8 @@ public class BoardController {
 
     @GetMapping
     public List<Board> getBoardList(@RequestParam(value = "userNo", required = false) Long userNo) {
-        List<Board> boards = boardRepository.findAllByOrderByRegDtDesc().stream()
+        // TB_USER 조인으로 STATUS_CODE = S99(탈퇴) 작성자 글 제외 + 블라인드 제외
+        List<Board> boards = boardRepository.findAllByNonWithdrawnWriterOrderByRegDtDesc().stream()
                 .filter(b -> !isBlinded(b))
                 .collect(Collectors.toList());
         for (Board board : boards) {
@@ -134,7 +135,7 @@ public class BoardController {
     public Map<String, Object> getBoardDetail(@PathVariable("id") Long id) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."));
-        if (isBlinded(board)) {
+        if (isConsultBoardHidden(board)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "삭제되었거나 볼 수 없는 게시글입니다.");
         }
 
@@ -174,7 +175,7 @@ public class BoardController {
     @PostMapping("/{id}/replies")
     public String createReply(@PathVariable("id") Long boardId, @RequestBody Map<String, Object> data) {
         Board board = boardRepository.findById(boardId).orElseThrow();
-        if (isBlinded(board)) return "FAIL";
+        if (isConsultBoardHidden(board)) return "FAIL";
         if ("Y".equals(board.getMatchYn())) return "FAIL";
 
         Long lawyerNo = Long.parseLong(data.get("lawyerNo").toString());
@@ -194,7 +195,7 @@ public class BoardController {
     @PostMapping("/{id}/reviews")
     public String createReview(@PathVariable("id") Long boardId, @RequestBody Map<String, Object> data) {
         Board board = boardRepository.findById(boardId).orElseThrow();
-        if (isBlinded(board)) return "FAIL";
+        if (isConsultBoardHidden(board)) return "FAIL";
         Long lawyerNo = Long.parseLong(data.get("lawyerNo").toString());
         Long writerNo = Long.parseLong(data.get("writerNo").toString());
         String writerNm = (String) data.get("writerNm");
@@ -209,7 +210,7 @@ public class BoardController {
     @PutMapping("/{id}/match")
     public String completeMatch(@PathVariable("id") Long id) {
         Board board = boardRepository.findById(id).orElseThrow();
-        if (isBlinded(board)) return "FAIL";
+        if (isConsultBoardHidden(board)) return "FAIL";
         board.setMatchYn("Y");
         boardRepository.save(board);
         return "SUCCESS";
@@ -218,7 +219,7 @@ public class BoardController {
     @PutMapping("/{id}")
     public String updateBoard(@PathVariable("id") Long id, @RequestBody Map<String, Object> data) {
         Board board = boardRepository.findById(id).orElseThrow();
-        if (isBlinded(board)) return "FAIL";
+        if (isConsultBoardHidden(board)) return "FAIL";
         board.setTitle((String) data.get("title"));
         board.setContent((String) data.get("content"));
         boardRepository.save(board);
@@ -229,7 +230,7 @@ public class BoardController {
     @Transactional
     public String deleteBoard(@PathVariable("id") Long id) {
         Board board = boardRepository.findById(id).orElseThrow();
-        if (isBlinded(board)) return "FAIL";
+        if (isConsultBoardHidden(board)) return "FAIL";
         List<BoardReply> replies = boardReplyRepository.findByBoardNo(id);
         if (!replies.isEmpty()) boardReplyRepository.deleteAll(replies);
         boardRepository.delete(board);
@@ -244,7 +245,7 @@ public class BoardController {
             return ResponseEntity.notFound().build();
         }
         Board fileBoard = boardRepository.findById(fileEntity.getBoardNo()).orElse(null);
-        if (fileBoard == null || isBlinded(fileBoard)) {
+        if (fileBoard == null || isConsultBoardHidden(fileBoard)) {
             return ResponseEntity.notFound().build();
         }
 
@@ -263,7 +264,7 @@ public class BoardController {
         BoardReply reply = boardReplyRepository.findById(replyId)
                 .orElseThrow(() -> new RuntimeException("답변을 찾을 수 없습니다."));
         Board parentBoard = boardRepository.findById(reply.getBoardNo()).orElseThrow();
-        if (isBlinded(parentBoard)) return "FAIL";
+        if (isConsultBoardHidden(parentBoard)) return "FAIL";
 
         String content = (String) data.get("content");
         reply.setContent(content);
@@ -278,7 +279,7 @@ public class BoardController {
                 .orElseThrow(() -> new RuntimeException("답변을 찾을 수 없습니다."));
 
         Board board = boardRepository.findById(reply.getBoardNo()).orElseThrow();
-        if (isBlinded(board)) return "FAIL";
+        if (isConsultBoardHidden(board)) return "FAIL";
         if (board.getReplyCnt() > 0) {
             board.setReplyCnt(board.getReplyCnt() - 1);
             boardRepository.save(board);
@@ -297,6 +298,16 @@ public class BoardController {
 
         ChatRoomRequestResultDTO result = chatService.requestOrReuseActiveConsultationRoom(userNo, lawyerNo);
         return ResponseEntity.ok(result);
+    }
+
+    /** 관리자 블라인드(BLIND_YN = 'Y') 또는 탈퇴(S99) 작성자 글 — 일반 상담게시판에서 제외 */
+    private boolean isConsultBoardHidden(Board board) {
+        if (board == null) return true;
+        if (isBlinded(board)) return true;
+        if (board.getWriterNo() == null) return true;
+        return userRepository.findById(board.getWriterNo())
+                .map(u -> "S99".equals(u.getStatusCode()))
+                .orElse(true);
     }
 
     /** 관리자 블라인드(BLIND_YN = 'Y') 게시글 — 일반 상담게시판 API에서 제외 */
