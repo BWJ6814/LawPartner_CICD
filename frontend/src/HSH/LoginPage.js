@@ -21,6 +21,7 @@ const LoginPage = () => {
     const [recoveryLoading, setRecoveryLoading] = useState(false);
     const [recoveryMessage, setRecoveryMessage] = useState('');
     const [recoveryError, setRecoveryError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // 페이지 진입 시 로직 (이미 로그인 체크 + 접속 로그)
 
@@ -44,6 +45,7 @@ const LoginPage = () => {
     const handleLoginSubmit = async (e) => {
         e.preventDefault();
         setIsError(false);
+        setIsSubmitting(true);
 
         try {
             const response = await api.post('/api/auth/login', {
@@ -243,8 +245,8 @@ const LoginPage = () => {
                         </button>
                     </div>
 
-                    <button type="submit" className={buttonStyle}>
-                        계정 로그인
+                    <button type="submit" className={buttonStyle} disabled={isSubmitting}>
+                        {isSubmitting ? '로그인 중...' : '계정 로그인'}
                     </button>
                 </form>
                 
