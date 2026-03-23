@@ -1,8 +1,18 @@
 // UserManagementView.js
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Badge } from './AdminComponents';
 
 export default function UserManagementView({ users, setSelectedItem, setShowModal, filterRole, setFilterRole }) {
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const normalizedKeyword = searchKeyword.trim().toLowerCase();
+  const filteredUsers = normalizedKeyword
+    ? users.filter((user) =>
+        (user.userId || '').toLowerCase().includes(normalizedKeyword) ||
+        (user.userNm || '').toLowerCase().includes(normalizedKeyword) ||
+        (user.nickNm || '').toLowerCase().includes(normalizedKeyword)
+      )
+    : users;
+
   return (
     <Card title="일반 회원 관리 (전체 명부)">
       <div className="flex flex-wrap gap-2 mt-4">
@@ -35,6 +45,15 @@ export default function UserManagementView({ users, setSelectedItem, setShowModa
           관리자
         </button>
       </div>
+      <div className="mt-3">
+        <input
+          type="text"
+          placeholder="아이디 / 이름 / 닉네임 검색"
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          className="w-full md:w-96 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300"
+        />
+      </div>
       <div className="overflow-x-auto mt-4 w-full">
         <table className="w-full text-left table-auto whitespace-nowrap">
           <thead>
@@ -49,8 +68,8 @@ export default function UserManagementView({ users, setSelectedItem, setShowModa
             </tr>
           </thead>
           <tbody className="text-sm">
-            {users.length > 0 ? (
-              users.map(user => (
+            {filteredUsers.length > 0 ? (
+              filteredUsers.map(user => (
                 <tr 
                   key={user.userNo} 
                   // [핵심] 더블 클릭으로 상세 모달 열기
@@ -106,7 +125,7 @@ export default function UserManagementView({ users, setSelectedItem, setShowModa
           회원 목록을 <strong>더블 클릭</strong>하여 상세 정보 관리 및 권한 설정을 할 수 있습니다.
         </div>
         <div className="text-[10px] text-slate-300 font-medium">
-          Total: {users.length} Users
+          Total: {filteredUsers.length} Users
         </div>
       </div>
     </Card>

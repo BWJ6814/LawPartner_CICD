@@ -98,7 +98,7 @@ export default function DashboardView({
         </Card>
 
         {/* 최근 보안 위협 로그 카드 */}
-        <Card title="최근 보안 위협 로그 (전체)">
+        <Card title="최근 보안 위협 로그 (최신 5건)">
           <div className="space-y-4">
             {threatLogs && threatLogs.length > 0 ? (
               threatLogs.map(log => (
