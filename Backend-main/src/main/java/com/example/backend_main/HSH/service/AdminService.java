@@ -70,6 +70,7 @@ public class AdminService {
                         .roleCode(user.getRoleCode())
                         .statusCode(user.getStatusCode())
                         .joinDt(user.getJoinDt())
+                        .profileImg(user.getProfileImg())
                         .build())
                 .collect(Collectors.toList());
     }
