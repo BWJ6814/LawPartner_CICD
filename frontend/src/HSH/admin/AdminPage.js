@@ -312,8 +312,7 @@ export default function AdminPage() {
           fetchBlacklist(),
           fetchContentBoards(),
           fetchBannedWords(),
-          fetchAuditLogs(),
-          fetchDailyStats(period) // ✅ 1. 초기에 차트 데이터도 같이 불러오도록 추가!
+          fetchAuditLogs()
         ]);
       } catch (error) {
         console.error("초기 데이터 로딩 실패", error);
