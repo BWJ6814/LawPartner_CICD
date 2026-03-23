@@ -1,0 +1,31 @@
+RDS MySQL import quick steps
+============================
+
+1) Convert Oracle dump SQL -> MySQL SQL
+---------------------------------------
+python "d:\LawPartner_CICD\scripts\migration\02_oracle_to_mysql_convert.py" ^
+  --input "C:\path\to\oracle_dump.sql" ^
+  --output "d:\LawPartner_CICD\scripts\migration\mysql_dump_converted.sql"
+
+2) Validate database exists on RDS
+----------------------------------
+mysql -h lawpartner-mysql.c5ouium6m1h6.ap-northeast-2.rds.amazonaws.com -P 3306 -u <USER> -p -e "SHOW DATABASES;"
+
+If needed:
+mysql -h lawpartner-mysql.c5ouium6m1h6.ap-northeast-2.rds.amazonaws.com -P 3306 -u <USER> -p -e "CREATE DATABASE IF NOT EXISTS fourjo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+3) Import converted SQL
+-----------------------
+mysql -h lawpartner-mysql.c5ouium6m1h6.ap-northeast-2.rds.amazonaws.com -P 3306 -u <USER> -p fourjo < "d:\LawPartner_CICD\scripts\migration\mysql_dump_converted.sql"
+
+4) Sanity checks
+----------------
+mysql -h lawpartner-mysql.c5ouium6m1h6.ap-northeast-2.rds.amazonaws.com -P 3306 -u <USER> -p -D fourjo -e "SHOW TABLES;"
+
+mysql -h lawpartner-mysql.c5ouium6m1h6.ap-northeast-2.rds.amazonaws.com -P 3306 -u <USER> -p -D fourjo -e "SELECT COUNT(*) AS c FROM TB_USER;"
+
+Notes
+-----
+- Oracle triggers/procedures/functions are commented in the converted file and need manual rewrite.
+- If import fails on one table, fix that block and rerun from the failed statement.
+- Keep Oracle dump untouched; always convert into a new file.
