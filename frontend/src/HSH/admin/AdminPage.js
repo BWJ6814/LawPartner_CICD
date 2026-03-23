@@ -46,6 +46,8 @@ export default function AdminPage() {
   const [summary, setSummary] = useState({});
   const [threatLogs, setThreatLogs] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [dailyStats, setDailyStats] = useState([]);
   const [loading, setLoading] = useState(false);
   const [contentBoards, setContentBoards] = useState([]);
@@ -152,18 +154,26 @@ export default function AdminPage() {
 
   const fetchAuditLogs = async (params = {}) => {
     try {
-      const res = await api.get('/api/admin/logs', { params: { page: 0, size: 50, ...params } });
-      if (res.data.success) setLogs(res.data.data.content || []);
+      const res = await api.get('/api/admin/logs', { params: { page: currentPage, size: 50, ...params } });
+      if (res.data.success) {
+        setLogs(res.data.data.content || []);
+        setTotalPages(res.data.data.page?.totalPages || 0);
+      }
     } catch (error) {
       console.error("로그 로드 실패", error);
       toast.error("로그 로드에 실패했습니다.");
     }
   };
 
-  const handleSearch = () => { fetchAuditLogs(searchParams); setSearchParams(prev => ({ ...prev, keyword: '' })); };
+  const handleSearch = () => {
+    setCurrentPage(0);
+    fetchAuditLogs({ ...searchParams, page: 0 });
+    setSearchParams(prev => ({ ...prev, keyword: '' }));
+  };
   const handleReset = () => {
     const init = { startDate: '', endDate: '', keywordType: 'IP', keyword: '', statusType: 'ALL' };
-    setSearchParams(init); fetchAuditLogs({});
+    setCurrentPage(0);
+    setSearchParams(init); fetchAuditLogs({ page: 0 });
   };
   const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearch(); };
 
@@ -332,6 +342,12 @@ export default function AdminPage() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (activeMenu === 'audit-log') {
+      fetchAuditLogs(searchParams);
+    }
+  }, [currentPage, activeMenu]);
+
   // ✅ 2. 삭제되었던 코드 복구! (7일, 30일 버튼 누를 때마다 차트 새로고침)
   useEffect(() => {
     fetchDailyStats(period);
@@ -360,7 +376,7 @@ export default function AdminPage() {
       }
       case 'lawyer-approve': return <LawyerApprovalView users={users} handleUserStatusChange={handleUserStatusChange} handleViewLicense={handleViewLicense} />;
       case 'create-operator': return <CreateOperatorView handleCreateOperator={handleCreateOperator} />;
-      case 'audit-log': return <AuditLogView logs={logs} searchParams={searchParams} setSearchParams={setSearchParams} handleSearch={handleSearch} handleReset={handleReset} handleKeyDown={handleKeyDown} handleExcelDownload={handleExcelDownload} hasPermission={hasPermission} />;
+      case 'audit-log': return <AuditLogView logs={logs} searchParams={searchParams} setSearchParams={setSearchParams} handleSearch={handleSearch} handleReset={handleReset} handleKeyDown={handleKeyDown} handleExcelDownload={handleExcelDownload} hasPermission={hasPermission} currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />;
       case 'blacklist': return <BlacklistView blacklist={blacklist} newIp={newIp} setNewIp={setNewIp} newReason={newReason} setNewReason={setNewReason} handleAddBlacklist={handleAddBlacklist} handleUnblock={handleUnblock} />;
       case 'security-policy': return <SecurityPolicyView bannedWords={bannedWords} newWord={newWord} setNewWord={setNewWord} handleAddBannedWord={handleAddBannedWord} handleDeleteBannedWord={handleDeleteBannedWord} />;
       case 'content-security': return <ContentSecurityView contentBoards={contentBoards} handleToggleBlind={handleToggleBlind} />;
