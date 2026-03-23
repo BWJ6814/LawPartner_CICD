@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../common/api/axiosConfig';
+import { logout } from '../common/utils/logout';
 
 const RELOGIN_MSG = '이메일이 변경되었습니다. 보안을 위해 다시 로그인해주세요.';
 
@@ -105,8 +106,7 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
         const emailChanged = emailInput.trim() !== emailBaselineRef.current;
         if (emailChanged) {
             alert(RELOGIN_MSG);
-            localStorage.clear();
-            window.location.href = '/login';
+            await logout();
             return;
         }
 
@@ -130,8 +130,7 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
 
         await api.put('/api/mypage/password', { oldPassword: pwInput.oldPw, newPassword: pwInput.newPw });
         alert("비밀번호가 변경되었습니다. 보안을 위해 다시 로그인해주세요.");
-        localStorage.clear();
-        window.location.href = '/login';
+        await logout();
     }, null);
 
     // 3. 회원 탈퇴 API (기존 유지)
@@ -139,8 +138,7 @@ const SettingsModal = ({ isOpen, onClose, profileData, onSaveName }) => {
         if (!window.confirm("정말로 탈퇴하시겠습니까?")) throw new Error("탈퇴가 취소되었습니다.");
         await api.delete('/api/mypage/account');
         alert("회원 탈퇴가 완료되었습니다.");
-        localStorage.clear();
-        window.location.href = '/';
+        await logout();
     }, null);
 
     const TabButton = ({ tabName, icon, label, isDanger = false }) => {
