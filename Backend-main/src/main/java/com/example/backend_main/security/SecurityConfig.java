@@ -3,6 +3,7 @@ package com.example.backend_main.security;
 import com.example.backend_main.HSH.service.CustomUserDetailsService;
 import com.example.backend_main.common.security.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; // ★ 이 import가 필요합니다!
@@ -20,7 +21,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.data.web.config.EnableSpringDataWebSupport.PageSerializationMode;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 @Configuration
 // @EnableMethodSecurity : 컨틀로러의 메소드 위에 붙은 @PreAuthorize가 살아있는 코드로 변함
 // 만일 없을 경우 권한 체크가 무시하됨..!
@@ -42,6 +45,8 @@ public class SecurityConfig {
     // 401 : 인증 실패 - 입구 컷 (신분증 -JWT가 없음)
     // 403 : 인가 실패 - 권한 컷 (입장은 했으나, JWT 권한에 막힘)
     private final CustomUserDetailsService customUserDetailsService;
+    @Value("${app.cors.allowed-origins:http://localhost:3000}")
+    private String corsAllowedOrigins;
 
     // 비밀번호 암호기 등록하기.
     @Bean
@@ -109,8 +114,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 리액트 주소(3000) 허용
-        configuration.setAllowedOrigins(List.of("http://192.168.0.43:3000", "http://localhost:3000"));
+        // 쉼표로 분리된 허용 Origin 목록을 환경변수/설정에서 읽어옵니다.
+        List<String> allowedOrigins = Arrays.stream(corsAllowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+        configuration.setAllowedOrigins(allowedOrigins);
 
         // 모든 메소드 허용
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

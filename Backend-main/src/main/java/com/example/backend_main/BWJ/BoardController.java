@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/boards")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://192.168.0.43:3000", "http://localhost:3000"})
 public class BoardController {
 
     private final BoardRepository boardRepository;

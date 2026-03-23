@@ -29,7 +29,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ai")
-@CrossOrigin(origins = {"http://192.168.0.43:3000", "http://localhost:3000"}) // 리액트 허용
 public class AiChatController {
 
     private static final int AI_CONSULT_DAILY_LIMIT = Integer.parseInt(

@@ -7,6 +7,7 @@ import {
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import api from '../../common/api/axiosConfig';
+import { API_BASE_URL } from '../../common/api/axiosConfig';
 
 // [1] 공통 컴포넌트 및 분리된 뷰 임포트
 import {
@@ -469,7 +470,7 @@ export default function AdminPage() {
               <div className="flex items-center gap-4">
                 {selectedItem.profileImg ? (
                   <img
-                    src={`http://192.168.0.43:8080${selectedItem.profileImg}`}
+                    src={`${API_BASE_URL}${selectedItem.profileImg}`}
                     alt="프로필"
                     className="w-16 h-16 rounded-full object-cover"
                   />

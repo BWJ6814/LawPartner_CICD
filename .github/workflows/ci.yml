@@ -17,6 +17,31 @@ jobs:
   backend:
     name: Backend (Spring Boot)
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: fourjo
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/fourjo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
+      JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-jwt-secret-key-ci-jwt-secret-key-1234' }}
+      ENCRYPTION_AES256_KEY: ${{ secrets.ENCRYPTION_AES256_KEY || '12345678901234567890123456789012' }}
+      PORTONE_SECRET_KEY: ${{ secrets.PORTONE_SECRET_KEY || 'ci-portone-secret' }}
+      CHAT_FILE_UPLOAD_DIR: /tmp/chat_uploads
+      CHAT_FILE_SERVER_URL: http://localhost:8080
+      FILE_UPLOAD_DIR: /tmp/lawyer-docs
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:3000
     defaults:
       run:
         working-directory: Backend-main

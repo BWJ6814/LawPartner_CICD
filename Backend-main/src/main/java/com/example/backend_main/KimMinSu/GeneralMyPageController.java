@@ -24,7 +24,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/mypage")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://192.168.0.43:3000", "http://localhost:3000"})
 public class GeneralMyPageController {
 
     private final GeneralMyPageService myPageService;
