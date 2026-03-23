@@ -10,7 +10,10 @@ export default function AuditLogView({
   handleReset, 
   handleKeyDown, 
   handleExcelDownload, 
-  hasPermission 
+  hasPermission,
+  currentPage,
+  totalPages,
+  setCurrentPage
 }) {
   return (
     <Card>
@@ -102,6 +105,27 @@ export default function AuditLogView({
             {logs.length === 0 && <tr><td colSpan="5" className="py-10 text-center text-slate-400">검색된 로그가 없습니다.</td></tr>}
           </tbody>
         </table>
+      </div>
+      <div className="mt-4 flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => setCurrentPage(currentPage - 1)}
+          disabled={currentPage <= 0}
+          className="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
+        >
+          이전
+        </button>
+        <span className="text-xs font-bold text-slate-500">
+          {currentPage + 1} / {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={() => setCurrentPage(currentPage + 1)}
+          disabled={currentPage >= totalPages - 1}
+          className="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
+        >
+          다음
+        </button>
       </div>
     </Card>
   );
