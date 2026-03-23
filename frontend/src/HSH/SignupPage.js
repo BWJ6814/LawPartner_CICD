@@ -536,7 +536,7 @@ const SignupPage = () => {
                                     </label>
                                     <input type="file" id="license-file" className="hidden" accept=".jpg,.png,.pdf" onChange={handleFileChange} />
                                     <span className="text-xs font-bold text-slate-400 truncate max-w-[200px]">
-                                        {selectedFile ? selectedFile.name : "선택된 파일 없음"}
+                                        {selectedFile ? selectedFile.name : "IMG, JPG, PDF 파일만 업로드 가능합니다."}
                                     </span>
                                 </div>
                             </div>
