@@ -383,6 +383,13 @@ public class AdminService {
 
     @Transactional
     public void addBlacklist(String ip, String reason, String adminId) {
+        if (ip == null || ip.isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT, "IP 주소는 필수입니다.");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT, "차단 사유는 필수입니다.");
+        }
+
         if (blacklistIpRepository.existsById(ip)) {
             // ✅ IllegalArgumentException → CustomException 통일
             throw new CustomException(ErrorCode.DUPLICATE_DATA, "이미 차단된 IP입니다.");
