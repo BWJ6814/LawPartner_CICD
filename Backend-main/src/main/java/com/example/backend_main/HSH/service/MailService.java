@@ -2,6 +2,7 @@ package com.example.backend_main.HSH.service;
 
 import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;
+import com.example.backend_main.common.util.MaskingUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +71,8 @@ public class MailService {
             message.setText(text);
             mailSender.send(message);
         } catch (Exception e) {
-            log.error("메일 전송 실패 - to: {}, subject: {}, error: {}", toEmail, subject, e.getMessage());
+            log.error("메일 전송 실패 - to: {}, subject: {}, error: {}",
+                    MaskingUtil.maskEmail(toEmail), subject, e.getMessage());
             throw new CustomException(ErrorCode.SYSTEM_ERROR, "메일 전송에 실패했습니다. 잠시 후 다시 시도해주세요.");
         }
     }

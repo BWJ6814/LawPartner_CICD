@@ -25,7 +25,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         // 2. DB의 emailHash 컬럼과 대조하여 유저를 찾음
         // (UserRepository에 findByEmailHash 메서드가 필요합니다)
         User user = userRepository.findByEmailHash(emailHash)
-                .orElseThrow(() -> new UsernameNotFoundException("해당 이메일의 사용자를 찾을 수 없습니다: " + email));
+                .orElseThrow(() -> new UsernameNotFoundException("해당 이메일의 사용자를 찾을 수 없습니다."));
 
         return new CustomUserDetails(user);
     }
