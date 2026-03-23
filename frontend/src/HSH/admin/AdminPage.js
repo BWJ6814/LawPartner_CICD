@@ -307,7 +307,6 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    fetchDashboardData();
     const interval = setInterval(() => {
       fetchDashboardData();
     }, 30000);
