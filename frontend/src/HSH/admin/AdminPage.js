@@ -433,7 +433,17 @@ export default function AdminPage() {
             </div>
             <div className="p-8 space-y-6">
               <div className="flex items-center gap-4">
-                <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-300"><Users size={40} /></div>
+                {selectedItem.profileImg ? (
+                  <img
+                    src={`http://192.168.0.43:8080${selectedItem.profileImg}`}
+                    alt="프로필"
+                    className="w-16 h-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                    <Users size={28} className="text-slate-400" />
+                  </div>
+                )}
                 <div>
                   <h4 className="text-2xl font-black text-slate-800">{selectedItem.userNm}</h4>
                   <p className="text-slate-500">@{selectedItem.userId}</p>

@@ -18,4 +18,5 @@ public class UserListDto {
     private String roleCode;
     private String statusCode;
     private LocalDateTime joinDt;
+    private String profileImg;
 }
