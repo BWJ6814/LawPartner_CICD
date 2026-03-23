@@ -4,6 +4,7 @@ import com.example.backend_main.common.entity.RefreshToken;
 import com.example.backend_main.common.repository.RefreshTokenRepository;
 import com.example.backend_main.common.util.HashUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
@@ -39,6 +41,7 @@ public class RefreshTokenService {
                                         .build()
                         )
                 );
+        log.info("[RefreshToken] 저장/갱신 완료 - userNo: {}", userNo);
     }
 
     /*
@@ -47,17 +50,22 @@ public class RefreshTokenService {
     @Transactional
     public void deleteByUserNo(Long userNo) {
         refreshTokenRepository.deleteByUserNo(userNo);
+        log.info("[RefreshToken] 삭제 완료 - userNo: {}", userNo);
     }
 
     // RefreshTokenService에 추가
     @Transactional(readOnly = true)
     public RefreshToken findByUserNo(Long userNo) {
         return refreshTokenRepository.findByUserNo(userNo)
-                .orElseThrow(() -> new IllegalArgumentException("로그아웃 된 사용자입니다. 다시 로그인해주세요."));
+                .orElseThrow(() -> {
+                    log.warn("[RefreshToken] 토큰 없음 - userNo: {}", userNo);
+                    return new IllegalArgumentException("로그아웃 된 사용자입니다. 다시 로그인해주세요.");
+                });
     }
 
     @Transactional
     public void deleteToken(RefreshToken token) {
         refreshTokenRepository.delete(token);
+        log.info("[RefreshToken] 단건 삭제 완료 - tokenId: {}", token.getTokenId());
     }
 }

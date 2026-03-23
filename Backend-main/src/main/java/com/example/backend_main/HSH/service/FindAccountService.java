@@ -38,12 +38,14 @@ public class FindAccountService {
 
         Optional<User> optionalUser = userRepository.findByUserNmAndEmailHash(dto.getUserNm(), emailHash);
         if (optionalUser.isEmpty()) {
+            log.warn("[FindAccount] 아이디 찾기 실패 - 이메일 미존재: {}", MaskingUtil.maskEmail(dto.getEmail()));
             throw new CustomException(ErrorCode.USER_NOT_FOUND, "입력하신 정보와 일치하는 계정을 찾을 수 없습니다.");
         }
 
         User user = optionalUser.get();
         String email = user.getEmail(); // Aes256Converter를 통한 자동 복호화
         mailService.sendFindIdMail(email, user.getUserId());
+        log.info("[FindAccount] 아이디 찾기 성공 - email: {}", MaskingUtil.maskEmail(dto.getEmail()));
 
         return MaskingUtil.maskUserId(user.getUserId());
     }
@@ -64,6 +66,7 @@ public class FindAccountService {
         );
 
         if (optionalUser.isEmpty()) {
+            log.warn("[FindAccount] 비밀번호 찾기 실패 - 사용자 미존재: {}", MaskingUtil.maskEmail(dto.getEmail()));
             throw new CustomException(ErrorCode.USER_NOT_FOUND, "입력하신 정보와 일치하는 계정을 찾을 수 없습니다.");
         }
 
@@ -77,6 +80,7 @@ public class FindAccountService {
 
         String email = user.getEmail();
         mailService.sendTempPasswordMail(email, tempPassword);
+        log.info("[FindAccount] 임시 비밀번호 발급 완료 - email: {}", MaskingUtil.maskEmail(dto.getEmail()));
     }
 
 }
