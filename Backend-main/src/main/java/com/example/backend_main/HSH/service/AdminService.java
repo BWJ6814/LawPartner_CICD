@@ -197,6 +197,7 @@ public class AdminService {
                 .phoneHash(phoneHash)
                 .roleCode("ROLE_OPERATOR")
                 .statusCode("S01")
+                .nickNm("관리자_" + dto.getUserNm()+"입니다.")
                 .pwChangeRequired("Y")
                 .build();
 
@@ -283,7 +284,6 @@ public class AdminService {
             log.error("🚨 [엑셀 다운로드 실패]", e);
             throw new IOException("엑셀 생성 중 오류가 발생했습니다.");
         } finally {
-            workbook.dispose();
             workbook.close();
         }
     }
