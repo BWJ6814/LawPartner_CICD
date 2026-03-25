@@ -1,4 +1,5 @@
-FROM node:20-alpine AS build
+# Alpine(musl)보다 Debian에서 webpack/terser가 안정적인 경우가 많아 slim 사용
+FROM node:20-bookworm-slim AS build
 WORKDIR /app
 
 COPY package*.json ./
@@ -8,9 +9,11 @@ COPY . .
 
 ARG REACT_APP_API_URL=http://localhost:8080
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
-# 소스맵 생성은 메모리·시간을 많이 씀 → 운영 이미지에서는 끔 (디버깅 필요 시 로컬에서만 켜기)
 ENV GENERATE_SOURCEMAP=false
-ENV NODE_OPTIONS=--max-old-space-size=4096
+ENV CI=false
+ENV DISABLE_ESLINT_PLUGIN=true
+# 소형 EC2: 힙을 너무 크게 잡으면 스왑만 도는 경우가 있어 2~3GB대가 나은 경우 많음
+ENV NODE_OPTIONS=--max-old-space-size=3072
 RUN npm run build
 
 FROM nginx:1.27-alpine

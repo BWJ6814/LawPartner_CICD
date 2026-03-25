@@ -171,6 +171,52 @@ Docker가 없으면 위 명령이 동작하지 않습니다. Amazon Linux / Ubun
 
 ---
 
+## 트러블슈팅: `npm run build` 가 30~40분 넘게 같은 로그만 나올 때
+
+`Creating an optimized production build...` 뒤로 **로그가 거의 안 바뀌는 것처럼 보이는** 경우가 많습니다. 이건 **정상적으로 느린 것**일 수도 있고, **메모리 부족으로 스왑만 도는 경우**도 많습니다.
+
+### 1) 먼저 확인 (다른 SSH 창에서)
+
+```bash
+free -h
+docker stats --no-stream
+```
+
+- **`Swap used`가 크게 잡혀 있고** CPU는 낮은데 시간만 가면 → **스왑 지옥** 가능성이 큼.
+- 컨테이너의 **CPU가 계속 움직이면** → 아직 빌드 중일 수 있음.
+
+### 2) 스왑 2GB 추가 (Amazon Linux 2 / 2023 예시, 한 번만)
+
+```bash
+sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
+
+재부팅 후에도 유지하려면 `/etc/fstab`에 스왑 항목을 추가하는 방식이 필요합니다(배포판마다 문구가 다름).
+
+### 3) 레포 최신 Dockerfile 반영
+
+`frontend/Dockerfile`은 **소스맵 끄기·ESLint 플러그인 끄기·Node 힙 조정·Debian slim 베이스** 등으로 EC2 빌드를 줄이도록 맞춰질 수 있습니다. **반드시 `git pull` 후** 다시 빌드합니다.
+
+### 4) 그래도 EC2에서 안 끝나면: PC에서 `npm run build` 후 `build` 폴더만 서버에 올리기
+
+1. **PC(Windows)** 에서 `frontend` 폴더로 이동 후  
+   `npm ci --legacy-peer-deps` → `npm run build` (운영 API URL은 `.env`의 `REACT_APP_API_URL` 또는 빌드 전 `set`/`$env:` 로 맞춤)  
+2. 생성된 **`frontend/build`** 폴더 전체를 `scp` 등으로 서버의 `~/LawPartner_CICD/frontend/` 아래에 덮어씀.  
+3. 서버 **프로젝트 루트**에서 `Dockerfile.prebuilt` 를 쓰는 오버라이드로 프론트만 빌드·기동:
+
+```bash
+cd ~/LawPartner_CICD
+docker compose -f docker-compose.prod.yml -f docker-compose.frontend-prebuilt.yml --env-file .env.prod build frontend
+docker compose -f docker-compose.prod.yml -f docker-compose.frontend-prebuilt.yml --env-file .env.prod up -d
+```
+
+(`docker-compose.frontend-prebuilt.yml` 이 `frontend` 서비스의 Dockerfile만 `Dockerfile.prebuilt` 로 바꿉니다.)
+
+---
+
 ## 이 프로젝트에서 포트 정리 (compose 기준)
 
 | 서버(EC2)에서 연 포트 | 컨테이너 | 역할 |

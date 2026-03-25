@@ -1,0 +1,7 @@
+# EC2에서 npm run build 가 너무 오래 걸릴 때: PC에서 frontend/build 만든 뒤 서버에 복사한 다음 이 파일로 프론트 이미지만 빌드
+# 사용 예: docker compose -f docker-compose.prod.yml -f docker-compose.frontend-prebuilt.yml --env-file .env.prod build frontend
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prebuilt
