@@ -1,5 +1,6 @@
 node_modules
-build
+# build/ 는 제외하지 않음 — Dockerfile.prebuilt 가 호스트의 build 를 COPY 할 때 필요.
+# 소스만 EC2에서 빌드할 때는 보통 build 폴더가 없음; 로컬에 있으면 컨텍스트만 약간 커짐.
 .git
 .idea
 .vscode
