@@ -75,8 +75,174 @@
 | Dockerfile | “이미지를 어떻게 만드나” |
 | `docker-compose` + `.env` | “실행할 때 DB 주소·비밀키·CORS를 무엇으로 넣나” |
 | RDS / DNS / SSL | “인터넷에서 어디로 붙나” — 코드와 별개 |
-
+ssh -i "lawpartner-key.pem" ec2-user@ec2-3-38-99-50.ap-northeast-2.compute.amazonaws.com
+ssh -i "D:\ssh\lawpartner-key.pem" ec2-user@ec2-3-38-99-50.ap-northeast-2.compute.amazonaws.com
 체크리스트를 다 통과하면 **그때** “도커에 올렸고 설정도 맞다”고 보시면 됩니다.
+
+---
+
+## 부록 A) Ubuntu 서버 — 복붙용 배포 명령
+
+> **전제**: SSH로 서버에 접속한 뒤, **프로젝트를 둘 폴더**에서 실행 (아래는 `~/LawPartner_CICD` 예시).
+ssh -i "D:\ssh\lawpartner-key.pem" ec2-user@ec2-3-38-99-50.ap-northeast-2.compute.amazonaws.com
+ssh -v -i "D:\ssh\lawpartner-key.pem" ec2-user@ec2-3-38-99-50.ap-northeast-2.compute.amazonaws.com
+taskkill /F /IM ssh.exe
+
+### A-1. 최초 1회 — Docker 설치 (공식 스크립트)
+
+```bash
+sudo apt-get update -y
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update -y
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo usermod -aG docker "$USER"
+# 로그아웃 후 다시 로그인 (docker 그룹 적용)
+```
+
+### A-2. 코드 받기 (처음이면 clone, 이미 있으면 pull)
+
+```bash
+cd ~
+git clone https://github.com/BWJ6814/LawPartner_CICD.git
+cd LawPartner_CICD
+```
+
+이미 클론해 둔 경우:
+
+```bash
+cd ~/LawPartner_CICD
+git pull origin main
+```
+
+### A-3. 환경 파일 (서버에만 존재, Git에 안 올림)
+
+```bash
+nano .env.prod
+```
+
+`.env.prod.example` 내용을 참고해 **RDS·JWT·CORS·REACT_APP_API_URL** 등을 채운 뒤 저장 (`Ctrl+O`, Enter, `Ctrl+X`).
+
+### A-4. FAISS 인덱스 (Git에 없음 — 로컬에서 서버로 복사)
+
+로컬 PC(Windows PowerShell)에서 예시:
+
+```powershell
+scp -r D:\LawPartner_CICD\backend-ai\faiss_db ubuntu@서버IP:~/LawPartner_CICD/backend-ai/
+```
+
+서버에 폴더만 만들고 나중에 올릴 때:
+
+```bash
+mkdir -p ~/LawPartner_CICD/backend-ai/faiss_db
+```
+
+### A-5. 빌드 & 기동
+
+```bash
+cd ~/LawPartner_CICD
+docker compose -f docker-compose.prod.yml --env-file .env.prod build
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs backend --tail=80
+```
+
+### A-6. 다시 배포할 때 (코드만 갱신)
+
+```bash
+cd ~/LawPartner_CICD
+git pull origin main
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+sudo mkdir -p /usr/local/lib/docker/cli-plugins
+
+sudo curl -SL "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64" \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+
+sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+docker compose version
+
+
+### A-7. 포트 정리 (이 compose 기준)
+
+| 호스트(서버) | 컨테이너 | 용도 |
+|-------------|----------|------|
+| `3000` | 프론트 nginx `80` | 웹 UI |
+| `8080` | Spring Boot | API |
+| `8000` | FastAPI AI | AI 서버 |
+| `8025` | Mailpit 웹 UI | 메일 테스트(운영에선 외부 막기 권장) |
+
+앞단에 **시스템 nginx / Caddy / ALB**로 `443` → `3000`(또는 원하는 포트) 프록시하면 도메인으로 접속합니다.
+
+### A-8. 방화벽 예시 (ufw)
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+# compose를 직접 노출할 때만 (프록시 뒤면 보통 불필요)
+# sudo ufw allow 3000/tcp
+sudo ufw enable
+sudo ufw status
+```
+
+### A-9. 루트 EBS 용량 부족 시 — 볼륨 늘리기 (콘솔 + EC2)
+
+Docker 빌드 시 `No space left on device`가 나오면 **루트 볼륨(예: 8 GiB)을 50 GiB 등으로 확장**합니다.
+
+**1) AWS 콘솔 (브라우저)**
+
+1. **EC2** → 왼쪽 **볼륨(Elastic Block Store → 볼륨)**  
+2. 인스턴스에 붙은 루트 볼륨 선택 (예: `/dev/xvda`, `In use`)  
+3. **작업** → **볼륨 수정**  
+4. **크기**를 **50** GiB(또는 원하는 값)로 변경 → **수정**  
+5. 상태가 `optimizing` → `completed` 될 때까지 잠시 대기 (보통 수 분)
+
+**2) EC2에 SSH 접속 후 — 파티션·파일시스템 확장**
+
+```bash
+# 디스크/파티션 이름 확인
+lsblk
+df -Th /
+```
+
+루트가 **XFS**이면(Amazon Linux에서 흔함):
+
+```bash
+# 디바이스 이름은 lsblk에 맞출 것. 예: xvda + 파티션 1
+sudo growpart /dev/xvda 1
+sudo xfs_growfs -d /
+df -h /
+```
+
+**NVMe**로 보이면(예: `nvme0n1p1`):
+
+```bash
+sudo growpart /dev/nvme0n1 1
+sudo xfs_growfs -d /
+df -h /
+```
+
+루트가 **ext4**이면 `xfs_growfs` 대신:
+
+```bash
+sudo resize2fs /dev/xvda1
+# 또는: sudo resize2fs $(findmnt -n -o SOURCE /)
+```
+
+`growpart`가 없으면:
+
+```bash
+sudo yum install -y cloud-utils-growpart
+# 또는 Amazon Linux 2023: sudo dnf install -y cloud-utils-growpart
+```
+
+확장 후 `df -h /`에서 여유가 늘었는지 확인하고, 다시 `docker compose ... up -d --build` 실행.
 
 ---
 
