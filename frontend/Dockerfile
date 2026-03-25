@@ -8,8 +8,10 @@ COPY . .
 
 ARG REACT_APP_API_URL=http://localhost:8080
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
-# react-scripts(Webpack) 빌드는 메모리를 많이 씀. 기본 힙에서 OOM 나는 경우 방지 (EC2 Docker 빌드)
-RUN NODE_OPTIONS="--max-old-space-size=8192" npm run build
+# 소스맵 생성은 메모리·시간을 많이 씀 → 운영 이미지에서는 끔 (디버깅 필요 시 로컬에서만 켜기)
+ENV GENERATE_SOURCEMAP=false
+ENV NODE_OPTIONS=--max-old-space-size=4096
+RUN npm run build
 
 FROM nginx:1.27-alpine
 WORKDIR /usr/share/nginx/html
