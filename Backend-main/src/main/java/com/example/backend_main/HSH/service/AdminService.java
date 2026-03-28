@@ -31,7 +31,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -370,7 +369,8 @@ public class AdminService {
 
         LocalDate today = LocalDate.now(DASHBOARD_ZONE);
         LocalDate startDay = today.minusDays(days - 1);
-        Timestamp startTs = Timestamp.from(startDay.atStartOfDay(DASHBOARD_ZONE).toInstant());
+        // JPA와 동일하게 DATETIME은 타임존 없는 wall-clock으로 저장됨 → Instant/Timestamp가 아닌 LocalDateTime으로 바인딩해야 범위 비교가 맞음
+        LocalDateTime rangeStart = startDay.atStartOfDay();
 
         Map<String, Map<String, Object>> mergedMap = new TreeMap<>();
         for (int i = days - 1; i >= 0; i--) {
@@ -382,21 +382,22 @@ public class AdminService {
             mergedMap.put(date, data);
         }
 
-        // CAST(REG_DT AS DATE) — DATE_FORMAT보다 ONLY_FULL_GROUP_BY·드라이버 호환에 유리한 편
+        // 소문자 테이블명: Linux + lower_case_table_names=0 환경에서 대문자만 쓰면 SQL 실패 → catch 후 전부 0으로 보임
         String sqlLog = "SELECT CAST(REG_DT AS DATE) AS day_key, COUNT(DISTINCT REQ_IP) AS cnt "
-                + "FROM TB_ACCESS_LOG WHERE REG_DT >= ? "
+                + "FROM tb_access_log WHERE REG_DT >= ? "
                 + "GROUP BY CAST(REG_DT AS DATE)";
         String sqlUser = "SELECT CAST(JOIN_DT AS DATE) AS day_key, COUNT(*) AS cnt "
-                + "FROM TB_USER WHERE JOIN_DT >= ? "
+                + "FROM tb_user WHERE JOIN_DT >= ? "
                 + "GROUP BY CAST(JOIN_DT AS DATE)";
 
         List<Map<String, Object>> logRows;
         List<Map<String, Object>> userRows;
         try {
-            logRows = jdbcTemplate.queryForList(sqlLog, startTs);
-            userRows = jdbcTemplate.queryForList(sqlUser, startTs);
+            logRows = jdbcTemplate.queryForList(sqlLog, rangeStart);
+            userRows = jdbcTemplate.queryForList(sqlUser, rangeStart);
+            log.info("일별 통계 SQL 행 수: access_log={}, tb_user={}", logRows.size(), userRows.size());
         } catch (DataAccessException e) {
-            log.error("일별 통계 SQL 실패 (TB_ACCESS_LOG / TB_USER): {}", e.getMostSpecificCause().getMessage(), e);
+            log.error("일별 통계 SQL 실패 (tb_access_log / tb_user): {}", e.getMostSpecificCause().getMessage(), e);
             return new ArrayList<>(mergedMap.values());
         }
 

@@ -41,6 +41,8 @@ export default function AdminPage() {
   const [selectedItem, setSelectedItem] = useState(null);
 
   const chartRef = useRef(null);
+  /** 초기 로드는 fetchInitialData의 Promise.all에서 fetchDailyStats 호출 — period effect와 중복 방지 */
+  const skipFirstPeriodFetch = useRef(true);
 
   const [users, setUsers] = useState([]);
   const [filterRole, setFilterRole] = useState('ALL');
@@ -320,6 +322,7 @@ export default function AdminPage() {
       try {
         await Promise.all([
           fetchDashboardData(),
+          fetchDailyStats(period),
           fetchBlacklist(),
           fetchContentBoards(),
           fetchBannedWords(),
@@ -349,8 +352,12 @@ export default function AdminPage() {
     }
   }, [currentPage, activeMenu]);
 
-  // ✅ 2. 삭제되었던 코드 복구! (7일, 30일 버튼 누를 때마다 차트 새로고침)
+  // ✅ 기간(오늘/7일/30일) 변경 시만 차트 재요청 — 최초 1회는 fetchInitialData에서 로드
   useEffect(() => {
+    if (skipFirstPeriodFetch.current) {
+      skipFirstPeriodFetch.current = false;
+      return;
+    }
     fetchDailyStats(period);
   }, [period]);
 

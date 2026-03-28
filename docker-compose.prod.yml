@@ -11,6 +11,7 @@ services:
     ports:
       - "8080:8080"
     environment:
+      TZ: Asia/Seoul
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
       CHAT_FILE_UPLOAD_DIR: /data/chat_uploads
       # 공개 API 베이스 — ${} 미사용(다른 도메인이면 .env.prod에 CHAT_FILE_SERVER_URL 추가 후 아래 줄 제거·조정)
