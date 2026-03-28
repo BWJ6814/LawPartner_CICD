@@ -27,12 +27,7 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long>, Jpa
     // 상태 코드 필터링 조회
     Page<AccessLog> findByStatusCodeGreaterThanEqual(Integer statusCode, Pageable pageable);
 
-    // [신규] 지정일별 방문자 수 — MySQL: Object[] 두 컬럼 (네이티브 Map 반환 제거)
-    @Query(value = "SELECT DATE_FORMAT(REG_DT, '%Y-%m-%d'), COUNT(DISTINCT REQ_IP) " +
-            "FROM TB_ACCESS_LOG " +
-            "WHERE REG_DT >= :sevenDaysAgo " +
-            "GROUP BY DATE_FORMAT(REG_DT, '%Y-%m-%d')", nativeQuery = true)
-    List<Object[]> findDailyVisitorStats(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo);
+    // 일별 방문 차트: AdminService에서 JdbcTemplate으로 조회 (JPA 네이티브 반환 이슈 회피)
 
     // ==================================================================================
     // 📊 대시보드 통계용 쿼리 (성능 최적화)

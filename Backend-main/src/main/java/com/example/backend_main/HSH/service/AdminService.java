@@ -24,11 +24,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -49,6 +51,7 @@ public class AdminService {
     private final BoardRepository boardRepository;
     private final AdminAuditRepository adminAuditRepository;
     private final com.example.backend_main.HSH.service.MailService mailService;
+    private final JdbcTemplate jdbcTemplate;
 
     // ✅ Aes256Util 의존성 제거 — JPA Converter가 자동 암호화/복호화 처리
 
@@ -356,8 +359,22 @@ public class AdminService {
         if (days < 2) days = 2;
 
         LocalDateTime startDate = LocalDateTime.now().minusDays(days - 1);
-        List<Object[]> userStats = userRepository.findDailySignupStats(startDate);
-        List<Object[]> logStats = accessLogRepository.findDailyVisitorStats(startDate);
+        Timestamp startTs = Timestamp.valueOf(startDate);
+
+        // JPA 네이티브 List<Object[]>/Map 반환은 Hibernate·버전에 따라 500 발생 → JdbcTemplate으로 고정
+        String sqlLog = "SELECT DATE_FORMAT(REG_DT, '%Y-%m-%d'), COUNT(DISTINCT REQ_IP) "
+                + "FROM TB_ACCESS_LOG WHERE REG_DT >= ? "
+                + "GROUP BY DATE_FORMAT(REG_DT, '%Y-%m-%d')";
+        String sqlUser = "SELECT DATE_FORMAT(JOIN_DT, '%Y-%m-%d'), COUNT(*) "
+                + "FROM TB_USER WHERE JOIN_DT >= ? "
+                + "GROUP BY DATE_FORMAT(JOIN_DT, '%Y-%m-%d')";
+
+        List<Object[]> logStats = jdbcTemplate.query(sqlLog, (rs, rowNum) -> new Object[]{
+                rs.getObject(1), rs.getObject(2)
+        }, startTs);
+        List<Object[]> userStats = jdbcTemplate.query(sqlUser, (rs, rowNum) -> new Object[]{
+                rs.getObject(1), rs.getObject(2)
+        }, startTs);
 
         Map<String, Map<String, Object>> mergedMap = new TreeMap<>();
         for (int i = days - 1; i >= 0; i--) {
