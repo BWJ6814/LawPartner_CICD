@@ -84,9 +84,26 @@ ssh -i "D:\ssh\lawpartner-key.pem" ec2-user@ec2-3-38-99-50.ap-northeast-2.comput
 ## 부록 A) Ubuntu 서버 — 복붙용 배포 명령
 
 > **전제**: SSH로 서버에 접속한 뒤, **프로젝트를 둘 폴더**에서 실행 (아래는 `~/LawPartner_CICD` 예시).
-ssh -i "D:\ssh\lawpartner-key.pem" ec2-user@ec2-3-38-99-50.ap-northeast-2.compute.amazonaws.com
-ssh -v -i "D:\ssh\lawpartner-key.pem" ec2-user@ec2-3-38-99-50.ap-northeast-2.compute.amazonaws.com
+키조이기
+icacls "D:\ssh\lawpartner-key.pem" /inheritance:r
+icacls "D:\ssh\lawpartner-key.pem" /grant:r %USERNAME%:(R)
+
+ssh -i "D:\ssh\lawpartner-key.pem" ec2-user@ec2-13-124-73-116.ap-northeast-2.compute.amazonaws.com
+ssh -v -i "D:\ssh\lawpartner-key.pem" ec2-user@ec2-13-124-73-116.ap-northeast-2.compute.amazonaws.com
 taskkill /F /IM ssh.exe
+파워쉘에서 키 조이기
+icacls "D:\ssh\lawpartner-key.pem" /inheritance:r
+icacls "D:\ssh\lawpartner-key.pem" /grant:r ($env:USERNAME + ':(R)')
+파워쉘에서 실행
+ssh -i "D:\ssh\lawpartner-key.pem" ec2-user@ec2-13-124-73-116.ap-northeast-2.compute.amazonaws.com 
+
+
+
+도커로 빌드 후 기동
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+잘 빌드 됐는지 확인
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs backend --tail=50
 
 ### A-1. 최초 1회 — Docker 설치 (공식 스크립트)
 

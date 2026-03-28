@@ -18,6 +18,8 @@ services:
       CHAT_FILE_UPLOAD_DIR: /data/chat_uploads
       CHAT_FILE_SERVER_URL: ${CHAT_FILE_SERVER_URL:-https://api.fourjolawpartner.com:443}
       FILE_UPLOAD_DIR: /data/lawyer-docs
+      # GeneralMyPageService @Value — Linux/Docker에서 필수 (없으면 빈 생성 실패 → 502)
+      FILE_PROFILE_UPLOAD_DIR: ${FILE_PROFILE_UPLOAD_DIR:-/data/profile_uploads}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-mailpit}
