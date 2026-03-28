@@ -3,6 +3,7 @@ package com.example.backend_main.security;
 import com.example.backend_main.HSH.service.CustomUserDetailsService;
 import com.example.backend_main.common.security.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 @Configuration
+@Slf4j
 // @EnableMethodSecurity : 컨틀로러의 메소드 위에 붙은 @PreAuthorize가 살아있는 코드로 변함
 // 만일 없을 경우 권한 체크가 무시하됨..!
 @EnableWebSecurity
@@ -119,6 +121,10 @@ public class SecurityConfig {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
+        if (allowedOrigins.isEmpty()) {
+            log.warn("app.cors.allowed-origins 비어 있음 — http://localhost:3000 만 허용합니다. 운영 프론트 주소를 설정하세요.");
+            allowedOrigins = List.of("http://localhost:3000");
+        }
         configuration.setAllowedOrigins(allowedOrigins);
 
         // 모든 메소드 허용

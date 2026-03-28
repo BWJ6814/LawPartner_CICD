@@ -20,7 +20,8 @@ services:
       FILE_UPLOAD_DIR: /data/lawyer-docs
       # GeneralMyPageService @Value — Linux/Docker에서 필수 (없으면 빈 생성 실패 → 502)
       FILE_PROFILE_UPLOAD_DIR: ${FILE_PROFILE_UPLOAD_DIR:-/data/profile_uploads}
-      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS}
+      # 비어 있으면 스프링 기본값이 아닌 빈 문자열로 들어가 CORS가 막히는 경우가 있음 → Compose에서 기본 허용
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://lawpartner.kro.kr,http://www.lawpartner.kro.kr}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-mailpit}
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-1025}
