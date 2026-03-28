@@ -332,6 +332,26 @@ public class AdminService {
         return summary;
     }
 
+    /** 네이티브 쿼리 결과의 날짜가 java.sql.Date/Timestamp 등으로 오면 toString이 yyyy-MM-dd와 달라 병합이 실패함 → 앞 10자만 사용 */
+    private static String normalizeChartDateKey(Object dateObj) {
+        if (dateObj == null) return "";
+        String s = String.valueOf(dateObj).trim();
+        if (s.length() >= 10 && s.charAt(4) == '-' && s.charAt(7) == '-') {
+            return s.substring(0, 10);
+        }
+        return s;
+    }
+
+    private static long toLongCount(Object countObj) {
+        if (countObj == null) return 0L;
+        if (countObj instanceof Number n) return n.longValue();
+        try {
+            return Long.parseLong(String.valueOf(countObj));
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
+
     public List<Map<String, Object>> getDailyVisitStats(int days) {
         if (days < 2) days = 2;
 
@@ -352,15 +372,19 @@ public class AdminService {
         for (Map<String, Object> stat : logStats) {
             Object dateObj = stat.getOrDefault("date", stat.get("DATE"));
             Object countObj = stat.getOrDefault("count", stat.get("COUNT"));
-            String date = String.valueOf(dateObj);
-            if (mergedMap.containsKey(date)) mergedMap.get(date).put("visitors", countObj);
+            String date = normalizeChartDateKey(dateObj);
+            if (mergedMap.containsKey(date)) {
+                mergedMap.get(date).put("visitors", toLongCount(countObj));
+            }
         }
 
         for (Map<String, Object> stat : userStats) {
             Object dateObj = stat.getOrDefault("date", stat.get("DATE"));
             Object countObj = stat.getOrDefault("count", stat.get("COUNT"));
-            String date = String.valueOf(dateObj);
-            if (mergedMap.containsKey(date)) mergedMap.get(date).put("users", countObj);
+            String date = normalizeChartDateKey(dateObj);
+            if (mergedMap.containsKey(date)) {
+                mergedMap.get(date).put("users", toLongCount(countObj));
+            }
         }
 
         return new ArrayList<>(mergedMap.values());
