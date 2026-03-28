@@ -1,5 +1,8 @@
 services:
   backend:
+    # RDS·JWT 등은 .env.prod에만 두고, 아래 environment의 빈 ${VAR}가 env를 덮어쓰지 않도록 DB/비밀키는 여기서 지정하지 않음
+    env_file:
+      - .env.prod
     build:
       context: ./Backend-main
       dockerfile: Dockerfile
@@ -8,20 +11,15 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
-      JWT_SECRET: ${JWT_SECRET}
-      ENCRYPTION_AES256_KEY: ${ENCRYPTION_AES256_KEY}
-      PORTONE_SECRET_KEY: ${PORTONE_SECRET_KEY}
       CHAT_FILE_UPLOAD_DIR: /data/chat_uploads
-      CHAT_FILE_SERVER_URL: ${CHAT_FILE_SERVER_URL:-https://api.fourjolawpartner.com:443}
+      # 공개 API 베이스 — ${} 미사용(다른 도메인이면 .env.prod에 CHAT_FILE_SERVER_URL 추가 후 아래 줄 제거·조정)
+      CHAT_FILE_SERVER_URL: "http://api.lawpartner.kro.kr"
       FILE_UPLOAD_DIR: /data/lawyer-docs
       # GeneralMyPageService @Value — Linux/Docker에서 필수 (없으면 빈 생성 실패 → 502)
       FILE_PROFILE_UPLOAD_DIR: ${FILE_PROFILE_UPLOAD_DIR:-/data/profile_uploads}
-      # 비어 있으면 스프링 기본값이 아닌 빈 문자열로 들어가 CORS가 막히는 경우가 있음 → Compose에서 기본 허용
-      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://lawpartner.kro.kr,http://www.lawpartner.kro.kr}
+      # 리터럴( ${} 없음 ) — 셸 미설정 시에도 프론트 Origin 허용
+      APP_CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://lawpartner.kro.kr,http://www.lawpartner.kro.kr"
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-mailpit}
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-1025}
@@ -37,6 +35,8 @@ services:
       - lawpartner_data:/data
 
   backend-ai:
+    env_file:
+      - .env.prod
     build:
       context: ./backend-ai
       dockerfile: Dockerfile
@@ -45,7 +45,6 @@ services:
     ports:
       - "8000:8000"
     environment:
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
       RAG_DISABLE: ${RAG_DISABLE:-false}
     volumes:
       - ./backend-ai/faiss_db:/app/faiss_db
