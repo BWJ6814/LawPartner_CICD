@@ -356,8 +356,8 @@ public class AdminService {
         if (days < 2) days = 2;
 
         LocalDateTime startDate = LocalDateTime.now().minusDays(days - 1);
-        List<Map<String, Object>> userStats = userRepository.findDailySignupStats(startDate);
-        List<Map<String, Object>> logStats = accessLogRepository.findDailyVisitorStats(startDate);
+        List<Object[]> userStats = userRepository.findDailySignupStats(startDate);
+        List<Object[]> logStats = accessLogRepository.findDailyVisitorStats(startDate);
 
         Map<String, Map<String, Object>> mergedMap = new TreeMap<>();
         for (int i = days - 1; i >= 0; i--) {
@@ -369,21 +369,19 @@ public class AdminService {
             mergedMap.put(date, data);
         }
 
-        for (Map<String, Object> stat : logStats) {
-            Object dateObj = stat.getOrDefault("date", stat.get("DATE"));
-            Object countObj = stat.getOrDefault("count", stat.get("COUNT"));
-            String date = normalizeChartDateKey(dateObj);
+        for (Object[] row : logStats) {
+            if (row == null || row.length < 2) continue;
+            String date = normalizeChartDateKey(row[0]);
             if (mergedMap.containsKey(date)) {
-                mergedMap.get(date).put("visitors", toLongCount(countObj));
+                mergedMap.get(date).put("visitors", toLongCount(row[1]));
             }
         }
 
-        for (Map<String, Object> stat : userStats) {
-            Object dateObj = stat.getOrDefault("date", stat.get("DATE"));
-            Object countObj = stat.getOrDefault("count", stat.get("COUNT"));
-            String date = normalizeChartDateKey(dateObj);
+        for (Object[] row : userStats) {
+            if (row == null || row.length < 2) continue;
+            String date = normalizeChartDateKey(row[0]);
             if (mergedMap.containsKey(date)) {
-                mergedMap.get(date).put("users", toLongCount(countObj));
+                mergedMap.get(date).put("users", toLongCount(row[1]));
             }
         }
 

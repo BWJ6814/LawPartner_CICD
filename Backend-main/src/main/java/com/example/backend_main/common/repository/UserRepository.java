@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /*
@@ -66,12 +65,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 11. 특정 상태 회원 수 (변호사 승인 대기: S02)
     long countByStatusCode(String statusCode);
 
-    // 12. 일별 가입자 통계 (차트용) — MySQL: DATE_FORMAT (운영 RDS 기준)
-    @Query(value = "SELECT DATE_FORMAT(JOIN_DT, '%Y-%m-%d') AS `date`, COUNT(*) AS `count` " +
+    // 12. 일별 가입자 통계 (차트용) — MySQL: Hibernate 6는 네이티브 Map 반환이 불안정 → Object[] 두 컬럼
+    @Query(value = "SELECT DATE_FORMAT(JOIN_DT, '%Y-%m-%d'), COUNT(*) " +
             "FROM TB_USER " +
             "WHERE JOIN_DT >= :sevenDaysAgo " +
             "GROUP BY DATE_FORMAT(JOIN_DT, '%Y-%m-%d')", nativeQuery = true)
-    List<Map<String, Object>> findDailySignupStats(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo);
+    List<Object[]> findDailySignupStats(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo);
 }
 /*
 레퍼지토리(Repository)란 무엇인가?

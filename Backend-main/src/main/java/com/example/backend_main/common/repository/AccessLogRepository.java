@@ -13,8 +13,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-
 
 /*
 [AccessLogRepository]
@@ -29,12 +27,12 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long>, Jpa
     // 상태 코드 필터링 조회
     Page<AccessLog> findByStatusCodeGreaterThanEqual(Integer statusCode, Pageable pageable);
 
-    // [신규] 지정일별 방문자 수 — MySQL: DATE_FORMAT (운영 RDS 기준)
-    @Query(value = "SELECT DATE_FORMAT(REG_DT, '%Y-%m-%d') AS `date`, COUNT(DISTINCT REQ_IP) AS `count` " +
+    // [신규] 지정일별 방문자 수 — MySQL: Object[] 두 컬럼 (네이티브 Map 반환 제거)
+    @Query(value = "SELECT DATE_FORMAT(REG_DT, '%Y-%m-%d'), COUNT(DISTINCT REQ_IP) " +
             "FROM TB_ACCESS_LOG " +
             "WHERE REG_DT >= :sevenDaysAgo " +
             "GROUP BY DATE_FORMAT(REG_DT, '%Y-%m-%d')", nativeQuery = true)
-    List<Map<String, Object>> findDailyVisitorStats(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo);
+    List<Object[]> findDailyVisitorStats(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo);
 
     // ==================================================================================
     // 📊 대시보드 통계용 쿼리 (성능 최적화)
