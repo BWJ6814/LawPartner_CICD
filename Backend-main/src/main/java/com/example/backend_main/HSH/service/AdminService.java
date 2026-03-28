@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,6 +42,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class AdminService {
+
+    /** Docker 기본 TZ가 UTC일 때 LocalDate.now()가 한국 날짜와 하루 어긋나 차트만 0으로 나오는 문제 방지 */
+    private static final ZoneId DASHBOARD_ZONE = ZoneId.of("Asia/Seoul");
 
     private final UserRepository userRepository;
     private final AccessLogRepository accessLogRepository;
@@ -299,11 +303,12 @@ public class AdminService {
     public Map<String, Object> getAdminSummary() {
         Map<String, Object> summary = new HashMap<>();
 
-        // 오늘 및 어제 날짜 범위 설정 (00:00:00 ~ 23:59:59.999...)
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        LocalDateTime todayEnd = todayStart.plusDays(1).minusNanos(1);
-        LocalDateTime yesterdayStart = todayStart.minusDays(1);
-        LocalDateTime yesterdayEnd = todayStart.minusNanos(1);
+        // 오늘·어제 = 서비스 기준(한국) 달력 — JVM TZ(UTC)와 DB 날짜(CAST AS DATE) 불일치 방지
+        LocalDate today = LocalDate.now(DASHBOARD_ZONE);
+        LocalDateTime todayStart = today.atStartOfDay();
+        LocalDateTime todayEnd = today.plusDays(1).atStartOfDay().minusNanos(1);
+        LocalDateTime yesterdayStart = today.minusDays(1).atStartOfDay();
+        LocalDateTime yesterdayEnd = today.atStartOfDay().minusNanos(1);
 
         // 1. 회원 수 통계 (DB 집계 쿼리 사용)
         long totalUsersToday = userRepository.count();
@@ -363,12 +368,13 @@ public class AdminService {
     public List<Map<String, Object>> getDailyVisitStats(int days) {
         if (days < 2) days = 2;
 
-        LocalDateTime startDate = LocalDateTime.now().minusDays(days - 1);
-        Timestamp startTs = Timestamp.valueOf(startDate);
+        LocalDate today = LocalDate.now(DASHBOARD_ZONE);
+        LocalDate startDay = today.minusDays(days - 1);
+        Timestamp startTs = Timestamp.from(startDay.atStartOfDay(DASHBOARD_ZONE).toInstant());
 
         Map<String, Map<String, Object>> mergedMap = new TreeMap<>();
         for (int i = days - 1; i >= 0; i--) {
-            String date = LocalDateTime.now().minusDays(i).toLocalDate().toString();
+            String date = today.minusDays(i).toString();
             Map<String, Object> data = new HashMap<>();
             data.put("date", date);
             data.put("visitors", 0L);
