@@ -27,6 +27,9 @@ services:
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_SMTP_AUTH:-false}
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:-false}
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      # Docker 네트워크 내 AI 서비스 (127.0.0.1은 백엔드 컨테이너 자기 자신을 가리켜 연결 실패함)
+      PYTHON_CHAT_URL: ${PYTHON_CHAT_URL:-http://backend-ai:8000/chat}
+      PYTHON_SUMMARIZE_URL: ${PYTHON_SUMMARIZE_URL:-http://backend-ai:8000/summarize-consult}
     volumes:
       - lawpartner_data:/data
 

@@ -66,11 +66,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 11. 특정 상태 회원 수 (변호사 승인 대기: S02)
     long countByStatusCode(String statusCode);
 
-    // 12. 일별 가입자 통계 (차트용)
-    @Query(value = "SELECT TO_CHAR(JOIN_DT, 'YYYY-MM-DD') as \"date\", COUNT(*) as \"count\" " +
+    // 12. 일별 가입자 통계 (차트용) — MySQL: DATE_FORMAT (운영 RDS 기준)
+    @Query(value = "SELECT DATE_FORMAT(JOIN_DT, '%Y-%m-%d') AS `date`, COUNT(*) AS `count` " +
             "FROM TB_USER " +
             "WHERE JOIN_DT >= :sevenDaysAgo " +
-            "GROUP BY TO_CHAR(JOIN_DT, 'YYYY-MM-DD')", nativeQuery = true)
+            "GROUP BY DATE_FORMAT(JOIN_DT, '%Y-%m-%d')", nativeQuery = true)
     List<Map<String, Object>> findDailySignupStats(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo);
 }
 /*

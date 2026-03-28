@@ -29,11 +29,11 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long>, Jpa
     // 상태 코드 필터링 조회
     Page<AccessLog> findByStatusCodeGreaterThanEqual(Integer statusCode, Pageable pageable);
 
-    // [신규] 지정일별 방문자 수 (API 호출 수)
-    @Query(value = "SELECT TO_CHAR(REG_DT, 'YYYY-MM-DD') as \"date\", COUNT(DISTINCT REQ_IP) as \"count\" " +
+    // [신규] 지정일별 방문자 수 — MySQL: DATE_FORMAT (운영 RDS 기준)
+    @Query(value = "SELECT DATE_FORMAT(REG_DT, '%Y-%m-%d') AS `date`, COUNT(DISTINCT REQ_IP) AS `count` " +
             "FROM TB_ACCESS_LOG " +
             "WHERE REG_DT >= :sevenDaysAgo " +
-            "GROUP BY TO_CHAR(REG_DT, 'YYYY-MM-DD')", nativeQuery = true)
+            "GROUP BY DATE_FORMAT(REG_DT, '%Y-%m-%d')", nativeQuery = true)
     List<Map<String, Object>> findDailyVisitorStats(@Param("sevenDaysAgo") LocalDateTime sevenDaysAgo);
 
     // ==================================================================================
