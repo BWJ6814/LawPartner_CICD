@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -355,26 +356,15 @@ public class AdminService {
         }
     }
 
+    /**
+     * 일별 방문/가입 추이. DATE_FORMAT+GROUP BY 환경·드라이버에 따라 실패할 수 있어 CAST(DATE) + queryForList 사용.
+     */
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getDailyVisitStats(int days) {
         if (days < 2) days = 2;
 
         LocalDateTime startDate = LocalDateTime.now().minusDays(days - 1);
         Timestamp startTs = Timestamp.valueOf(startDate);
-
-        // JPA 네이티브 List<Object[]>/Map 반환은 Hibernate·버전에 따라 500 발생 → JdbcTemplate으로 고정
-        String sqlLog = "SELECT DATE_FORMAT(REG_DT, '%Y-%m-%d'), COUNT(DISTINCT REQ_IP) "
-                + "FROM TB_ACCESS_LOG WHERE REG_DT >= ? "
-                + "GROUP BY DATE_FORMAT(REG_DT, '%Y-%m-%d')";
-        String sqlUser = "SELECT DATE_FORMAT(JOIN_DT, '%Y-%m-%d'), COUNT(*) "
-                + "FROM TB_USER WHERE JOIN_DT >= ? "
-                + "GROUP BY DATE_FORMAT(JOIN_DT, '%Y-%m-%d')";
-
-        List<Object[]> logStats = jdbcTemplate.query(sqlLog, (rs, rowNum) -> new Object[]{
-                rs.getObject(1), rs.getObject(2)
-        }, startTs);
-        List<Object[]> userStats = jdbcTemplate.query(sqlUser, (rs, rowNum) -> new Object[]{
-                rs.getObject(1), rs.getObject(2)
-        }, startTs);
 
         Map<String, Map<String, Object>> mergedMap = new TreeMap<>();
         for (int i = days - 1; i >= 0; i--) {
@@ -386,23 +376,54 @@ public class AdminService {
             mergedMap.put(date, data);
         }
 
-        for (Object[] row : logStats) {
-            if (row == null || row.length < 2) continue;
-            String date = normalizeChartDateKey(row[0]);
-            if (mergedMap.containsKey(date)) {
-                mergedMap.get(date).put("visitors", toLongCount(row[1]));
-            }
+        // CAST(REG_DT AS DATE) — DATE_FORMAT보다 ONLY_FULL_GROUP_BY·드라이버 호환에 유리한 편
+        String sqlLog = "SELECT CAST(REG_DT AS DATE) AS day_key, COUNT(DISTINCT REQ_IP) AS cnt "
+                + "FROM TB_ACCESS_LOG WHERE REG_DT >= ? "
+                + "GROUP BY CAST(REG_DT AS DATE)";
+        String sqlUser = "SELECT CAST(JOIN_DT AS DATE) AS day_key, COUNT(*) AS cnt "
+                + "FROM TB_USER WHERE JOIN_DT >= ? "
+                + "GROUP BY CAST(JOIN_DT AS DATE)";
+
+        List<Map<String, Object>> logRows;
+        List<Map<String, Object>> userRows;
+        try {
+            logRows = jdbcTemplate.queryForList(sqlLog, startTs);
+            userRows = jdbcTemplate.queryForList(sqlUser, startTs);
+        } catch (DataAccessException e) {
+            log.error("일별 통계 SQL 실패 (TB_ACCESS_LOG / TB_USER): {}", e.getMostSpecificCause().getMessage(), e);
+            return new ArrayList<>(mergedMap.values());
         }
 
-        for (Object[] row : userStats) {
-            if (row == null || row.length < 2) continue;
-            String date = normalizeChartDateKey(row[0]);
+        for (Map<String, Object> row : logRows) {
+            Object dayObj = mapGetIgnoreCase(row, "day_key");
+            Object cntObj = mapGetIgnoreCase(row, "cnt");
+            if (dayObj == null) continue;
+            String date = normalizeChartDateKey(dayObj);
             if (mergedMap.containsKey(date)) {
-                mergedMap.get(date).put("users", toLongCount(row[1]));
+                mergedMap.get(date).put("visitors", toLongCount(cntObj));
+            }
+        }
+        for (Map<String, Object> row : userRows) {
+            Object dayObj = mapGetIgnoreCase(row, "day_key");
+            Object cntObj = mapGetIgnoreCase(row, "cnt");
+            if (dayObj == null) continue;
+            String date = normalizeChartDateKey(dayObj);
+            if (mergedMap.containsKey(date)) {
+                mergedMap.get(date).put("users", toLongCount(cntObj));
             }
         }
 
         return new ArrayList<>(mergedMap.values());
+    }
+
+    private static Object mapGetIgnoreCase(Map<String, Object> row, String key) {
+        if (row == null || key == null) return null;
+        for (Map.Entry<String, Object> e : row.entrySet()) {
+            if (e.getKey() != null && e.getKey().equalsIgnoreCase(key)) {
+                return e.getValue();
+            }
+        }
+        return null;
     }
 
     private String calculateGrowth(long current, long previous) {
