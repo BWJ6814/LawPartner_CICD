@@ -35,9 +35,9 @@ def health():
 
 def _rag_top_k() -> int:
     try:
-        return max(1, int(os.getenv("RAG_TOP_K", "5")))
+        return max(1, int(os.getenv("RAG_TOP_K", "2")))
     except ValueError:
-        return 5
+        return 2
 
 
 # RAG_DISABLE=1 이면 LLM만 사용

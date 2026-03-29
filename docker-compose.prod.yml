@@ -47,6 +47,8 @@ services:
       - "8000:8000"
     environment:
       RAG_DISABLE: ${RAG_DISABLE:-false}
+      # FAISS 유사도 상위 N건 (판례 노출 개수)
+      RAG_TOP_K: ${RAG_TOP_K:-2}
     volumes:
       - ./backend-ai/faiss_db:/app/faiss_db
 
