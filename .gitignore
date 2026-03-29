@@ -16,6 +16,7 @@
 
 # --- [AI Server: Python] 가상환경 및 캐시 ---
 **/venv/
+**/.venv/
 **/__pycache__/
 **/.pytest_cache
 **/.ipynb_checkpoints

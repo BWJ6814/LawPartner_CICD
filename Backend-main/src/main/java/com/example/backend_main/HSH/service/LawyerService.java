@@ -9,13 +9,13 @@ import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika; // ★ Tika 추가
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -30,8 +30,9 @@ public class LawyerService {
 
     private final LawyerInfoRepository lawyerInfoRepository;
 
-    // ★ [경로 통일] FileController와 똑같은 경로로 수정했습니다.
-    private final String uploadPath = "C:/LP_upload/licenses/";
+    /** FileService·docker-compose의 FILE_UPLOAD_DIR(file.upload-dir)과 동일 — Linux/EC2에서는 /data/lawyer-docs 등으로 주입 */
+    @Value("${file.upload-dir:C:/LP_upload/licenses/}")
+    private String uploadPath;
 
     // ★ [보안] 파일 위변조 감지 도구 소환
     private final Tika tika = new Tika();
@@ -60,7 +61,8 @@ public class LawyerService {
                 // 저장 메서드 호출 (여기서 Tika 검사 수행)
                 savedFileName = saveLicenseFile(dto.getLicenseFile());
             } catch (IOException e) {
-                log.error("❌ 파일 저장 중 오류 발생: {}", e.getMessage());
+                log.error("❌ [변호사 자격증 저장 실패] uploadPath={}, userId={}, msg={}",
+                        uploadPath, user.getUserId(), e.getMessage(), e);
                 throw new RuntimeException("자격증 파일 저장에 실패했습니다.");
             }
         }
@@ -101,18 +103,20 @@ public class LawyerService {
             throw new IllegalArgumentException("이미지나 PDF 파일만 업로드 가능합니다.");
         }
 
-        // [2] 폴더 생성
-        File dir = new File(uploadPath);
-        if (!dir.exists()) dir.mkdirs();
+        // [2] 디렉터리 생성 (Windows·Linux 공통)
+        Path baseDir = Paths.get(uploadPath).toAbsolutePath().normalize();
+        Files.createDirectories(baseDir);
 
         // [3] 파일명 중복 방지 (UUID)
         String originalName = file.getOriginalFilename();
         String uuid = UUID.randomUUID().toString();
-        // 안심하고 저장할 파일명
         String savedName = uuid + "_" + originalName;
 
         // [4] 저장 실행
-        File dest = new File(uploadPath + savedName);
+        Path dest = baseDir.resolve(savedName).normalize();
+        if (!dest.startsWith(baseDir)) {
+            throw new IllegalArgumentException("부적절한 파일 경로입니다.");
+        }
         file.transferTo(dest);
 
         return savedName;
