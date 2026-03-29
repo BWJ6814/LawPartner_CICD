@@ -1,111 +1,101 @@
-===========================================================
-프로젝트명: AI 기반 법률 상담 서비스 (AI-Law)
-===========================================================
+## 포트폴리오·상세 문서
 
-1. 프로젝트 개요 ⚖️
------------------------------------------------------------
-- 사용자의 질문을 AI가 분석하여 관련 법률 정보와 추천 변호사를 매칭해주는 서비스입니다. [cite: 2026-02-03]
-- 복잡한 법률 상담의 진입장벽을 낮추고 효율적인 매칭 시스템을 제공하는 것을 목표로 합니다. [cite: 2026-02-03]
+**기획·배경·분석·설계·요구사항·화면 설계·ERD·시연 영상·테스트·아키텍처 등 상세 내용은 아래 GitHub Pages 사이트에 정리되어 있습니다.**
 
-2. 기술 스택 (Tech Stack) 💻
------------------------------------------------------------
-- Frontend: React.js (사용자 UI 및 인터페이스 담당) 
-- Backend: Spring Boot (비즈니스 로직 및 데이터 관리) 
-- AI Server: FastAPI / Python (AI 모델 추론 및 자연어 처리) 
-- Database: Oracle (사용자, 상담, 변호사 데이터 저장) 
+👉 **<https://bwj6814.github.io/lawpartner_portfolio/>**
 
-3. 프로젝트 구조 (Directory Structure) 📂
------------------------------------------------------------
-Ai-Law/
-├── Backend-main/    # 스프링 부트 백엔드 소스 
-├── backend-ai/      # 파이썬 FastAPI AI 서버 
-├── frontend/        # 리액트 프론트엔드 소스 
-├── setup.bat        # 통합 환경 설치 스크립트 (Windows용)
-└── .gitignore       # Git 제외 설정 파일 
+이 저장소의 README는 **클론 후 로컬 실행·배포** 위주 요약입니다. 발표·포트폴리오용 설명은 위 링크를 먼저 보시면 됩니다.
 
-4. 운영 배포 전 체크 🧾
------------------------------------------------------------
-- 서버에 올리기 전에 할 일: **[DEPLOY_CHECKLIST.md](./DEPLOY_CHECKLIST.md)** 를 순서대로 체크하세요.  
-  (도커 이미지 + 환경변수 + DB·DNS·SSL까지 한 번에 정리해 두었습니다.)
+---
 
-5. 시작하기 (Quick Start) 🚀
------------------------------------------------------------
-팀원들은 코드를 Clone 받은 후 아래 순서대로 진행하세요. 
+## 서비스·기능 요약
 
-git 저장 안전하게 하기 아침에 오시면 무조건 받아주세요
+- **서비스 목표**: 사용자 사건 맥락에 맞는 법률 상담과 **전문 변호사 매칭·구인**을 한 흐름으로 제공하는 웹 서비스.
+- **AI 법률 상담 (RAG)**: 법령·판례 등 신뢰 가능한 데이터를 검색·증강(Retrieval-Augmented Generation)해 LLM 답변의 근거를 보강하고, 참고 판례·출처를 함께 제시.
+- **AI → 상담 게시판 연동**: AI 상담 내용을 바탕으로 **상담 요청글이 자동 구성·등록**되어 게시판으로 이어지는 시나리오.
+- **법률 상담 게시판**: 게시글 CRUD, 변호사 답변(댓글 형태), 매칭·**1:1 실시간 대화 요청**, 별점·후기 등.
+- **백엔드·실시간**: Spring Boot 기반 API·**JWT** 인증, WebSocket(STOMP) 기반 **1:1 채팅·알림** 등 (세부는 포트폴리오 및 코드 참고).
+- **AI 서버**: FastAPI + LangChain 등으로 LLM·RAG 파이프라인 처리; 운영 시 Spring이 AI 서버와 HTTP 연동.
+- **데이터**: 정형 데이터는 DB(개발 스키마는 Oracle 기준 문서·운영은 **RDS MySQL** 등 환경에 맞게), 벡터 유사도 검색은 **FAISS** 등 병행.
+- **배포·협업**: Docker, GitHub Actions, AWS(EC2·RDS), GitHub·Notion·Discord 등.
 
-git stash (내 작업 잠시 보관)
+### 팀 역할 (발췌)
 
-git pull --rebase (서버 내용 깔끔하게 가져오기)
+| 팀원 | 담당 |
+|------|------|
+| 김민수 | 메인·일반 마이페이지, 1:1 채팅, 헤더 알림 |
+| 홍승현 | 공통 API·보안·AOP, 로그인/회원가입, 관리자 |
+| 변운조(PM) | 상담 게시판(CRUD), RAG 기반 AI 채팅 상담 |
+| 김용 | KY·결제·변호사 마이페이지 |
+| 임동주 | 변호사 찾기·상세, 고객센터 |
 
-git stash pop (내 작업 다시 합치기)
-이렇게 항상 받아주시고
-올리실때는 
-git status (확인)
+---
 
-git add . (담기)
+## 1. 프로젝트 개요
 
-git commit -m "메시지" (포장)
+- 사용자 질문을 AI가 분석하고 관련 법률 정보·변호사 매칭으로 이어지도록 설계했습니다.
+- 법률 상담 진입 장벽을 낮추고, AI 1차 상담 후 전문가 연결까지 이어지는 흐름을 목표로 합니다.
 
-git pull --rebase origin main (최신 상태 동기화 - 핵심!)
+## 2. 기술 스택
 
-git push origin main (발송)
+- **Frontend**: React, Axios, Tailwind 등  
+- **Backend**: Spring Boot, JWT, JPA  
+- **AI Server**: FastAPI, LangChain  
+- **DB**: Oracle(문서/로컬)·운영 RDS MySQL, FAISS(벡터 검색)  
+- **CI/CD**: GitHub Actions, Docker, AWS EC2 / RDS  
 
+## 3. 프로젝트 구조
 
+```
+LawPartner_CICD/
+├── Backend-main/    # Spring Boot
+├── backend-ai/      # FastAPI AI 서버
+├── frontend/        # React
+├── setup.bat        # Windows 통합 설치 스크립트
+└── .gitignore
+```
 
-Node.js https://nodejs.org/ko/download 다운로드를 받으시고 마지막 체크는 하지 마시고 완료하세요
+## 4. 운영 배포 전 체크
 
-1) 라이브러리 통합 설치:
-   - 최상위 폴더의 'setup.bat' 파일을 실행합니다. 
-   - Maven, Pip, NPM 라이브러리가 자동으로 설치됩니다.
+- **[DEPLOY_CHECKLIST.md](./DEPLOY_CHECKLIST.md)** 를 순서대로 확인하세요. (Docker, 환경변수, DB, DNS, SSL 등)
 
-2) 서버 실행 포트 확인:
-   - React (Frontend): http://localhost:3000 
-   - Spring Boot (Backend): http://localhost:8080 
-   - FastAPI (AI Server): http://localhost:8000
+## 5. 시작하기 (Quick Start)
 
-3) 파이썬 라이브러리 설치 전
-   - D:\AI-Law\backend-ai
-   - python -m venv venv
-   - .\venv\Scripts\activate
-   - pip install fastapi uvicorn pydantic
-  
-4) 파이썬 서버 실행
-   - run.bat 실행
-   
-5) 리액트 실행 
-   - npm start
+팀원은 Clone 후 아래 순서로 동기화·실행합니다.
 
-6) 리액트 라우터 설치
-   - 터미널에 npm install react-router-dom
-  
-7) 테일윈드 설치
-   - npm install -D tailwindcss@3.4.17 postcss autoprefixer
-   - postcss.config.js
-      // postcss.config.js
-   module.exports = {
-     plugins: {
-       tailwindcss: {}, // 👈 '@tailwindcss/postcss' 대신 이걸로 복구!
-       autoprefixer: {},
-        },
-      }
-   
-   - tailwind.config.js
-     /** @type {import('tailwindcss').Config} */
-      module.exports = {
-        prefix: 'tw-',
-        content: [
-          "./src/**/*.{js,jsx,ts,tsx}",
-        ],
-        theme: {
-          extend: {},
-        },
-        plugins: [],
-      }
+```text
+git stash
+git pull --rebase
+git stash pop
+```
 
-     
-6. 담당 역할 👥
------------------------------------------------------------
-- 김민수: AI 서버 구축, 메인 페이지 개발, 1:1 채팅 기능 구현, 일반 마이페이지 구현, 1:1 채팅시 헤더 알림 기능 구현
-- 홍승현: 공통 API 객체, 보안, AOP 설정. 로그인/회원가입(백/프) 개발, 관리자 페이지 구축
-- (추가 팀원 정보 기입 필요)
+올릴 때:
+
+```text
+git status
+git add .
+git commit -m "메시지"
+git pull --rebase origin main
+git push origin main
+```
+
+- Node.js: <https://nodejs.org/ko/download> (설치 마법사 마지막 옵션은 생략 가능)
+
+1. **라이브러리 통합 설치**: 최상위 `setup.bat` 실행 (Maven, pip, npm)
+
+2. **서버 포트**
+   - React: `http://localhost:3000`
+   - Spring Boot: `http://localhost:8080`
+   - FastAPI: `http://localhost:8000`
+
+3. **Python (backend-ai)**  
+   - `cd backend-ai` → `python -m venv .venv` → 가상환경 활성화 → `pip install -r requirements.txt` (프로젝트 기준)  
+   - 또는 기존 `run.bat` 사용
+
+4. **React**: `cd frontend` → `npm start`
+
+5. **추가 패키지** (프로젝트에 따라 이미 포함됨): `react-router-dom`, Tailwind 등은 `frontend/package.json` 기준
+
+---
+
+*포트폴리오 사이트: [LawPartner 포트폴리오 (GitHub Pages)](https://bwj6814.github.io/lawpartner_portfolio/)*
