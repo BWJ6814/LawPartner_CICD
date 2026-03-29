@@ -28,7 +28,7 @@ public class IpBlacklistFilter extends OncePerRequestFilter {
     // 🌟 S급 최적화: DB 부하를 막기 위한 스레드 세이프 메모리 캐시
     private final Set<String> blacklistCache = ConcurrentHashMap.newKeySet();
     private long lastCacheUpdateTime = 0;
-    private static final long CACHE_TTL_MS = 60000; // 캐시 갱신 주기 (1분)
+    private static final long CACHE_TTL_MS = 1000; // 캐시 갱신 주기 (1분)
 
     @Override
     protected void doFilterInternal(
