@@ -1,0 +1,5 @@
+# 로컬에서 application.properties 로 복사해 사용 (application.properties 는 gitignore 대상일 수 있음)
+# 또는 IDE/쉘에서 환경변수 APP_SECURITY_GLOBAL_RATE_LIMIT_PER_MINUTE 만 설정
+
+# IP당 분당 전역 요청 상한 (GlobalRateLimitFilter). 0이면 비활성화.
+app.security.global-rate-limit-per-minute=${APP_SECURITY_GLOBAL_RATE_LIMIT_PER_MINUTE:300}
