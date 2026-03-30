@@ -1,5 +1,6 @@
 package com.example.backend_main.common.security;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -9,11 +10,17 @@ import org.springframework.context.annotation.Configuration;
  * 전역 레이트 리밋 필터는 Spring Security 체인에만 넣고, 서블릿 컨테이너에 이중 등록되지 않게 합니다.
  */
 @Configuration
+@Slf4j
 public class GlobalRateLimitFilterConfig {
 
     @Bean
     public GlobalRateLimitFilter globalRateLimitFilter(
             @Value("${app.security.global-rate-limit-per-minute:300}") int maxPerMinute) {
+        if (maxPerMinute <= 0) {
+            log.warn("[GlobalRateLimit] 비활성화됨 (app.security.global-rate-limit-per-minute={})", maxPerMinute);
+        } else {
+            log.info("[GlobalRateLimit] 활성화 — IP당 분당 최대 {}회 (초과 시 403/SEC-429)", maxPerMinute);
+        }
         return new GlobalRateLimitFilter(maxPerMinute);
     }
 

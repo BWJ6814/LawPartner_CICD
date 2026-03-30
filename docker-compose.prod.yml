@@ -29,7 +29,8 @@ services:
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_SMTP_AUTH:-false}
       SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:-false}
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
-      # 전역 API 레이트 리밋 (IP당 분당). .env.prod 에 APP_SECURITY_GLOBAL_RATE_LIMIT_PER_MINUTE= 로 조정
+      # 전역 API 레이트 리밋 (IP당 분당). .env.prod 에서 조정. 기본 300.
+      # 검증만 할 때: env.rate-limit-verify 내용을 .env.prod에 추가하거나 compose.override.rate-limit-verify.yml 사용
       APP_SECURITY_GLOBAL_RATE_LIMIT_PER_MINUTE: ${APP_SECURITY_GLOBAL_RATE_LIMIT_PER_MINUTE:-300}
       # Docker 네트워크 내 AI 서비스 (127.0.0.1은 백엔드 컨테이너 자기 자신을 가리켜 연결 실패함)
       PYTHON_CHAT_URL: ${PYTHON_CHAT_URL:-http://backend-ai:8000/chat}
