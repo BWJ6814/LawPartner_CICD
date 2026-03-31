@@ -5,6 +5,8 @@ import com.example.backend_main.common.util.IpUtil;
 import com.example.backend_main.common.vo.ResultVO;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -76,6 +78,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ResultVO<Void>> handleValidationException(MethodArgumentNotValidException e) {
         String errorMessage = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
         log.warn("⚠️ [Validation Error] 양식 검증 실패: {}", errorMessage);
+        return ResponseEntity
+                .status(ErrorCode.VALIDATION_ERROR.getHttpStatus())
+                .body(ResultVO.fail(ErrorCode.VALIDATION_ERROR, errorMessage));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ResultVO<Void>> handleConstraintViolation(ConstraintViolationException e) {
+        String errorMessage = e.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .findFirst()
+                .orElse(ErrorCode.VALIDATION_ERROR.getMessage());
+        log.warn("⚠️ [Validation Error] 제약 조건 위반: {}", errorMessage);
         return ResponseEntity
                 .status(ErrorCode.VALIDATION_ERROR.getHttpStatus())
                 .body(ResultVO.fail(ErrorCode.VALIDATION_ERROR, errorMessage));

@@ -18,6 +18,8 @@ import com.example.backend_main.dto.HSH_DTO.UserRoleUpdateDto;
 import com.example.backend_main.dto.HSH_DTO.UserStatusUpdateDto;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -28,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -48,6 +51,7 @@ import java.util.Map;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class AdminController {
 
     private final AdminService adminService;
@@ -219,7 +223,9 @@ public class AdminController {
     @DeleteMapping("/banned-words/{wordNo}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @ActionLog(action = "DELETE_BANNED_WORD", target = "TB_BANNED_WORD")
-    public ResultVO<Void> deleteBannedWord(@PathVariable Long wordNo) {
+    public ResultVO<Void> deleteBannedWord(
+            @PathVariable Long wordNo,
+            @RequestParam @NotBlank(message = "삭제 사유는 필수입니다.") @Size(max = 200, message = "삭제 사유는 200자 이내여야 합니다.") String reason) {
         adminService.deleteBannedWord(wordNo);
         return ResultVO.ok("금지어가 삭제되었습니다.", null);
     }
@@ -287,7 +293,9 @@ public class AdminController {
     @DeleteMapping("/customer/inquiries/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @ActionLog(action = "DELETE_INQUIRY", target = "TB_CUSTOMER_INQUIRY")
-    public ResultVO<Void> deleteInquiry(@PathVariable Long id) {
+    public ResultVO<Void> deleteInquiry(
+            @PathVariable Long id,
+            @RequestParam @NotBlank(message = "삭제 사유는 필수입니다.") @Size(max = 200, message = "삭제 사유는 200자 이내여야 합니다.") String reason) {
         // ✅ 5. 삭제 권한 체크 후 처리
         inquiryService.deleteInquiry(id);
         return ResultVO.ok("문의가 삭제되었습니다.", null);

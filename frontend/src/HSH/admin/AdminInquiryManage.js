@@ -99,9 +99,18 @@ export default function AdminInquiryPro() {
     const handleDeleteInquiry = async () => {
         if (!detail?.id) return;
         if (!window.confirm('문의를 영구 삭제합니다. 계속하시겠습니까?')) return;
+        const reason = window.prompt('문의 삭제 사유를 입력해주세요:');
+        if (reason == null) return;
+        const trimmed = reason.trim();
+        if (!trimmed) {
+            toast.warn('삭제 사유를 입력해주세요.');
+            return;
+        }
         setIsDeleting(true);
         try {
-            const res = await api.delete(`/api/admin/customer/inquiries/${detail.id}`);
+            const res = await api.delete(`/api/admin/customer/inquiries/${detail.id}`, {
+                params: { reason: trimmed },
+            });
             if (res.data.success) {
                 toast.success('삭제 완료');
                 setSelectedId(null); setDetail(null);
