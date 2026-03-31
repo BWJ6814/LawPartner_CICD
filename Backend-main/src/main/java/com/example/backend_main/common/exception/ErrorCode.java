@@ -76,7 +76,10 @@ public enum ErrorCode {
     RATE_LIMIT_EXCEEDED(HttpStatus.FORBIDDEN, "SEC-429", "요청이 너무 자주 발생했습니다. 잠시 후 다시 시도해주세요."),
 
     // 6. 서버 에러
-    SYSTEM_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SYSTEM_ERROR", "서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.");
+    SYSTEM_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SYSTEM_ERROR", "서버 내부 오류가 발생했습니다. 관리자에게 문의하세요."),
+
+    // 7. 금지어
+    BANNED_WORD_DETECTED(HttpStatus.BAD_REQUEST, "BANNED_WORD", "금지어가 포함된 내용입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

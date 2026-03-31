@@ -8,6 +8,7 @@ import com.example.backend_main.common.repository.ChatMessageRepository;
 import com.example.backend_main.common.repository.ChatRoomRepository;
 import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.common.service.BannedWordService;
 import com.example.backend_main.dto.ChatMessageDTO;
 import com.example.backend_main.dto.ChatRoomRequestResultDTO;
 import com.example.backend_main.ky.entity.Review;
@@ -80,6 +81,7 @@ public class ChatService {
         private final org.apache.tika.Tika tika = new org.apache.tika.Tika();
         private final CalendarEventRepository calendarEventRepository;
         private final ReviewRepository reviewRepository;
+        private final BannedWordService bannedWordService;
 
         @Value("${chat.file.upload-dir}")
         private String uploadDir;
@@ -242,6 +244,8 @@ public class ChatService {
         // ------------------------------------------------------------------
         @Transactional
         public void saveMessage(ChatMessageDTO dto) {
+                bannedWordService.validate(dto.getMessage());
+
                 // ① 메시지 DB에 저장
                 ChatMessage msg = ChatMessage.builder()
                                 .roomId(dto.getRoomId())

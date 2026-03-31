@@ -1479,3 +1479,6 @@ MODIFY TOKEN_VALUE VARCHAR2(64) NOT NULL;
 SELECT * FROM TB_REFRESH_TOKEN;
 
 SELECT * FROM TB_USER;
+
+select * from tb_admin_audit;
+select * from tb_ip_blacklist;

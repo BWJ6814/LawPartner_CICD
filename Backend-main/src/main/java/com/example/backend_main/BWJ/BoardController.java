@@ -6,6 +6,7 @@ import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.BoardReply;
 import com.example.backend_main.dto.BoardFile;
 import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.common.service.BannedWordService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -39,6 +40,7 @@ public class BoardController {
     private final UserRepository userRepository;
     private final BoardFileRepository boardFileRepository;
     private final ChatService chatService;
+    private final BannedWordService bannedWordService;
 
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public String createBoard(
@@ -51,6 +53,9 @@ public class BoardController {
 
         try {
             String secretYn = (isSecret != null && isSecret) ? "Y" : "N";
+
+            bannedWordService.validate(title);
+            bannedWordService.validate(content);
 
             Board board = Board.builder()
                     .title(title)
@@ -177,6 +182,8 @@ public class BoardController {
         if (isConsultBoardHidden(board)) return "FAIL";
         if ("Y".equals(board.getMatchYn())) return "FAIL";
 
+        bannedWordService.validate((String) data.get("content"));
+
         Long lawyerNo = Long.parseLong(data.get("lawyerNo").toString());
         BoardReply reply = BoardReply.builder()
                 .boardNo(boardId)
@@ -219,6 +226,8 @@ public class BoardController {
     public String updateBoard(@PathVariable("id") Long id, @RequestBody Map<String, Object> data) {
         Board board = boardRepository.findById(id).orElseThrow();
         if (isConsultBoardHidden(board)) return "FAIL";
+        bannedWordService.validate((String) data.get("title"));
+        bannedWordService.validate((String) data.get("content"));
         board.setTitle((String) data.get("title"));
         board.setContent((String) data.get("content"));
         boardRepository.save(board);
@@ -264,6 +273,8 @@ public class BoardController {
                 .orElseThrow(() -> new RuntimeException("답변을 찾을 수 없습니다."));
         Board parentBoard = boardRepository.findById(reply.getBoardNo()).orElseThrow();
         if (isConsultBoardHidden(parentBoard)) return "FAIL";
+
+        bannedWordService.validate((String) data.get("content"));
 
         String content = (String) data.get("content");
         reply.setContent(content);

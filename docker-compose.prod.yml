@@ -22,12 +22,16 @@ services:
       # 리터럴( ${} 없음 ) — 셸 미설정 시에도 프론트 Origin 허용
       APP_CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://lawpartner.kro.kr,http://www.lawpartner.kro.kr"
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      # 메일: ${…} 치환은 호스트의 .env + 셸 환경만 본다(.env.prod는 자동 미포함).
+      # Gmail 등: `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d` 로 실행하거나,
+      # 프로젝트 루트 .env 에 SPRING_MAIL_* 를 두어 치환되게 할 것.
+      # Spring이 읽는 키 이름은 반드시 아래 두 개(…MAIL_SMTP…) — 오타로 …PROPERTIES_SMTP… 만 쓰면 무시됨.
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-mailpit}
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-1025}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_SMTP_AUTH:-false}
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:-false}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:-${SPRING_MAIL_SMTP_AUTH:-false}}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:-${SPRING_MAIL_SMTP_STARTTLS_ENABLE:-false}}
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
       # 전역 API 레이트 리밋 (IP당 분당). .env.prod 에서 조정. 기본 300.
       # 검증만 할 때: env.rate-limit-verify 내용을 .env.prod에 추가하거나 compose.override.rate-limit-verify.yml 사용
