@@ -230,7 +230,7 @@ public class AdminService {
     public Page<AccessLogResponseDTO> getAccessLogs(int page, int size, String type) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("regDt").descending());
         Page<AccessLog> logPage = "ERROR".equals(type)
-                ? accessLogRepository.findByStatusCodeGreaterThanEqual(400, pageable)
+                ? accessLogRepository.findThreatAccessLogs(pageable)
                 : accessLogRepository.findAll(pageable);
         return logPage.map(AccessLogResponseDTO::fromEntity);
     }
@@ -245,7 +245,7 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<AccessLogResponseDTO> getRecentThreats() {
-        return accessLogRepository.findTop5ByStatusCodeGreaterThanEqualOrderByRegDtDesc(400)
+        return accessLogRepository.findRecentThreats(PageRequest.of(0, 5))
                 .stream()
                 .map(AccessLogResponseDTO::fromEntity)
                 .collect(Collectors.toList());
@@ -331,7 +331,7 @@ public class AdminService {
         summary.put("todayVisitors", visitorsToday);
         summary.put("visitorsGrowth", calculateGrowth(visitorsToday, visitorsYesterday));
 
-        // 3. 보안 위협 통계 (400 에러 이상 발생 수)
+        // 3. 보안 위협 통계 (HTTP 4xx/5xx 또는 컨트롤러 예외가 기록된 접근)
         long threatsToday = accessLogRepository.countThreatsByRegDtBetween(todayStart, todayEnd);
         long threatsYesterday = accessLogRepository.countThreatsByRegDtBetween(yesterdayStart, yesterdayEnd);
 

@@ -1,10 +1,12 @@
 package com.example.backend_main.common.security;
 
 import com.example.backend_main.common.exception.ErrorCode;
+import com.example.backend_main.common.service.AccessLogWriterService;
 import com.example.backend_main.common.vo.ResultVO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -18,7 +20,10 @@ import java.io.IOException;
 예: '의뢰인'이 '변호사 전용 심사 메뉴'에 접근할 때
 */
 @Component
+@RequiredArgsConstructor
 public class JwtAccessDeniedHandler implements AccessDeniedHandler {
+
+    private final AccessLogWriterService accessLogWriterService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -34,12 +39,17 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
         // 2. HTTP 상태 코드 403 Forbidden 설정
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 
+        String reason = accessDeniedException != null && accessDeniedException.getMessage() != null
+                ? accessDeniedException.getMessage()
+                : ErrorCode.ACCESS_DENIED.getMessage();
+        accessLogWriterService.saveSecurityRejection(request, HttpServletResponse.SC_FORBIDDEN,
+                "접근 권한 없음 (403): " + reason);
+
         // 3. 표준 식판(ResultVO)에 AUTH-403 코드와 메시지 담기
         // 로그인은 되어있으나, 권한이 없기에 메인페이지로 돌려보내거나, 접근 불가 알림 처리..
-        ResultVO<Void> result = ResultVO.fail(ErrorCode.ACCESS_DENIED);
+        ResultVO<Void> failBody = ResultVO.fail(ErrorCode.ACCESS_DENIED);
 
-        // 4. JSON으로 변환하여 리액트에게 전송
-        String jsonResponse = objectMapper.writeValueAsString(result);
+        String jsonResponse = objectMapper.writeValueAsString(failBody);
         response.getWriter().write(jsonResponse);
     }
 }

@@ -1,10 +1,12 @@
 package com.example.backend_main.common.security;
 
 import com.example.backend_main.common.exception.ErrorCode;
+import com.example.backend_main.common.service.AccessLogWriterService;
 import com.example.backend_main.common.vo.ResultVO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -22,9 +24,12 @@ import java.io.IOException;
 // AuthenticationEntryPoint : 스프링 시큐리티에서 인증 실패 시 처리는 자신이 맡는다는 약속된 인터페이스
 //
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-    // 2. JSON 변환기 (객체를 글자로 바꿔주는 도구)를 준비하기!
+    private final AccessLogWriterService accessLogWriterService;
+
+    // JSON 변환기 (ObjectMapper는 스프링 빈 주입보다 단순 인스턴스로 충분)
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 검거 시 실행되는 메서드!
@@ -45,15 +50,20 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         // setStatus(SC_UNAUTHORIZED) : 401 에러를 명시적으로 보내주기
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
+        String reason = authException != null && authException.getMessage() != null
+                ? authException.getMessage()
+                : ErrorCode.INVALID_TOKEN.getMessage();
+        accessLogWriterService.saveSecurityRejection(request, HttpServletResponse.SC_UNAUTHORIZED,
+                "인증 필요 (401): " + reason);
+
         // 5. 표준 객체(ResultVO)에 실패 메시지를 담습니다.
         // AUTH : 로그인 관련 - 누구세요?
         // 401 : HTTP 상태 코드 401에서 따온 숫자
         // AUTH-401 : 당신이 누구신지는 모르겠으니, 신분증(JWT토큰)을 가져오세요!
-        ResultVO<Void> result = ResultVO.fail(ErrorCode.INVALID_TOKEN);;
+        ResultVO<Void> failBody = ResultVO.fail(ErrorCode.INVALID_TOKEN);
 
         // 6. 식판(객체)을 문자열(JSON)로 바꿔서 손님(리액트)에게 전송합니다.
-        // 자바 객체(ResultVO)를 이렉트가 읽을 수 있는 텍스트(JSON) 으로 변환하는 마법의 도구
-        String jsonResponse = objectMapper.writeValueAsString(result);
+        String jsonResponse = objectMapper.writeValueAsString(failBody);
         response.getWriter().write(jsonResponse);
     }
 }

@@ -4,8 +4,9 @@ import com.example.backend_main.common.annotation.ActionLog;
 import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.entity.AdminAudit;
 import com.example.backend_main.common.entity.User;
-import com.example.backend_main.common.repository.AccessLogRepository;
+import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.repository.AdminAuditRepository;
+import com.example.backend_main.common.service.AccessLogWriterService;
 import com.example.backend_main.common.repository.UserRepository;
 import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.util.IpUtil;
@@ -18,9 +19,11 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -34,7 +37,7 @@ import java.util.UUID;
 @Slf4j
 public class LogingAspect {
 
-    private final AccessLogRepository accessLogRepository;
+    private final AccessLogWriterService accessLogWriterService;
     private final UserRepository userRepository;
     private final AdminAuditRepository adminAuditRepository;
 
@@ -82,10 +85,12 @@ public class LogingAspect {
 
         Object result = null; // ✅ 초기화
         String errorMsg = null;
+        Exception caught = null;
 
         try {
             result = joinPoint.proceed();
         } catch (Exception e) {
+            caught = e;
             errorMsg = e.getMessage();
             if (errorMsg != null && errorMsg.length() > 500) {
                 errorMsg = errorMsg.substring(0, 500);
@@ -94,16 +99,13 @@ public class LogingAspect {
         } finally {
             long duration = System.currentTimeMillis() - startTime;
 
-            // ✅ GlobalExceptionHandler가 예외를 처리한 후의 실제 상태코드를 읽어옴
-            int status = 200;
-            if (httpResponse != null) {
-                status = httpResponse.getStatus();
-            }
+            // 응답 커밋 전에는 ServletResponse 상태가 200인 경우가 많음 → 예외·ResponseEntity에서 유추
+            int status = resolveLoggedHttpStatus(httpResponse, caught, result);
 
             log.info("📢 [Audit] TraceID: {}, URI: {}, Status: {}, Time: {}ms", traceId, uri, status, duration);
 
             try {
-                accessLogRepository.save(AccessLog.builder()
+                accessLogWriterService.save(AccessLog.builder()
                         .traceId(traceId)
                         .reqIp(ip)
                         .reqUri(uri)
@@ -283,4 +285,20 @@ public class LogingAspect {
     }
 
     // ✅ getClientIp() 메서드 삭제 — IpUtil.getClientIp()로 완전 대체
+
+    private static int resolveLoggedHttpStatus(HttpServletResponse response, Exception caught, Object result) {
+        if (caught instanceof CustomException ce) {
+            return ce.getErrorCode().getHttpStatus().value();
+        }
+        if (caught instanceof ResponseStatusException rse) {
+            return rse.getStatusCode().value();
+        }
+        if (result instanceof ResponseEntity<?> re) {
+            return re.getStatusCode().value();
+        }
+        if (response != null) {
+            return response.getStatus();
+        }
+        return 200;
+    }
 }

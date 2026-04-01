@@ -2,6 +2,7 @@ package com.example.backend_main.common.security;
 
 import com.example.backend_main.common.entity.BlacklistIp;
 import com.example.backend_main.common.repository.BlacklistIpRepository;
+import com.example.backend_main.common.service.AccessLogWriterService;
 import com.example.backend_main.common.util.IpUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class IpBlacklistFilter extends OncePerRequestFilter {
 
     private final BlacklistIpRepository blacklistIpRepository;
+    private final AccessLogWriterService accessLogWriterService;
 
     /**
      * DB 스냅샷을 통째로 갈아끼움(clear+addAll 없음) — 읽기 스레드가 빈 캐시를 보는 틈 제거.
@@ -46,6 +48,9 @@ public class IpBlacklistFilter extends OncePerRequestFilter {
         Set<String> snap = blacklistSnapshot;
         if (ip != null && snap.contains(ip)) {
             log.warn("🚨 [차단된 IP 접근 방어] IP: {}, URI: {}", ip, request.getRequestURI());
+
+            accessLogWriterService.saveSecurityRejection(request, HttpServletResponse.SC_FORBIDDEN,
+                    "IP 블랙리스트 차단 (BL-403)");
 
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json;charset=UTF-8");

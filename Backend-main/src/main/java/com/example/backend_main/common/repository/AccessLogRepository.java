@@ -2,7 +2,6 @@ package com.example.backend_main.common.repository;
 
 
 import com.example.backend_main.common.entity.AccessLog;
-import com.example.backend_main.common.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,11 +20,11 @@ import java.util.List;
 @Repository
 public interface AccessLogRepository extends JpaRepository<AccessLog, Long>, JpaSpecificationExecutor<AccessLog>{
 
-    // 상태 코드가 특정 값(예: 400) 이상인 최신 로그 5개만 조회
-    List<AccessLog> findTop5ByStatusCodeGreaterThanEqualOrderByRegDtDesc(Integer statusCode);
+    @Query("SELECT a FROM AccessLog a WHERE (a.statusCode >= 400 OR a.errorMsg IS NOT NULL) ORDER BY a.regDt DESC")
+    List<AccessLog> findRecentThreats(Pageable pageable);
 
-    // 상태 코드 필터링 조회
-    Page<AccessLog> findByStatusCodeGreaterThanEqual(Integer statusCode, Pageable pageable);
+    @Query("SELECT a FROM AccessLog a WHERE (a.statusCode >= 400 OR a.errorMsg IS NOT NULL) ORDER BY a.regDt DESC")
+    Page<AccessLog> findThreatAccessLogs(Pageable pageable);
 
     // 일별 방문 차트: AdminService에서 JdbcTemplate으로 조회 (JPA 네이티브 반환 이슈 회피)
 
@@ -37,7 +36,7 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long>, Jpa
     @Query("SELECT COUNT(DISTINCT a.reqIp) FROM AccessLog a WHERE a.regDt BETWEEN :start AND :end")
     long countDistinctIpByRegDtBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    // 2. 기간별 보안 위협 수 (Status >= 400)
-    @Query("SELECT COUNT(a) FROM AccessLog a WHERE a.statusCode >= 400 AND a.regDt BETWEEN :start AND :end")
+    // 2. 기간별 보안 위협 수 (HTTP 오류 또는 컨트롤러 예외 메시지가 남은 접근)
+    @Query("SELECT COUNT(a) FROM AccessLog a WHERE (a.statusCode >= 400 OR a.errorMsg IS NOT NULL) AND a.regDt BETWEEN :start AND :end")
     long countThreatsByRegDtBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

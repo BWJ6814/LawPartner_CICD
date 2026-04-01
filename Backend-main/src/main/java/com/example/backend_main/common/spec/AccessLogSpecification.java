@@ -48,10 +48,10 @@ public class AccessLogSpecification {
 
             // 3. 상태 코드 필터 (여기가 핵심 수정!)
             if ("ERROR".equals(statusType)) {
-                // DB의 statusCode는 Integer 타입입니다.
-                // 따라서 문자열 "400"이 아닌, 숫자 400과 비교해야 합니다.
-                predicate = criteriaBuilder.and(predicate,
-                        criteriaBuilder.greaterThanOrEqualTo(root.get("statusCode"), 400));
+                predicate = criteriaBuilder.and(predicate, criteriaBuilder.or(
+                        criteriaBuilder.greaterThanOrEqualTo(root.get("statusCode"), 400),
+                        criteriaBuilder.isNotNull(root.get("errorMsg"))
+                ));
             }
 
             query.orderBy(criteriaBuilder.desc(root.get("regDt")));
