@@ -207,7 +207,24 @@ public class GlobalExceptionHandler {
     }
 
     // ==================================================================================
-    // 5. 💣 [최후의 보루] 위에서 못 잡은 모든 에러 (500)
+    // 5. 비즈니스 CustomException (Exception 핸들러보다 반드시 위에 둠 — 상세 메시지 유지)
+    // ==================================================================================
+
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<ResultVO<Void>> handleCustomException(CustomException e) {
+        ErrorCode errorCode = e.getErrorCode();
+        log.warn("⚠️ [Business Error] 코드: {}, 메시지: {}", errorCode.getCode(), e.getMessage());
+        String detail = e.getMessage();
+        if (detail == null || detail.isBlank()) {
+            detail = errorCode.getMessage();
+        }
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(ResultVO.fail(errorCode, detail));
+    }
+
+    // ==================================================================================
+    // 6. 💣 [최후의 보루] 위에서 못 잡은 모든 에러 (500)
     // ==================================================================================
 
     @ExceptionHandler(Exception.class)
@@ -216,14 +233,5 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ErrorCode.SYSTEM_ERROR.getHttpStatus())
                 .body(ResultVO.fail(ErrorCode.SYSTEM_ERROR)); // 500은 절대 내부 메시지 노출 금지
-    }
-
-    @ExceptionHandler(CustomException.class)
-    public ResponseEntity<ResultVO<Void>> handleCustomException(CustomException e) {
-        ErrorCode errorCode = e.getErrorCode();
-        log.warn("⚠️ [Business Error] 코드: {}, 메시지: {}", errorCode.getCode(), e.getMessage());
-        return ResponseEntity
-                .status(errorCode.getHttpStatus())
-                .body(ResultVO.fail(errorCode, e.getMessage()));
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,7 +33,7 @@ public class BannedWordService {
         cachedWords = bannedWordRepository.findAll().stream()
                 .map(BannedWord::getWord)
                 .filter(w -> w != null && !w.isBlank())
-                .map(String::toLowerCase)
+                .map(String::trim)
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
@@ -41,10 +42,21 @@ public class BannedWordService {
             return;
         }
         String lower = content.toLowerCase();
+        LinkedHashSet<String> matched = new LinkedHashSet<>();
         for (String word : cachedWords) {
-            if (lower.contains(word)) {
-                throw new CustomException(ErrorCode.BANNED_WORD_DETECTED);
+            if (word.isEmpty()) {
+                continue;
             }
+            if (lower.contains(word.toLowerCase())) {
+                matched.add(word);
+            }
+        }
+        if (!matched.isEmpty()) {
+            String detail = String.join(", ", matched);
+            throw new CustomException(
+                    ErrorCode.BANNED_WORD_DETECTED,
+                    "다음 금지어가 포함되어 있습니다: " + detail
+            );
         }
     }
 }

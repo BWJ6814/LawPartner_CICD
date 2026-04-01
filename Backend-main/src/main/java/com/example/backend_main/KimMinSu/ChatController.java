@@ -1,5 +1,6 @@
 package com.example.backend_main.KimMinSu;
 
+import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.repository.NotificationRepository;
 import com.example.backend_main.common.security.JwtTokenProvider;
 import com.example.backend_main.common.vo.ResultVO;
@@ -8,15 +9,18 @@ import com.example.backend_main.dto.ChatRequestDTO;
 import com.example.backend_main.dto.ChatRoomDTO;
 import com.example.backend_main.dto.ChatRoomRequestResultDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
@@ -84,11 +88,45 @@ public class ChatController {
 
     // @MessageMapping("/chat/message")은 /pub/chat/message로 온 메시지를 가로챔
     @MessageMapping("/chat/message")
-    public void message(@Payload ChatMessageDTO msg){
-        // 1. 받은 메시지를 DB에 저장
-        chatService.saveMessage(msg);
-        // 2. 해당 방을 구독 중인 (/sub/chat/room/{roomId}) 사람들에게 메시지 뿌리기
-        messagingTemplate.convertAndSend("/sub/chat/room/"+msg.getRoomId(), msg);
+    public void message(@Payload ChatMessageDTO msg, Principal principal) {
+        if (principal == null) {
+            log.warn("[WebSocket] 메시지 수신 — 인증(Principal) 없음. roomId={}", msg != null ? msg.getRoomId() : null);
+            return;
+        }
+        try {
+            chatService.saveMessage(msg);
+            messagingTemplate.convertAndSend("/sub/chat/room/" + msg.getRoomId(), msg);
+        } catch (CustomException e) {
+            String detail = e.getMessage();
+            if (detail == null || detail.isBlank()) {
+                detail = e.getErrorCode().getMessage();
+            }
+            Map<String, String> error = Map.of(
+                    "code", e.getErrorCode().getCode(),
+                    "message", detail
+            );
+            // 알림(/sub/user/{userNo}/notification)과 동일하게 userNo 기준 직접 브로드캐스트.
+            // convertAndSendToUser(/user/queue/errors)는 Principal 이름과 구독이 어긋나 토스트가 안 뜨는 경우가 있음.
+            Long senderNo = msg != null ? msg.getSenderNo() : null;
+            if (senderNo != null) {
+                messagingTemplate.convertAndSend("/sub/user/" + senderNo + "/errors", error);
+            } else {
+                messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/errors", error);
+            }
+        } catch (Exception e) {
+            log.error("[WebSocket] 채팅 메시지 처리 실패. roomId={}, user={}",
+                    msg != null ? msg.getRoomId() : null, principal.getName(), e);
+            Map<String, String> error = Map.of(
+                    "code", "SYSTEM_ERROR",
+                    "message", "메시지 전송 중 오류가 발생했습니다."
+            );
+            Long senderNo = msg != null ? msg.getSenderNo() : null;
+            if (senderNo != null) {
+                messagingTemplate.convertAndSend("/sub/user/" + senderNo + "/errors", error);
+            } else {
+                messagingTemplate.convertAndSendToUser(principal.getName(), "/queue/errors", error);
+            }
+        }
     }
 
 

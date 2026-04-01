@@ -1478,7 +1478,14 @@ MODIFY TOKEN_VALUE VARCHAR2(64) NOT NULL;
 
 SELECT * FROM TB_REFRESH_TOKEN;
 
-SELECT * FROM TB_USER;
+select * from tb_user
+order by user_no desc;
 
-select * from tb_admin_audit;
+delete from tb_user where user_no = 96;
+
+commit;
+
+select * from tb_admin_audit
+order by audit_no desc;
 select * from tb_ip_blacklist;
+
