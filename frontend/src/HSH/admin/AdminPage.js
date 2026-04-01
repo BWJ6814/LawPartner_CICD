@@ -54,6 +54,15 @@ export default function AdminPage() {
   const [dailyStats, setDailyStats] = useState([]);
   const [loading, setLoading] = useState(false);
   const [contentBoards, setContentBoards] = useState([]);
+  const CONTENT_BOARD_PAGE_SIZE = 20;
+  const [contentBoardPage, setContentBoardPage] = useState(0);
+  const [contentBoardTotalPages, setContentBoardTotalPages] = useState(0);
+  const [contentBoardTotalElements, setContentBoardTotalElements] = useState(0);
+  const [contentBoardFilters, setContentBoardFilters] = useState({
+    keyword: '',
+    blindYn: 'ALL',
+    category: '',
+  });
   const [bannedWords, setBannedWords] = useState([]);
   const [newWord, setNewWord] = useState('');
   const [period, setPeriod] = useState(7);
@@ -119,10 +128,25 @@ export default function AdminPage() {
     } catch (error) { toast.error(error.response?.data?.message || "차단 해제 중 오류가 발생했습니다."); }
   };
 
-  const fetchContentBoards = async () => {
+  const runContentBoardQuery = async (page, filters) => {
     try {
-      const res = await api.get('/api/admin/boards');
-      if (res.data.success) setContentBoards(res.data.data);
+      const res = await api.get('/api/admin/boards', {
+        params: {
+          keyword: filters.keyword?.trim() || undefined,
+          blindYn: filters.blindYn || 'ALL',
+          category: filters.category?.trim() || undefined,
+          page,
+          size: CONTENT_BOARD_PAGE_SIZE,
+        },
+      });
+      if (res.data.success) {
+        const d = res.data.data;
+        setContentBoards(d.content || []);
+        setContentBoardTotalPages(typeof d.totalPages === 'number' ? d.totalPages : 0);
+        setContentBoardTotalElements(typeof d.totalElements === 'number' ? d.totalElements : 0);
+        setContentBoardPage(typeof d.page === 'number' ? d.page : page);
+        setContentBoardFilters(filters);
+      }
     } catch (e) {
       console.error("게시글 로드 실패", e);
       toast.error("게시글 로드에 실패했습니다.");
@@ -285,7 +309,7 @@ export default function AdminPage() {
       const res = await api.put(`/api/admin/board/blind`, { boardNo, blindYn: nextStatus, reason });
       if (res.data.success) {
         toast.success(res.data.message || "게시글 상태가 변경되었습니다.");
-        fetchContentBoards();
+        runContentBoardQuery(contentBoardPage, contentBoardFilters);
       }
     } catch (e) { toast.error(e.response?.data?.message || "블라인드 처리 중 오류가 발생했습니다."); }
   };
@@ -324,7 +348,7 @@ export default function AdminPage() {
           fetchDashboardData(),
           fetchDailyStats(period),
           fetchBlacklist(),
-          fetchContentBoards(),
+          runContentBoardQuery(0, { keyword: '', blindYn: 'ALL', category: '' }),
           fetchBannedWords(),
           fetchAuditLogs()
         ]);
@@ -387,7 +411,20 @@ export default function AdminPage() {
       case 'audit-log': return <AuditLogView logs={logs} searchParams={searchParams} setSearchParams={setSearchParams} handleSearch={handleSearch} handleReset={handleReset} handleKeyDown={handleKeyDown} handleExcelDownload={handleExcelDownload} hasPermission={hasPermission} currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />;
       case 'blacklist': return <BlacklistView blacklist={blacklist} newIp={newIp} setNewIp={setNewIp} newReason={newReason} setNewReason={setNewReason} handleAddBlacklist={handleAddBlacklist} handleUnblock={handleUnblock} />;
       case 'security-policy': return <SecurityPolicyView bannedWords={bannedWords} newWord={newWord} setNewWord={setNewWord} handleAddBannedWord={handleAddBannedWord} handleDeleteBannedWord={handleDeleteBannedWord} />;
-      case 'content-security': return <ContentSecurityView contentBoards={contentBoards} handleToggleBlind={handleToggleBlind} />;
+      case 'content-security': return (
+        <ContentSecurityView
+          contentBoards={contentBoards}
+          handleToggleBlind={handleToggleBlind}
+          filters={contentBoardFilters}
+          setFilters={setContentBoardFilters}
+          onSearch={() => runContentBoardQuery(0, contentBoardFilters)}
+          page={contentBoardPage}
+          totalPages={contentBoardTotalPages}
+          totalElements={contentBoardTotalElements}
+          pageSize={CONTENT_BOARD_PAGE_SIZE}
+          onPageChange={(p) => runContentBoardQuery(p, contentBoardFilters)}
+        />
+      );
       case 'inquiry-manage': return <AdminInquiryManage />; 
       default: return <DashboardView {...commonProps} />;
     }
