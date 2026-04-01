@@ -27,6 +27,8 @@ const ChatList = () => {
     const reconnectTimer = useRef(null);
     const currentRoomIdRef = useRef(roomId);
     const chatSubRef = useRef(null);
+    /** Spring STOMP 유저 전용 에러 큐 (/user/queue/errors) — 금지어 등 처리 실패 시 서버가 여기로 푸시 */
+    const errorSubRef = useRef(null);
 
     const userNo = Number(localStorage.getItem('userNo'));
 
@@ -191,6 +193,9 @@ const ChatList = () => {
             if (chatSubRef.current) {
                 chatSubRef.current.unsubscribe();
             }
+            if (errorSubRef.current) {
+                errorSubRef.current.unsubscribe();
+            }
 
             chatSubRef.current = client.subscribe(`/sub/chat/room/${roomId}`, (response) => {
                 if (!isMounted) return;
@@ -211,6 +216,17 @@ const ChatList = () => {
                 showNotification({ senderName: noti.title, message: noti.content });
             });
 
+            errorSubRef.current = client.subscribe('/user/queue/errors', (frame) => {
+                if (!isMounted) return;
+                try {
+                    const err = JSON.parse(frame.body);
+                    const text = err?.message || '오류가 발생했습니다.';
+                    showNotification({ senderName: '채팅', message: text });
+                } catch {
+                    showNotification({ senderName: '채팅', message: frame.body || '오류가 발생했습니다.' });
+                }
+            });
+
         }, (error) => {
             console.error("❌ WS 연결 실패:", error);
             setWsConnected(false);
@@ -224,6 +240,10 @@ const ChatList = () => {
             if (chatSubRef.current) {
                 chatSubRef.current.unsubscribe();
                 chatSubRef.current = null;
+            }
+            if (errorSubRef.current) {
+                errorSubRef.current.unsubscribe();
+                errorSubRef.current = null;
             }
 
             if (stompClient.current) {

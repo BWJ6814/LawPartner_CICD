@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // useNavigate: 다른 페이지로 이동시켜주는(링크 역할) 리액트 훅입니다.
 import { useParams, useNavigate } from 'react-router-dom';
 // axios: 스프링 서버랑 통신(데이터 주고받기)하기 위한 라이브러리입니다.
-import api, { getAccessToken } from '../common/api/axiosConfig';
+import api, { getAccessToken, getApiErrorMessage } from '../common/api/axiosConfig';
 import {
     CaretLeft, ChatCircleDots, Star, PencilSimple, Trash,
     CheckCircle, User, PaperPlaneRight, Siren, X, FileText, DownloadSimple
@@ -93,7 +93,7 @@ const ConsultationDetail = () => {
             setIsEditing(false);
             setPost({ ...post, title: editTitle, content: editContent });
         } catch (err) {
-            alert("게시글 수정 중 오류가 발생했습니다.");
+            alert(getApiErrorMessage(err, "게시글 수정 중 오류가 발생했습니다."));
         }
     };
 
@@ -134,7 +134,7 @@ const ConsultationDetail = () => {
             alert("답변이 등록되었습니다.");
             window.location.reload(); // 등록 후 새로고침
         } catch (err) {
-            alert("답변 등록 중 오류가 발생했습니다.");
+            alert(getApiErrorMessage(err, "답변 등록 중 오류가 발생했습니다."));
         }
     };
 
@@ -168,7 +168,7 @@ const ConsultationDetail = () => {
             setEditingReplyId(null);
             window.location.reload();
         } catch (err) {
-            alert("답변 수정 중 오류가 발생했습니다.");
+            alert(getApiErrorMessage(err, "답변 수정 중 오류가 발생했습니다."));
         }
     };
 

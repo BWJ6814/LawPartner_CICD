@@ -89,6 +89,40 @@ api.interceptors.response.use(
 
 export default api;
 
+/**
+ * axios 에러에서 백엔드 ResultVO.message(또는 유사 형태)를 안전히 추출합니다.
+ * - data가 문자열(JSON/평문)이거나, 중첩된 경우까지 보완
+ */
+export function getApiErrorMessage(error, fallback = '요청 처리 중 오류가 발생했습니다.') {
+  const res = error?.response;
+  if (!res || res.data === undefined || res.data === null || res.data === '') {
+    return fallback;
+  }
+  const d = res.data;
+  if (typeof d === 'string') {
+    const t = d.trim();
+    if (!t || t === 'FAIL') return fallback;
+    try {
+      const parsed = JSON.parse(t);
+      if (parsed && typeof parsed === 'object' && typeof parsed.message === 'string' && parsed.message.trim()) {
+        return parsed.message.trim();
+      }
+    } catch {
+      // JSON이 아니면 본문 일부를 그대로(너무 길면 fallback)
+    }
+    return t.length <= 2000 ? t : fallback;
+  }
+  if (typeof d === 'object') {
+    if (typeof d.message === 'string' && d.message.trim()) {
+      return d.message.trim();
+    }
+    if (d.data && typeof d.data === 'object' && typeof d.data.message === 'string' && d.data.message.trim()) {
+      return d.data.message.trim();
+    }
+  }
+  return fallback;
+}
+
 export const initAuth = async () => {
   try {
     const response = await axios.post(API_BASE_URL + '/api/auth/refresh', {}, { withCredentials: true });

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../common/api/axiosConfig';
+import api, { getApiErrorMessage } from '../common/api/axiosConfig';
 import { AttachedFilesFromAiContext } from '../common/context/AttachedFilesFromAiContext';
 import { LayoutGrid, CheckCircle, CloudUpload, X, FileText } from 'lucide-react';
 
@@ -134,7 +134,7 @@ const WriteQuestionPage = () => {
             navigate('/consultation');
         } catch (error) {
             console.error("등록 에러:", error);
-            alert("등록 중 오류가 발생했습니다.");
+            alert(getApiErrorMessage(error, "등록 중 오류가 발생했습니다."));
         }
     };
 
