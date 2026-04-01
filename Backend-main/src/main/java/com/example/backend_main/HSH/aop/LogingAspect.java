@@ -5,6 +5,7 @@ import com.example.backend_main.common.entity.AccessLog;
 import com.example.backend_main.common.entity.AdminAudit;
 import com.example.backend_main.common.entity.User;
 import com.example.backend_main.common.exception.CustomException;
+import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.repository.AdminAuditRepository;
 import com.example.backend_main.common.service.AccessLogWriterService;
 import com.example.backend_main.common.repository.UserRepository;
@@ -19,7 +20,11 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -105,17 +110,21 @@ public class LogingAspect {
             log.info("📢 [Audit] TraceID: {}, URI: {}, Status: {}, Time: {}ms", traceId, uri, status, duration);
 
             try {
-                accessLogWriterService.save(AccessLog.builder()
-                        .traceId(traceId)
-                        .reqIp(ip)
-                        .reqUri(uri)
-                        .userAgent(userAgent)
-                        .userNo(userNo)
-                        .statusCode(status)
-                        .execTime(duration)
-                        .errorMsg(errorMsg)
-                        .regDt(LocalDateTime.now())
-                        .build());
+                if (shouldSaveToDb(status, caught, uri)) {
+                    accessLogWriterService.save(AccessLog.builder()
+                            .traceId(traceId)
+                            .reqIp(ip)
+                            .reqUri(uri)
+                            .userAgent(userAgent)
+                            .userNo(userNo)
+                            .statusCode(status)
+                            .execTime(duration)
+                            .errorMsg(errorMsg)
+                            .regDt(LocalDateTime.now())
+                            .build());
+                } else {
+                    log.info("[SKIP-DB] uri={} status={} error={}", uri, status, errorMsg);
+                }
             } catch (Exception e) {
                 log.error("🚨 [접속 로그 저장 실패] {}", e.getMessage());
             }
@@ -300,5 +309,53 @@ public class LogingAspect {
             return response.getStatus();
         }
         return 200;
+    }
+
+    /**
+     * TB_ACCESS_LOG 저장 여부: 4xx/5xx 중 정책상 중·상 등급만 저장. 성공(2xx/3xx) 및 하 등급은 스킵.
+     */
+    private boolean shouldSaveToDb(int status, Exception caught, String reqUri) {
+        if (status < 400) {
+            return false;
+        }
+
+        if (caught instanceof CustomException ce) {
+            if (reqUri != null && reqUri.startsWith("/api/auth/refresh")
+                    && (ce.getErrorCode() == ErrorCode.INVALID_TOKEN || ce.getErrorCode() == ErrorCode.EXPIRED_TOKEN)) {
+                return false;
+            }
+
+            return switch (ce.getErrorCode()) {
+                case BANNED_WORD_DETECTED,
+                        ACCESS_DENIED,
+                        INVALID_TOKEN,
+                        EXPIRED_TOKEN,
+                        RATE_LIMIT_EXCEEDED,
+                        METHOD_NOT_ALLOWED,
+                        API_NOT_FOUND,
+                        DB_CONSTRAINT_ERROR,
+                        UNSUPPORTED_MEDIA_TYPE,
+                        SYSTEM_ERROR -> true;
+                default -> false;
+            };
+        }
+
+        if (caught instanceof HttpRequestMethodNotSupportedException) {
+            return true;
+        }
+        if (caught instanceof NoHandlerFoundException) {
+            return true;
+        }
+        if (caught instanceof HttpMediaTypeNotSupportedException) {
+            return true;
+        }
+        if (caught instanceof DataIntegrityViolationException) {
+            return true;
+        }
+        if (status == 500) {
+            return true;
+        }
+
+        return false;
     }
 }
