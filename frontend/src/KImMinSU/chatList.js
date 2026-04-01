@@ -32,7 +32,9 @@ const ChatList = () => {
     /** 전송 직후 입력창을 비우므로, 금지어 등으로 실패 시 복구할 마지막 본문 */
     const pendingChatSendRef = useRef(null);
 
-    const userNo = Number(localStorage.getItem('userNo'));
+    const rawUserNo = localStorage.getItem('userNo');
+    const userNo = rawUserNo != null && rawUserNo !== '' ? Number(rawUserNo) : NaN;
+    const userNoOk = Number.isFinite(userNo) && userNo > 0;
 
     const fileInputRef = useRef(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -44,6 +46,8 @@ const ChatList = () => {
     const [showCalendarSendConfirm, setShowCalendarSendConfirm] = useState(false);
     const [selectedDate, setSelectedDate] = useState('');
     const [toastMsg, setToastMsg] = useState(null);
+    /** 금지어 등 전송 실패 — alert 외에 입력창 위에도 표시 (WS 구독 실패 대비) */
+    const [chatSendError, setChatSendError] = useState(null);
 
     const [pendingCalendarAction, setPendingCalendarAction] = useState(null);
     const [pendingCalendarRejectDate, setPendingCalendarRejectDate] = useState(null);
@@ -137,11 +141,11 @@ const ChatList = () => {
         if (selectedRoom) {
             setCurrentRoom(selectedRoom);
             setCurrentRoomStatus(selectedRoom.progressCode);
-            const opponentName = Number(selectedRoom.userNo) === Number(userNo)
+            const opponentName = userNoOk && Number(selectedRoom.userNo) === userNo
                 ? selectedRoom.lawyerName : selectedRoom.userNm;
             setTargetName(opponentName || '상대방');
         }
-    }, [roomId, rooms, userNo]);
+    }, [roomId, rooms, userNo, userNoOk]);
 
     useEffect(() => {
         if (!roomId) return;
@@ -206,7 +210,7 @@ const ChatList = () => {
                     setCurrentRoomStatus(newMsg.message);
                     loadRooms();
                 } else {
-                    if (Number(newMsg.senderNo) === Number(userNo)) {
+                    if (userNoOk && Number(newMsg.senderNo) === userNo) {
                         pendingChatSendRef.current = null;
                     }
                     setChatLog(prev => [...prev, newMsg]);
@@ -214,32 +218,40 @@ const ChatList = () => {
                 }
             });
 
-            client.subscribe(`/sub/user/${userNo}/notification`, (response) => {
-                if (!isMounted) return;
-                const noti = JSON.parse(response.body);
-                if (noti.roomId && String(noti.roomId) === String(roomId)) return;
-                showNotification({ senderName: noti.title, message: noti.content });
-            });
+            if (userNoOk) {
+                client.subscribe(`/sub/user/${userNo}/notification`, (response) => {
+                    if (!isMounted) return;
+                    const noti = JSON.parse(response.body);
+                    if (noti.roomId && String(noti.roomId) === String(roomId)) return;
+                    showNotification({ senderName: noti.title, message: noti.content });
+                });
 
-            errorSubRef.current = client.subscribe(`/sub/user/${userNo}/errors`, (frame) => {
-                if (!isMounted) return;
-                try {
-                    const err = JSON.parse(frame.body);
-                    const text = err?.message || '오류가 발생했습니다.';
-                    alert(text);
-                    if (pendingChatSendRef.current != null) {
-                        setMessage(pendingChatSendRef.current);
-                        pendingChatSendRef.current = null;
+                errorSubRef.current = client.subscribe(`/sub/user/${userNo}/errors`, (frame) => {
+                    if (!isMounted) return;
+                    try {
+                        const err = JSON.parse(frame.body);
+                        const code = err?.code ? `[${err.code}] ` : '';
+                        const text = (err?.message && String(err.message).trim()) || '오류가 발생했습니다.';
+                        const full = code + text;
+                        setChatSendError(full);
+                        window.setTimeout(() => setChatSendError(null), 12000);
+                        alert(full);
+                        if (pendingChatSendRef.current != null) {
+                            setMessage(pendingChatSendRef.current);
+                            pendingChatSendRef.current = null;
+                        }
+                    } catch {
+                        const raw = (frame.body && String(frame.body).trim()) || '오류가 발생했습니다.';
+                        setChatSendError(raw);
+                        window.setTimeout(() => setChatSendError(null), 12000);
+                        alert(raw);
+                        if (pendingChatSendRef.current != null) {
+                            setMessage(pendingChatSendRef.current);
+                            pendingChatSendRef.current = null;
+                        }
                     }
-                } catch {
-                    const raw = frame.body || '오류가 발생했습니다.';
-                    alert(raw);
-                    if (pendingChatSendRef.current != null) {
-                        setMessage(pendingChatSendRef.current);
-                        pendingChatSendRef.current = null;
-                    }
-                }
-            });
+                });
+            }
 
         }, (error) => {
             console.error("❌ WS 연결 실패:", error);
@@ -267,10 +279,10 @@ const ChatList = () => {
             if (recognitionRef.current) recognitionRef.current.stop();
             setWsConnected(false);
         };
-    }, [roomId]);
+    }, [roomId, userNo, userNoOk, loadRooms, showNotification]);
 
 
-    const isLawyer = currentRoom && Number(currentRoom.lawyerNo) === Number(userNo);
+    const isLawyer = currentRoom && userNoOk && Number(currentRoom.lawyerNo) === userNo;
 
     // ★ 상태 변경 API 호출 (헤더 추가 완료)
     const handleStatusChange = async (type) => {
@@ -292,6 +304,11 @@ const ChatList = () => {
         const msgContent = msgOverride !== undefined ? msgOverride : message;
         if (!msgContent.trim()) return;
 
+        if (!userNoOk) {
+            alert('로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요.');
+            return;
+        }
+
         if (!stompClient.current?.connected) {
             alert("연결이 불안정합니다. 잠시 후 다시 시도해주세요.");
             return;
@@ -305,8 +322,11 @@ const ChatList = () => {
         }
         // ★ [핵심 3] STOMP 전송 시에도 헤더에 신분증 꽂아줌!
         stompClient.current.send("/pub/chat/message", { Authorization: `Bearer ${token}` }, JSON.stringify(chatDTO));
-        if (msgType === 'TEXT') setMessage('');
-    }, [message, roomId, userNo]);
+        if (msgType === 'TEXT') {
+            setMessage('');
+            setChatSendError(null);
+        }
+    }, [message, roomId, userNo, userNoOk]);
 
     const sendCalendarProposal = () => {
         if (!selectedDate) { alert("날짜와 시간을 선택해주세요."); return; }
@@ -510,7 +530,7 @@ const ChatList = () => {
 
     const filteredRooms = rooms.filter(room => {
         const matchStatus = filterStatus === 'ALL' || room.progressCode === filterStatus;
-        const opponentName = Number(room.userNo) === Number(userNo) ? room.lawyerName : room.userNm;
+        const opponentName = userNoOk && Number(room.userNo) === userNo ? room.lawyerName : room.userNm;
         return matchStatus && (opponentName || '').toLowerCase().includes(searchTerm.toLowerCase());
     });
 
@@ -556,7 +576,7 @@ const ChatList = () => {
                         </div>
                         <div className="flex-1 overflow-y-auto bg-white custom-scrollbar">
                             {filteredRooms.length > 0 ? filteredRooms.map((room) => {
-                                const opponentName = Number(room.userNo) === Number(userNo) ? room.lawyerName : room.userNm;
+                                const opponentName = userNoOk && Number(room.userNo) === userNo ? room.lawyerName : room.userNm;
                                 return (
                                     <div key={room.roomId} className={`flex items-stretch border-b border-slate-100 ${String(roomId) === String(room.roomId) ? 'bg-blue-50' : ''}`}>
                                         <Link to={`/chatList/${room.roomId}`}
@@ -574,7 +594,7 @@ const ChatList = () => {
                                                 <p className="text-[11px] text-slate-400 truncate font-medium mt-0.5">{room.lastMessage || '대화를 시작하세요...'}</p>
                                             </div>
                                         </Link>
-                                        {(Number(room.userNo) === Number(userNo) || Number(room.lawyerNo) === Number(userNo)) && (
+                                        {(userNoOk && (Number(room.userNo) === userNo || Number(room.lawyerNo) === userNo)) && (
                                             <button
                                                 type="button"
                                                 title="채팅방 나가기"
@@ -633,7 +653,7 @@ const ChatList = () => {
                                         </div>
                                     )}
                                     {chatLog.map((msg, index) => {
-                                        const isMyMessage = Number(msg.senderNo) === Number(userNo);
+                                        const isMyMessage = userNoOk && Number(msg.senderNo) === userNo;
                                         const profileImg = msg.profileUrl || (currentRoom && !isMyMessage ? currentRoom.targetProfileImg : null);
                                         return (
                                             <div key={index} className={`flex items-end gap-2 mb-4 ${isMyMessage ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -681,6 +701,11 @@ const ChatList = () => {
 
                                 {/* 채팅 입력창 - 항상 하단에 고정 표시 */}
                                 <div className="flex-none shrink-0 w-full p-4 border-t-2 border-slate-200 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.08)]" style={{ flexShrink: 0 }}>
+                                    {chatSendError && (
+                                        <div className="max-w-4xl mx-auto mb-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs font-bold break-keep leading-snug">
+                                            {chatSendError}
+                                        </div>
+                                    )}
                                     <div className="relative bg-slate-100 rounded-2xl p-3 border border-slate-200 max-w-4xl mx-auto">
                                         <textarea disabled={currentRoomStatus === 'ST05'}
                                                   placeholder={currentRoomStatus === 'ST05' ? "상담이 종료되어 채팅할 수 없습니다." : "메시지를 입력하세요."}
