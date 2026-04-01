@@ -4,7 +4,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
 import { AttachedFilesFromAiProvider } from './common/context/AttachedFilesFromAiContext';
-import { initAuth, getAccessToken } from './common/api/axiosConfig';
+import { initAuth, getAccessToken, isIpBlockedClient } from './common/api/axiosConfig';
+import IpBlockedOverlay from './common/components/IpBlockedOverlay';
 import Header from './common/components/Header';
 import Footer from './common/components/Footer';
 import MainPage from './pages/mainpage';
@@ -67,10 +68,22 @@ function App() {
     });
 
     const [authReady, setAuthReady] = useState(false);
+    const [ipBlockedOverlay, setIpBlockedOverlay] = useState(() => isIpBlockedClient());
+
+    useEffect(() => {
+        const onIpBlocked = () => setIpBlockedOverlay(true);
+        window.addEventListener('lawpartner-ip-blocked', onIpBlocked);
+        return () => window.removeEventListener('lawpartner-ip-blocked', onIpBlocked);
+    }, []);
 
     useEffect(() => {
         initAuth()
             .then(() => {
+                if (isIpBlockedClient()) {
+                    setIpBlockedOverlay(true);
+                    setAuth({ isLoggedIn: false, role: null });
+                    return;
+                }
                 if (getAccessToken()) {
                     setAuth({
                         isLoggedIn: true,
@@ -81,6 +94,7 @@ function App() {
                 }
             })
             .finally(() => {
+                if (isIpBlockedClient()) setIpBlockedOverlay(true);
                 setAuthReady(true);
             });
     }, []);
@@ -103,6 +117,7 @@ function App() {
     return (
         <BrowserRouter>
             <AttachedFilesFromAiProvider>
+                {ipBlockedOverlay && <IpBlockedOverlay />}
                 <LayoutManager auth={auth} onLoginUpdate={updateAuth}>
                     <Routes>
                     {/* 기본 페이지 */}

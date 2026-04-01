@@ -7,6 +7,26 @@ let accessToken = null;
 export const getAccessToken = () => accessToken;
 export const setAccessToken = (token) => { accessToken = token; };
 
+const IP_BLOCKED_SESSION_KEY = 'lawpartner_ip_blocked';
+
+/** 클라이언트에 IP 차단 상태가 이미 적용됐는지 (오버레이·요청 차단용) */
+export function isIpBlockedClient() {
+  try {
+    return sessionStorage.getItem(IP_BLOCKED_SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** 개발/시연: 관리자가 차단 해제 후 사용자가 새로고침 전 테스트용으로만 사용 */
+export function clearIpBlockedClientFlag() {
+  try {
+    sessionStorage.removeItem(IP_BLOCKED_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** IP 블랙리스트(403, code BL-403) 응답 여부 */
 export function isIpBlockedResponse(error) {
   if (error?.response?.status !== 403) return false;
@@ -23,7 +43,8 @@ export function isIpBlockedResponse(error) {
   return false;
 }
 
-function clearClientSessionAndGoToLogin(query) {
+/** 세션 정리 + 차단 플래그 + 앱에 오버레이 표시 이벤트 (URL 이동 없음 → 로그인 무한 새로고침 방지) */
+export function applyIpBlockedState() {
   setAccessToken(null);
   try {
     localStorage.removeItem('accessToken');
@@ -35,8 +56,15 @@ function clearClientSessionAndGoToLogin(query) {
   } catch {
     /* ignore */
   }
-  const q = query ? (query.startsWith('?') ? query : `?${query}`) : '';
-  window.location.href = `/login${q}`;
+  try {
+    const already = sessionStorage.getItem(IP_BLOCKED_SESSION_KEY) === '1';
+    sessionStorage.setItem(IP_BLOCKED_SESSION_KEY, '1');
+    if (!already && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('lawpartner-ip-blocked'));
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 const api = axios.create({
@@ -53,6 +81,12 @@ const api = axios.create({
 // 1. 요청 인터셉터 (AccessToken 부착)
 api.interceptors.request.use(
     (config) => {
+        if (isIpBlockedClient()) {
+            const blockedErr = new Error('IP_BLOCKED');
+            blockedErr.config = config;
+            blockedErr.response = { status: 403, data: { code: 'BL-403', message: '접근이 원천 차단된 IP입니다.' } };
+            return Promise.reject(blockedErr);
+        }
         const token = getAccessToken();
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
@@ -71,9 +105,9 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // IP 원천 차단 — 세션 무효화 후 로그인 화면 (401 갱신보다 먼저 처리)
+        // IP 원천 차단 — 리다이렉트 없이 세션 정리 + 전역 오버레이 (로그인/refresh 루프 방지)
         if (isIpBlockedResponse(error)) {
-            clearClientSessionAndGoToLogin('blocked=1');
+            applyIpBlockedState();
             return Promise.reject(error);
         }
 
@@ -104,6 +138,10 @@ api.interceptors.response.use(
                     return api(originalRequest);
                 }
             } catch (refreshError) {
+                if (isIpBlockedResponse(refreshError)) {
+                    applyIpBlockedState();
+                    return Promise.reject(refreshError);
+                }
                 // ✅ 백엔드가 실제로 400/401 응답한 경우만 세션 만료 처리
                 // 네트워크 단절, 서버 다운 등의 에러는 로그아웃하지 않음
                 if (refreshError.response) {
@@ -172,7 +210,7 @@ export const initAuth = async () => {
     }
   } catch (e) {
     if (isIpBlockedResponse(e)) {
-      clearClientSessionAndGoToLogin('blocked=1');
+      applyIpBlockedState();
       return;
     }
     // 비로그인 상태 → 조용히 종료
