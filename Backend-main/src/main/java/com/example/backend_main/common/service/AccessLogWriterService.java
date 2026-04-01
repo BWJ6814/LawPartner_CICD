@@ -55,7 +55,7 @@ public class AccessLogWriterService {
                 err = err.substring(0, 500);
             }
 
-            save(AccessLog.builder()
+            accessLogRepository.save(AccessLog.builder()
                     .traceId(traceId)
                     .reqIp(IpUtil.getClientIp(request))
                     .reqUri(uri)
@@ -96,3 +96,4 @@ public class AccessLogWriterService {
         }
     }
 }
+
