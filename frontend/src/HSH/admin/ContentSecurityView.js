@@ -67,48 +67,66 @@ export default function ContentSecurityView({
         {pageSize ? ` · 페이지당 ${pageSize}건` : ''}
       </p>
 
-      <div className="overflow-x-auto mt-4">
-        <table className="w-full text-left text-sm whitespace-nowrap">
+      {/* 감사 로그와 동일: 테이블 고정 레이아웃 + 셀 말줄임 → 가로 스크롤 최소화 */}
+      <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+        <table className="w-full table-fixed text-left text-sm">
           <thead className="bg-slate-800 text-slate-300">
             <tr>
-              <th className="px-4 py-3 font-bold">게시글 번호</th>
-              <th className="px-4 py-3 font-bold">제목</th>
-              <th className="px-4 py-3 font-bold">카테고리</th>
-              <th className="px-4 py-3 font-bold">작성자 번호</th>
-              <th className="px-4 py-3 font-bold text-center">상태</th>
-              <th className="px-4 py-3 font-bold text-center">제어</th>
+              <th className="w-[4.5rem] px-2 py-2.5 font-bold text-xs">번호</th>
+              <th className="px-2 py-2.5 font-bold text-xs">제목</th>
+              <th className="w-[22%] px-2 py-2.5 font-bold text-xs">카테고리</th>
+              <th className="w-[5rem] px-2 py-2.5 font-bold text-xs">작성자</th>
+              <th className="w-[5.5rem] px-1 py-2.5 font-bold text-xs text-center">상태</th>
+              <th className="w-[7rem] px-1 py-2.5 font-bold text-xs text-center">제어</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 bg-white">
             {contentBoards.length > 0 ? contentBoards.map((board) => (
               <tr key={board.boardNo} className={`transition-colors ${board.blindYn === 'Y' ? 'bg-rose-50/50' : 'hover:bg-slate-50'}`}>
-                <td className="px-4 py-3 text-slate-500 font-mono">No.{board.boardNo}</td>
-                <td className="px-4 py-3 font-bold text-slate-700 max-w-xs truncate">{board.title}</td>
-                <td className="px-4 py-3 text-slate-600 max-w-[140px] truncate text-xs" title={board.categoryCode}>{board.categoryCode || '—'}</td>
-                <td className="px-4 py-3 text-blue-600 font-mono font-bold">User {board.writerNo}</td>
-                <td className="px-4 py-3 text-center">
+                <td className="px-2 py-2 align-middle text-slate-500 font-mono text-xs whitespace-nowrap">
+                  {board.boardNo}
+                </td>
+                <td className="max-w-0 px-2 py-2 align-middle">
+                  <span className="block truncate font-semibold text-slate-800 text-xs" title={board.title}>
+                    {board.title || '—'}
+                  </span>
+                </td>
+                <td className="max-w-0 px-2 py-2 align-middle">
+                  <span className="block truncate text-xs text-slate-600" title={board.categoryCode}>
+                    {board.categoryCode || '—'}
+                  </span>
+                </td>
+                <td className="px-2 py-2 align-middle text-center">
+                  <span className="inline-block truncate max-w-full text-blue-600 font-mono font-bold text-xs" title={String(board.writerNo)}>
+                    {board.writerNo}
+                  </span>
+                </td>
+                <td className="px-1 py-2 align-middle text-center">
                   {board.blindYn === 'Y' ? (
-                    <Badge variant="red">블라인드됨</Badge>
+                    <Badge variant="red">블라인드</Badge>
                   ) : (
-                    <Badge variant="green">정상 게시</Badge>
+                    <Badge variant="green">정상</Badge>
                   )}
                 </td>
-                <td className="px-4 py-3 text-center flex justify-center gap-2">
+                <td className="px-1 py-2 align-middle text-center">
                   <button
                     type="button"
                     onClick={() => handleToggleBlind(board.boardNo, board.blindYn)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ${
+                    title={board.blindYn === 'Y' ? '정상 복구' : '강제 블라인드'}
+                    className={`inline-flex items-center justify-center gap-0.5 rounded-lg px-2 py-1 text-[11px] font-bold leading-tight transition-colors whitespace-nowrap ${
                       board.blindYn === 'Y'
                         ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
                         : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
                     }`}
                   >
-                    {board.blindYn === 'Y' ? <><Eye size={14} /> 정상 복구</> : <><EyeOff size={14} /> 강제 블라인드</>}
+                    {board.blindYn === 'Y' ? <><Eye size={12} /> 복구</> : <><EyeOff size={12} /> 차단</>}
                   </button>
                 </td>
               </tr>
             )) : (
-              <tr><td colSpan="6" className="py-10 text-center text-slate-400 font-bold">조회된 게시글이 없습니다.</td></tr>
+              <tr>
+                <td colSpan="6" className="py-10 text-center text-slate-400 font-bold">조회된 게시글이 없습니다.</td>
+              </tr>
             )}
           </tbody>
         </table>

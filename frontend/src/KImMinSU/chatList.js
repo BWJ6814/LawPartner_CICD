@@ -226,7 +226,6 @@ const ChatList = () => {
                 try {
                     const err = JSON.parse(frame.body);
                     const text = err?.message || '오류가 발생했습니다.';
-                    showNotification({ senderName: '채팅', message: text });
                     alert(text);
                     if (pendingChatSendRef.current != null) {
                         setMessage(pendingChatSendRef.current);
@@ -234,7 +233,6 @@ const ChatList = () => {
                     }
                 } catch {
                     const raw = frame.body || '오류가 발생했습니다.';
-                    showNotification({ senderName: '채팅', message: raw });
                     alert(raw);
                     if (pendingChatSendRef.current != null) {
                         setMessage(pendingChatSendRef.current);
