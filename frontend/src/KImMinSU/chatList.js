@@ -27,8 +27,10 @@ const ChatList = () => {
     const reconnectTimer = useRef(null);
     const currentRoomIdRef = useRef(roomId);
     const chatSubRef = useRef(null);
-    /** Spring STOMP 유저 전용 에러 큐 (/user/queue/errors) — 금지어 등 처리 실패 시 서버가 여기로 푸시 */
+    /** 서버가 금지어 등 실패 시 푸시 — 백엔드와 동일하게 /sub/user/{userNo}/errors (알림 채널과 동일 패턴) */
     const errorSubRef = useRef(null);
+    /** 전송 직후 입력창을 비우므로, 금지어 등으로 실패 시 복구할 마지막 본문 */
+    const pendingChatSendRef = useRef(null);
 
     const userNo = Number(localStorage.getItem('userNo'));
 
@@ -204,6 +206,9 @@ const ChatList = () => {
                     setCurrentRoomStatus(newMsg.message);
                     loadRooms();
                 } else {
+                    if (Number(newMsg.senderNo) === Number(userNo)) {
+                        pendingChatSendRef.current = null;
+                    }
                     setChatLog(prev => [...prev, newMsg]);
                     loadRooms();
                 }
@@ -216,14 +221,25 @@ const ChatList = () => {
                 showNotification({ senderName: noti.title, message: noti.content });
             });
 
-            errorSubRef.current = client.subscribe('/user/queue/errors', (frame) => {
+            errorSubRef.current = client.subscribe(`/sub/user/${userNo}/errors`, (frame) => {
                 if (!isMounted) return;
                 try {
                     const err = JSON.parse(frame.body);
                     const text = err?.message || '오류가 발생했습니다.';
                     showNotification({ senderName: '채팅', message: text });
+                    alert(text);
+                    if (pendingChatSendRef.current != null) {
+                        setMessage(pendingChatSendRef.current);
+                        pendingChatSendRef.current = null;
+                    }
                 } catch {
-                    showNotification({ senderName: '채팅', message: frame.body || '오류가 발생했습니다.' });
+                    const raw = frame.body || '오류가 발생했습니다.';
+                    showNotification({ senderName: '채팅', message: raw });
+                    alert(raw);
+                    if (pendingChatSendRef.current != null) {
+                        setMessage(pendingChatSendRef.current);
+                        pendingChatSendRef.current = null;
+                    }
                 }
             });
 
@@ -286,6 +302,9 @@ const ChatList = () => {
         const chatDTO = { roomId, senderNo: userNo, message: msgContent, msgType };
         const token = getAccessToken();
 
+        if (msgType === 'TEXT') {
+            pendingChatSendRef.current = msgContent;
+        }
         // ★ [핵심 3] STOMP 전송 시에도 헤더에 신분증 꽂아줌!
         stompClient.current.send("/pub/chat/message", { Authorization: `Bearer ${token}` }, JSON.stringify(chatDTO));
         if (msgType === 'TEXT') setMessage('');
