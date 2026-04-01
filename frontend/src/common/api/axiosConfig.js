@@ -7,6 +7,38 @@ let accessToken = null;
 export const getAccessToken = () => accessToken;
 export const setAccessToken = (token) => { accessToken = token; };
 
+/** IP 블랙리스트(403, code BL-403) 응답 여부 */
+export function isIpBlockedResponse(error) {
+  if (error?.response?.status !== 403) return false;
+  const d = error.response.data;
+  if (d && typeof d === 'object' && d.code === 'BL-403') return true;
+  if (typeof d === 'string') {
+    try {
+      const p = JSON.parse(d);
+      return p.code === 'BL-403';
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+function clearClientSessionAndGoToLogin(query) {
+  setAccessToken(null);
+  try {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('userNo');
+    localStorage.removeItem('userNm');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('nickNm');
+  } catch {
+    /* ignore */
+  }
+  const q = query ? (query.startsWith('?') ? query : `?${query}`) : '';
+  window.location.href = `/login${q}`;
+}
+
 const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
@@ -38,6 +70,12 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+
+        // IP 원천 차단 — 세션 무효화 후 로그인 화면 (401 갱신보다 먼저 처리)
+        if (isIpBlockedResponse(error)) {
+            clearClientSessionAndGoToLogin('blocked=1');
+            return Promise.reject(error);
+        }
 
         // 401(만료) 에러 발생 시 작동
         if (
@@ -132,7 +170,11 @@ export const initAuth = async () => {
       const role = response.data?.data?.role;
       if (role) localStorage.setItem('userRole', role);
     }
-  } catch {
+  } catch (e) {
+    if (isIpBlockedResponse(e)) {
+      clearClientSessionAndGoToLogin('blocked=1');
+      return;
+    }
     // 비로그인 상태 → 조용히 종료
   }
 };

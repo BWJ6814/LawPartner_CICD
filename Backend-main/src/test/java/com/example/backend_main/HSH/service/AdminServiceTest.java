@@ -11,6 +11,7 @@ import com.example.backend_main.common.repository.BannedWordRepository;
 import com.example.backend_main.common.repository.BlacklistIpRepository;
 import com.example.backend_main.common.repository.LawyerInfoRepository;
 import com.example.backend_main.common.repository.UserRepository;
+import com.example.backend_main.common.security.IpBlacklistFilter;
 import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.common.util.PasswordUtil;
 import com.example.backend_main.dto.Board;
@@ -53,6 +54,8 @@ class AdminServiceTest {
     private BannedWordRepository bannedWordRepository;
     @Mock
     private BoardRepository boardRepository;
+    @Mock
+    private IpBlacklistFilter ipBlacklistFilter;
     @Mock
     private AdminAuditRepository adminAuditRepository;
     @Mock

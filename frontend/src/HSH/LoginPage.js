@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api, { getAccessToken, setAccessToken } from '../common/api/axiosConfig';
 import './LoginPage.css';
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [userId, setUserId] = useState('');           // 아이디 저장용
     const [password, setPassword] = useState('');       // 비밀번호
@@ -31,6 +32,10 @@ const LoginPage = () => {
             navigate('/');
             return;
         }
+        if (searchParams.get('blocked') === '1') {
+            setErrorMsg('이 IP는 접근이 차단되었습니다. 관리자에게 문의하세요.');
+            setIsError(true);
+        }
         // 1-2 브라우저 저장소에서 기억된 아이디 가져오기
         const savedId = localStorage.getItem('savedUserId');
         if(savedId){
@@ -39,7 +44,7 @@ const LoginPage = () => {
             // 체크박스도 체크됨으로 변경
             setIsRemember(true)
         }
-    }, [navigate]);
+    }, [navigate, searchParams]);
 
 
     const handleLoginSubmit = async (e) => {

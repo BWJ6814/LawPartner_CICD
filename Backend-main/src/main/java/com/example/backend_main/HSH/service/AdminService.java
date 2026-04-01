@@ -8,6 +8,7 @@ import com.example.backend_main.common.entity.*;
 import com.example.backend_main.common.exception.CustomException;
 import com.example.backend_main.common.exception.ErrorCode;
 import com.example.backend_main.common.repository.*;
+import com.example.backend_main.common.security.IpBlacklistFilter;
 import com.example.backend_main.common.spec.AccessLogSpecification;
 import com.example.backend_main.common.util.HashUtil;
 import com.example.backend_main.dto.Board;
@@ -55,6 +56,7 @@ public class AdminService {
     private final LawyerInfoRepository lawyerInfoRepository;
     private final BannedWordRepository bannedWordRepository;
     private final BoardRepository boardRepository;
+    private final IpBlacklistFilter ipBlacklistFilter;
     private final AdminAuditRepository adminAuditRepository;
     private final com.example.backend_main.HSH.service.MailService mailService;
     private final JdbcTemplate jdbcTemplate;
@@ -476,6 +478,7 @@ public class AdminService {
 
         blacklistIpRepository.save(blacklistIp);
         log.info("🚨 [IP 차단 완료] IP: {}, 사유: {}, 관리자: {}", ip, reason, adminId);
+        ipBlacklistFilter.refreshCacheNow();
     }
 
     @Transactional
@@ -486,6 +489,7 @@ public class AdminService {
 
         blacklistIpRepository.delete(target);
         log.info("✅ [IP 차단 해제 완료] IP: {}, 사유: {}", ip, reason);
+        ipBlacklistFilter.refreshCacheNow();
     }
 
     // ==================================================================================

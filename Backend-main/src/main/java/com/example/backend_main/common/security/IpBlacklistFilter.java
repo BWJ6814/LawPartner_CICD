@@ -74,4 +74,19 @@ public class IpBlacklistFilter extends OncePerRequestFilter {
             }
         }
     }
+
+    /** 관리자가 IP 등록/해제 직후 즉시 반영 (TTL 대기 없이 시연·운영 반응성) */
+    public void refreshCacheNow() {
+        synchronized (this) {
+            try {
+                Set<String> latest = blacklistIpRepository.findAll().stream()
+                        .map(BlacklistIp::getIpAddress)
+                        .collect(Collectors.toSet());
+                blacklistSnapshot = Collections.unmodifiableSet(latest);
+                lastCacheUpdateTime = System.currentTimeMillis();
+            } catch (Exception e) {
+                log.error("❌ 블랙리스트 캐시 강제 갱신 중 오류 발생", e);
+            }
+        }
+    }
 }
