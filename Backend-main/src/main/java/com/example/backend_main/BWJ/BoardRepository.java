@@ -2,6 +2,7 @@ package com.example.backend_main.BWJ;
 
 import com.example.backend_main.dto.Board;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-public interface BoardRepository extends JpaRepository<Board, Long> {
+public interface BoardRepository extends JpaRepository<Board, Long>, JpaSpecificationExecutor<Board> {
 
     // 1. 전체 목록 최신순
     List<Board> findAllByOrderByRegDtDesc();

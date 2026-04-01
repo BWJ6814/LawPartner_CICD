@@ -14,6 +14,7 @@ import com.example.backend_main.dto.Board;
 import com.example.backend_main.dto.HSH_DTO.AccessLogResponseDTO;
 import com.example.backend_main.dto.HSH_DTO.UserJoinRequestDto;
 import com.example.backend_main.dto.HSH_DTO.UserListDto;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -529,9 +531,45 @@ public class AdminService {
     // 📝 게시글 관리
     // ==================================================================================
 
+    /** 관리자 콘텐츠 보안: 키워드(제목 부분일치·글번호·작성자번호)·블라인드·카테고리 코드 부분일치·페이징 */
     @Transactional(readOnly = true)
-    public List<Board> getAllBoards() {
-        return boardRepository.findAll();
+    public Page<Board> searchBoardsForAdmin(String keyword, String blindYn, String category, Pageable pageable) {
+        Specification<Board> spec = adminBoardSpecification(keyword, blindYn, category);
+        return boardRepository.findAll(spec, pageable);
+    }
+
+    private Specification<Board> adminBoardSpecification(String keyword, String blindYn, String category) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (StringUtils.hasText(blindYn) && !"ALL".equalsIgnoreCase(blindYn.trim())) {
+                String b = blindYn.trim().toUpperCase(Locale.ROOT);
+                if ("Y".equals(b) || "N".equals(b)) {
+                    predicates.add(cb.equal(root.get("blindYn"), b));
+                }
+            }
+            if (StringUtils.hasText(category)) {
+                predicates.add(cb.like(root.get("categoryCode"), "%" + category.trim() + "%"));
+            }
+            if (StringUtils.hasText(keyword)) {
+                String k = keyword.trim();
+                List<Predicate> ors = new ArrayList<>();
+                ors.add(cb.like(cb.lower(root.get("title")), "%" + k.toLowerCase(Locale.ROOT) + "%"));
+                try {
+                    long num = Long.parseLong(k);
+                    if (num >= 0) {
+                        ors.add(cb.equal(root.get("boardNo"), num));
+                        ors.add(cb.equal(root.get("writerNo"), num));
+                    }
+                } catch (NumberFormatException ignored) {
+                    // 제목 LIKE 만 사용
+                }
+                predicates.add(cb.or(ors.toArray(new Predicate[0])));
+            }
+            if (predicates.isEmpty()) {
+                return cb.conjunction();
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     @Transactional

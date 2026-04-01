@@ -11,6 +11,7 @@ import com.example.backend_main.common.security.CustomUserDetails;
 import com.example.backend_main.common.vo.ResultVO;
 import com.example.backend_main.dto.*;
 import com.example.backend_main.dto.HSH_DTO.AccessLogResponseDTO;
+import com.example.backend_main.dto.HSH_DTO.AdminBoardListResponse;
 import com.example.backend_main.dto.HSH_DTO.BannedWordDto;
 import com.example.backend_main.dto.HSH_DTO.InquiryDto;
 import com.example.backend_main.dto.HSH_DTO.UserListDto;
@@ -18,6 +19,8 @@ import com.example.backend_main.dto.HSH_DTO.UserRoleUpdateDto;
 import com.example.backend_main.dto.HSH_DTO.UserStatusUpdateDto;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -242,8 +248,22 @@ public class AdminController {
 
     @GetMapping("/boards")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'OPERATOR')")
-    public ResultVO<List<Board>> getAllBoards() {
-        return ResultVO.ok(adminService.getAllBoards());
+    public ResultVO<AdminBoardListResponse> getAdminBoards(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false, defaultValue = "ALL") String blindYn,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "regDt"));
+        Page<Board> p = adminService.searchBoardsForAdmin(keyword, blindYn, category, pageable);
+        AdminBoardListResponse body = AdminBoardListResponse.builder()
+                .content(p.getContent())
+                .totalElements(p.getTotalElements())
+                .totalPages(p.getTotalPages())
+                .page(p.getNumber())
+                .size(p.getSize())
+                .build();
+        return ResultVO.ok("게시글 목록을 불러왔습니다.", body);
     }
 
     @PutMapping("/board/blind")
