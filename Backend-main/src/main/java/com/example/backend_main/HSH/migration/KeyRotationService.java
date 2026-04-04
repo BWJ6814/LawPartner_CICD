@@ -45,7 +45,14 @@ public class KeyRotationService {
                 user.setEmail(reEncryptedEmail);
 
             } catch (Exception e) {
-                log.error("❌ 유저 {} 처리 중 오류: {}", user.getUserId(), e.getMessage());
+                log.error("❌ 유저 {} 이메일 처리 중 오류: {}", user.getUserId(), e.getMessage());
+            }
+            try {
+                String plainPhone = decryptWithOldFirst(user.getPhone());
+                String reEncryptedPhone = newAesUtil.encrypt(plainPhone);
+                user.setPhone(reEncryptedPhone);
+            } catch (Exception e) {
+                log.error("❌ 유저 {} 전화번호 처리 중 오류: {}", user.getUserId(), e.getMessage());
             }
         }
         log.info("✅ 모든 데이터의 보안 세대교체가 완료되었습니다.");
